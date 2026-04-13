@@ -10,6 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import goodsImg from "@/assets/categories/Truck-removebg-preview.png";
+import houseImg from "@/assets/categories/shifting.jpg";
+import passengerImg from "@/assets/categories/passenger-removebg-preview.png";
+import emergencyImg from "@/assets/categories/Emergency-removebg-preview.png";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -33,11 +37,10 @@ const Dashboard = () => {
   }, []);
 
   const categories = [
-    { id: "goods", title: "Goods Transport", icon: <Truck className="w-5 h-5 text-black" />, bg: "bg-primary" },
-    { id: "house", title: "House Shifting", icon: <Home className="w-5 h-5 text-black" />, bg: "bg-primary" },
-    { id: "passenger", title: "Passenger", icon: <Users className="w-5 h-5 text-black" />, bg: "bg-primary" },
-    { id: "emergency", title: "Emergency", icon: <AlertTriangle className="w-5 h-5 text-black" />, bg: "bg-primary" },
-    { id: "construction", title: "Construction", icon: <Hammer className="w-5 h-5 text-black" />, bg: "bg-primary" },
+    { id: "goods", title: "Goods Transport", image: goodsImg },
+    { id: "house", title: "House Shifting", image: houseImg },
+    { id: "passenger", title: "Passenger", image: passengerImg },
+    { id: "emergency", title: "Emergency", image: emergencyImg },
   ];
 
   const handlePostRequirement = () => {
@@ -156,12 +159,21 @@ const Dashboard = () => {
               onClick={() => navigate(`/user/post-requirement?cat=${cat.id}`)}
               className="cursor-pointer"
             >
-              <Card className="border-2 border-primary/20 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl overflow-hidden bg-white">
-                <CardContent className="p-3.5 flex flex-col gap-2.5">
-                  <div className={`p-2.5 rounded-lg w-fit ${cat.bg}`}>
-                    {cat.icon}
+              <Card className="border-2 border-primary/20 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl overflow-hidden bg-white group">
+                <CardContent className="p-0 flex flex-col">
+                  <div className="w-full h-20 overflow-hidden relative flex items-center justify-center p-1 bg-zinc-50/30">
+                    <img 
+                      src={cat.image} 
+                      alt={cat.title} 
+                      className={cn(
+                        "w-full h-full transition-transform duration-500 group-hover:scale-110",
+                        cat.image.includes("removebg") ? "object-contain" : "object-cover"
+                      )} 
+                    />
                   </div>
-                  <span className="font-black text-black text-xs tracking-tight">{cat.title}</span>
+                  <div className="p-2 text-center border-t border-zinc-100 bg-white">
+                    <span className="font-black text-black text-[10px] uppercase tracking-tighter leading-none">{cat.title}</span>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
