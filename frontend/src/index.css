@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #facc15;
+  --color-primary-foreground: #000000;
+  --color-secondary: #000000;
+  --color-secondary-foreground: #ffffff;
+  --color-accent: #facc15;
+  --color-accent-foreground: #000000;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #000000;
+  --color-card: #ffffff;
+  --color-card-foreground: #000000;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #facc15;
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-white text-black font-sans antialiased selection:bg-primary/30;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Custom Utilities for Premium Look */
+.glass {
+  @apply bg-white/70 backdrop-blur-md border border-white/20;
+}
+
+.shadow-premium {
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 5px 15px -5px rgba(0, 0, 0, 0.03);
+}
+
+/* Animations for Page Transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+.page-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+.page-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Scrollbar Hiding for Mobile Experience */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
