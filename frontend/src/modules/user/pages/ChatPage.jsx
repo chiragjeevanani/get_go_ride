@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   ChevronLeft, Send, Image, Mic, MoreVertical, 
-  CheckCircle2, Info, Star, ShieldCheck, MapPin, Package 
+  CheckCircle2, Info, Star, ShieldCheck, MapPin, Package, X 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,11 +11,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import driverImg from "@/assets/Driver/driver1.jpg";
 
 const ChatPage = () => {
   const { requestId, vendorId } = useParams();
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
+  const [showMenu, setShowMenu] = useState(false);
+  const fileInputRef = useRef(null);
   const scrollRef = useRef(null);
 
   // Mock data for messages
@@ -30,7 +33,7 @@ const ChatPage = () => {
     name: "Shiv Logistics",
     rating: 4.8,
     isVerified: true,
-    avatar: "https://api.dicebear.com/7.x/initials/svg?seed=SL",
+    avatar: driverImg,
     quote: "₹3,500"
   };
 
@@ -54,17 +57,16 @@ const ChatPage = () => {
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] -m-4 bg-zinc-50 relative overflow-hidden">
+    <div className="flex flex-col h-screen -m-4 bg-zinc-50 relative overflow-hidden">
       {/* Chat Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-zinc-100 p-4 sticky top-0 z-40 safe-area-top shadow-sm flex items-center justify-between">
+      <header className="bg-white border-b border-zinc-100 p-4 pt-8 sticky top-0 z-40 safe-area-top shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-3">
            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => navigate(-1)}>
               <ChevronLeft className="w-6 h-6" />
            </Button>
-           <Avatar className="h-10 w-10 border-2 border-primary/10">
-              <AvatarImage src={vendor.avatar} />
-              <AvatarFallback>{vendor.name.substring(0, 2)}</AvatarFallback>
-           </Avatar>
+           <div className="w-10 h-10 rounded-full border-2 border-primary/20 bg-zinc-100 flex items-center justify-center font-black text-black text-xs overflow-hidden">
+              <img src={vendor.avatar} alt="logo" className="w-full h-full object-cover" />
+           </div>
            <div className="flex flex-col overflow-hidden">
               <div className="flex items-center gap-1">
                  <h4 className="font-bold text-black text-sm truncate">{vendor.name}</h4>
@@ -80,10 +82,64 @@ const ChatPage = () => {
               </div>
            </div>
         </div>
-        <div className="flex items-center gap-1">
-           <Button variant="ghost" size="icon" className="rounded-full text-zinc-400">
+        <div className="flex items-center gap-1 relative">
+           <Button 
+            variant="ghost" 
+            size="icon" 
+            className={cn("rounded-full transition-colors", showMenu ? "bg-zinc-100 text-black" : "text-zinc-400")}
+            onClick={() => setShowMenu(!showMenu)}
+           >
               <MoreVertical className="w-5 h-5" />
            </Button>
+
+           <AnimatePresence>
+             {showMenu && (
+               <>
+                 <motion.div 
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   exit={{ opacity: 0 }}
+                   className="fixed inset-0 z-40" 
+                   onClick={() => setShowMenu(false)}
+                 />
+                 <motion.div
+                   initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                   animate={{ opacity: 1, scale: 1, y: 0 }}
+                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                   className="absolute right-0 top-12 w-48 bg-white rounded-xl shadow-xl border border-zinc-100 p-1.5 z-50 overflow-hidden"
+                 >
+                    {[
+                      { label: "View Profile", icon: Info, onClick: () => navigate(`/user/vendor/${vendorId}`) },
+                      { label: "Share Contact", icon: Send, onClick: () => {
+                        if (navigator.share) {
+                          navigator.share({ title: vendor.name, text: 'Vendor Contact', url: window.location.href });
+                        }
+                        setShowMenu(false);
+                      }},
+                      { label: "Block Vendor", icon: X, color: "text-red-500", onClick: () => {
+                        alert("Vendor blocked successfully");
+                        setShowMenu(false);
+                      }},
+                    ].map((item, i) => (
+                      <button 
+                        key={i}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-black uppercase tracking-tighter hover:bg-zinc-50 transition-colors",
+                          item.color || "text-zinc-600"
+                        )}
+                        onClick={() => {
+                          if (item.onClick) item.onClick();
+                          else setShowMenu(false);
+                        }}
+                      >
+                         <item.icon className="w-4 h-4" />
+                         {item.label}
+                      </button>
+                    ))}
+                 </motion.div>
+               </>
+             )}
+           </AnimatePresence>
         </div>
       </header>
 
@@ -110,7 +166,7 @@ const ChatPage = () => {
       {/* Messages List */}
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar scroll-smooth"
+        className="flex-1 overflow-y-auto p-4 pb-32 space-y-2.5 no-scrollbar scroll-smooth"
       >
         <div className="flex justify-center my-6">
            <Badge variant="outline" className="bg-white/50 text-zinc-400 text-[9px] uppercase font-bold tracking-widest border-zinc-100 rounded-full px-3">
@@ -130,22 +186,26 @@ const ChatPage = () => {
                 msg.sender === "user" ? "ml-auto items-end" : "items-start"
               )}
             >
-               <div className={cn(
-                  "p-3.5 px-5 rounded-[2rem] text-sm leading-relaxed shadow-sm relative",
+                <div className={cn(
+                  "rounded-[1.25rem] text-[13px] leading-snug shadow-sm relative font-medium overflow-hidden",
                   msg.sender === "user" 
-                    ? "bg-primary text-black rounded-tr-none shadow-primary/10" 
-                    : "bg-white text-black rounded-tl-none shadow-zinc-100"
+                    ? "bg-primary text-black rounded-tr-none shadow-primary/10 border border-primary/20" 
+                    : "bg-white text-zinc-900 rounded-tl-none shadow-zinc-100 border border-zinc-100"
                )}>
-                  {msg.text}
-                  {msg.sender === "user" && (
-                    <div className="flex items-center justify-end mt-1 gap-1">
-                       <span className="text-[8px] opacity-70 italic">{msg.time}</span>
-                       <CheckCircle2 className="w-2.5 h-2.5 opacity-80" />
-                    </div>
+                  {msg.image ? (
+                    <img src={msg.image} alt="shared" className="max-w-full h-auto rounded-lg mb-1" />
+                  ) : (
+                    <div className="p-2.5 px-4">{msg.text}</div>
                   )}
-                  {msg.sender === "vendor" && (
-                    <span className="text-[8px] text-zinc-300 italic block mt-1">{msg.time}</span>
-                  )}
+                  <div className={cn(
+                    "flex items-center gap-1 mt-1 justify-end px-3 pb-1.5",
+                    msg.sender === "user" ? "opacity-60" : "opacity-40"
+                  )}>
+                     <span className="text-[8px] font-bold uppercase tracking-tighter">{msg.time}</span>
+                     {msg.sender === "user" && (
+                       <CheckCircle2 className="w-2.5 h-2.5" />
+                     )}
+                  </div>
                </div>
             </motion.div>
           ))}
@@ -153,9 +213,33 @@ const ChatPage = () => {
       </div>
 
       {/* Input Area */}
-      <div className="p-4 bg-white border-t border-zinc-100 safe-area-bottom">
-        <div className="flex items-end gap-2 bg-zinc-50 p-2 rounded-[2rem] border border-zinc-200">
-          <Button variant="ghost" size="icon" className="rounded-full text-zinc-400 shrink-0 h-10 w-10">
+      <div className="p-4 pt-1 bg-white border-t border-zinc-100 pb-3">
+        <div className="flex items-end gap-2 bg-zinc-50 p-2 rounded-[1.5rem] border border-zinc-200">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept="image/*"
+            onChange={(e) => {
+              if (e.target.files?.[0]) {
+                const newMessage = {
+                  id: Date.now(),
+                  sender: "user",
+                  text: "Shared an image",
+                  image: URL.createObjectURL(e.target.files[0]),
+                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  status: "sent"
+                };
+                setMessages([...messages, newMessage]);
+              }
+            }}
+          />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="rounded-full text-zinc-400 shrink-0 h-10 w-10 hover:bg-zinc-100 transition-colors"
+            onClick={() => fileInputRef.current?.click()}
+          >
              <Image className="w-5 h-5" />
           </Button>
           <textarea 
@@ -185,18 +269,19 @@ const ChatPage = () => {
       </div>
 
       {/* Floating CTA for Mobile inside Chat */}
-      <div className="px-4 pb-2 absolute bottom-24 left-0 right-0 z-10 sm:hidden translate-y-[-10px]">
+      <div className="px-6 absolute bottom-24 left-0 right-0 z-20 sm:hidden">
          <motion.div 
-           initial={{ y: 0 }}
-           animate={{ y: [0, -5, 0] }}
-           transition={{ duration: 3, repeat: Infinity }}
+           initial={{ y: 20, opacity: 0 }}
+           animate={{ y: 0, opacity: 1 }}
            className="w-full"
          >
            <Button 
-             className="w-full bg-primary text-black h-12 shadow-xl shadow-primary/30 rounded-2xl border-none font-bold"
+             className="w-full bg-black text-primary h-11 shadow-xl shadow-black/40 rounded-xl border-none font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
              onClick={() => navigate(`/user/finalize/${requestId}/${vendorId}`)}
            >
-              <CheckCircle2 className="w-4 h-4 mr-2" />
+              <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+              </div>
               Finalize Deal (₹3,500)
            </Button>
          </motion.div>

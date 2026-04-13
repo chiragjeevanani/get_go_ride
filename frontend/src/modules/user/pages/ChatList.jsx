@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import driver1 from "@/assets/Driver/driver1.jpg";
+import driver2 from "@/assets/Driver/driver2.jpg";
+import driver3 from "@/assets/Driver/driver3.jpg";
 
 const ChatList = () => {
   const navigate = useNavigate();
@@ -15,7 +18,7 @@ const ChatList = () => {
     {
       id: "1",
       vendorName: "Vijay Logistics",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Vijay",
+      avatar: driver1,
       lastMessage: "I can provide a 14ft container at ₹5500.",
       time: "10:30 AM",
       unread: 2,
@@ -27,7 +30,7 @@ const ChatList = () => {
     {
       id: "2",
       vendorName: "Rahul Transports",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul",
+      avatar: driver2,
       lastMessage: "Which date are you planning to shift?",
       time: "Yesterday",
       unread: 0,
@@ -39,7 +42,7 @@ const ChatList = () => {
     {
       id: "3",
       vendorName: "Super Fast Cabs",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Cab",
+      avatar: driver3,
       lastMessage: "Booking confirmed for tomorrow.",
       time: "2 days ago",
       unread: 0,

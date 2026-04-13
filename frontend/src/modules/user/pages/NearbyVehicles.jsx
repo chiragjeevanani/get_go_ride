@@ -3,6 +3,11 @@ import {
   MapPin, Search, Navigation, ChevronLeft, Car, Bike, Truck, 
   Timer, CheckCircle2, X, Map as MapIcon, Loader2
 } from "lucide-react";
+import bikeImg from "@/assets/categories/Bike-removebg-preview.png";
+import autoImg from "@/assets/categories/auto-removebg-preview.png";
+import cabImg from "@/assets/categories/cab-removebg-preview.png";
+import truckImg from "@/assets/categories/Truck-removebg-preview.png";
+import truck2Img from "@/assets/categories/truck2-removebg-preview.png";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,8 +33,8 @@ const NearbyVehicles = () => {
       time: "3 min",
       status: "Available",
       price: "₹40",
-      icon: <Bike className="w-5 h-5" />,
-      color: "bg-amber-100 text-amber-600"
+      image: bikeImg,
+      color: "bg-zinc-50 text-zinc-600"
     },
     {
       id: 2,
@@ -39,8 +44,8 @@ const NearbyVehicles = () => {
       time: "5 min",
       status: "Available",
       price: "₹85",
-      icon: <Car className="w-5 h-5" />,
-      color: "bg-emerald-100 text-emerald-600"
+      image: autoImg,
+      color: "bg-zinc-50 text-zinc-600"
     },
     {
       id: 3,
@@ -50,8 +55,8 @@ const NearbyVehicles = () => {
       time: "7 min",
       status: "Available",
       price: "₹120",
-      icon: <Car className="w-5 h-5" />,
-      color: "bg-blue-100 text-blue-600"
+      image: cabImg,
+      color: "bg-zinc-50 text-zinc-600"
     },
     {
       id: 4,
@@ -61,8 +66,8 @@ const NearbyVehicles = () => {
       time: "12 min",
       status: "Busy",
       price: "₹250",
-      icon: <Truck className="w-5 h-5" />,
-      color: "bg-zinc-100 text-zinc-600"
+      image: truck2Img,
+      color: "bg-zinc-50 text-zinc-600"
     }
   ];
 
@@ -207,10 +212,14 @@ const NearbyVehicles = () => {
                           <Card className="border-2 border-primary/10 shadow-sm hover:shadow-md transition-all rounded-2xl overflow-hidden bg-white">
                              <CardContent className="p-2.5 flex gap-3">
                                 <div className={cn(
-                                   "w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-inner",
+                                   "w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-inner overflow-hidden",
                                    vehicle.color
                                 )}>
-                                   {vehicle.icon}
+                                    <img 
+                                      src={vehicle.image} 
+                                      alt={vehicle.name} 
+                                      className="w-full h-full object-contain p-1"
+                                    />
                                 </div>
                                 
                                 <div className="flex-1 min-w-0">

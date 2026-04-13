@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import profileImg from "@/assets/profile.jpg";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ const ProfilePage = () => {
   const user = {
     name: "Felix Karanth",
     phone: "+91 98765 43210",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
+    avatar: profileImg,
     membership: "Gold",
     requests: 24,
     saved: 12
@@ -39,9 +40,9 @@ const ProfilePage = () => {
     { icon: <Package className="w-4 h-4" />, label: "Order History", desc: "View past and active requests", path: "/user/requests" },
     { icon: <CreditCard className="w-4 h-4" />, label: "Payments", desc: "Manage cards and methods", path: "/user/payments" },
     { icon: <MapPin className="w-4 h-4" />, label: "Addresses", desc: "Select frequent locations", path: "/user/addresses" },
-    { icon: <Heart className="w-4 h-4" />, label: "Vendors", desc: "Your favorite providers", path: "#" },
-    { icon: <Bell className="w-4 h-4" />, label: "Alerts", desc: "Control notification settings", path: "#" },
-    { icon: <ShieldCheck className="w-4 h-4" />, label: "Security", desc: "Account protection tools", path: "#" },
+    { icon: <Heart className="w-4 h-4" />, label: "Vendors", desc: "Your favorite providers", path: "/user/vendors" },
+    { icon: <Bell className="w-4 h-4" />, label: "Alerts", desc: "Control notification settings", path: "/user/alerts" },
+    { icon: <ShieldCheck className="w-4 h-4" />, label: "Security", desc: "Account protection tools", path: "/user/security" },
     { icon: <HelpCircle className="w-4 h-4" />, label: "Support", desc: "Get help with requests", path: "/user/support" },
   ];
 

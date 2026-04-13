@@ -15,6 +15,9 @@ import SavedAddresses from "../pages/SavedAddresses";
 import SupportPage from "../pages/SupportPage";
 import LocationSearchPage from "../pages/LocationSearchPage";
 import NearbyVehicles from "../pages/NearbyVehicles";
+import FavoriteVendors from "../pages/FavoriteVendors";
+import NotificationSettings from "../pages/NotificationSettings";
+import SecuritySettings from "../pages/SecuritySettings";
 
 const UserRoutes = () => {
   return (
@@ -38,6 +41,9 @@ const UserRoutes = () => {
         <Route path="profile" element={<ProfilePage />} />
         <Route path="payments" element={<PaymentMethods />} />
         <Route path="addresses" element={<SavedAddresses />} />
+        <Route path="vendors" element={<FavoriteVendors />} />
+        <Route path="alerts" element={<NotificationSettings />} />
+        <Route path="security" element={<SecuritySettings />} />
         <Route path="support" element={<SupportPage />} />
       </Route>
     </Routes>

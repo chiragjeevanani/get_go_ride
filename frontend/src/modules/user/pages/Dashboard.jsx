@@ -14,6 +14,8 @@ import goodsImg from "@/assets/categories/Truck-removebg-preview.png";
 import houseImg from "@/assets/categories/shifting.jpg";
 import passengerImg from "@/assets/categories/passenger-removebg-preview.png";
 import emergencyImg from "@/assets/categories/Emergency-removebg-preview.png";
+import truck2Img from "@/assets/categories/truck2-removebg-preview.png";
+import profileImg from "@/assets/profile.jpg";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -71,7 +73,7 @@ const Dashboard = () => {
             onClick={() => navigate("/user/profile")}
             className="w-8 h-8 rounded-lg bg-zinc-50 overflow-hidden border border-white shadow-sm ring-1 ring-zinc-50 cursor-pointer active:scale-90 transition-transform"
           >
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="avatar" className="w-full h-full object-cover" />
+            <img src={profileImg} alt="avatar" className="w-full h-full object-cover" />
           </div>
         </div>
       </header>
@@ -165,10 +167,7 @@ const Dashboard = () => {
                     <img 
                       src={cat.image} 
                       alt={cat.title} 
-                      className={cn(
-                        "w-full h-full transition-transform duration-500 group-hover:scale-110",
-                        cat.image.includes("removebg") ? "object-contain" : "object-cover"
-                      )} 
+                      className="w-full h-full object-contain p-1 transition-transform duration-500 group-hover:scale-110"
                     />
                   </div>
                   <div className="p-2 text-center border-t border-zinc-100 bg-white">
@@ -230,8 +229,8 @@ const Dashboard = () => {
             Register Now
           </Button>
         </div>
-        <div className="absolute -right-6 -bottom-6 opacity-10">
-          <Truck className="w-32 h-32 rotate-[-15deg] fill-primary" />
+        <div className="absolute -right-6 -bottom-6 opacity-20 w-32 h-32 rotate-[-15deg]">
+          <img src={truck2Img} alt="truck" className="w-full h-full object-contain brightness-0 opacity-40" />
         </div>
       </Card>
 

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   ChevronLeft, Star, ShieldCheck, MapPin, 
@@ -11,10 +12,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import driver1 from "@/assets/Driver/driver1.jpg";
 
 const VendorProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [showVerificationInfo, setShowVerificationInfo] = useState(false);
 
   const vendor = {
     id: id || "V-201",
@@ -28,7 +32,7 @@ const VendorProfile = () => {
     experience: "8+ Years",
     completed: "1,240+",
     isVerified: true,
-    avatar: "https://api.dicebear.com/7.x/initials/svg?seed=SL",
+    avatar: driver1,
     vehicles: [
       { name: "Tata Ace", capacity: "750kg", count: 4 },
       { name: "Mahindra Bolero", capacity: "1.2T", count: 2 },
@@ -41,65 +45,92 @@ const VendorProfile = () => {
   return (
     <div className="space-y-6 pb-24 animate-in fade-in slide-in-from-right-4 duration-500">
       {/* Header Sticky Container */}
-      <header className="sticky top-0 bg-zinc-50/80 backdrop-blur-md z-40 py-2 -mx-4 px-4 overflow-hidden flex items-center justify-between">
+      <header className="sticky top-0 bg-white/80 backdrop-blur-md z-40 py-2.5 -mx-4 px-4 overflow-hidden flex items-center justify-between border-b border-zinc-100 shadow-sm">
          <Button 
             variant="ghost" 
             size="icon" 
-            className="rounded-full bg-white shadow-sm border border-zinc-100"
+            className="w-10 h-10 rounded-full bg-zinc-50/50 hover:bg-zinc-100 transition-colors"
             onClick={() => navigate(-1)}
          >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5 text-black" />
          </Button>
-         <h1 className="text-sm font-bold text-black tracking-widest uppercase">Vendor Profile</h1>
-         <Button variant="ghost" size="icon" className="rounded-full text-zinc-400">
+         <h1 className="text-[11px] font-black text-black tracking-[0.2em] uppercase">Vendor Profile</h1>
+         <Button 
+            variant="ghost" 
+            size="icon" 
+            className={cn("w-10 h-10 rounded-full transition-colors", showVerificationInfo ? "bg-primary text-black" : "text-zinc-400")}
+            onClick={() => setShowVerificationInfo(!showVerificationInfo)}
+         >
             <Info className="w-5 h-5" />
          </Button>
       </header>
 
       {/* Hero Profile Info */}
-      <Card className="border-none shadow-premium bg-white overflow-visible relative mt-4">
-         <CardContent className="p-6">
-            <div className="flex flex-col items-center gap-4 text-center">
+      <Card className="border-none shadow-premium bg-white overflow-visible relative mt-2 rounded-[2rem]">
+         <CardContent className="p-4 px-6 pt-6">
+            <div className="flex flex-col items-center gap-3 text-center">
                <div className="relative">
-                  <Avatar className="h-24 w-24 border-4 border-white shadow-xl ring-1 ring-zinc-100">
-                     <AvatarImage src={vendor.avatar} />
-                     <AvatarFallback>{vendor.name.substring(0, 2)}</AvatarFallback>
-                  </Avatar>
+                  <div className="h-20 w-20 rounded-full border-4 border-white shadow-xl ring-1 ring-zinc-50 overflow-hidden">
+                     <img src={vendor.avatar} alt="vendor" className="w-full h-full object-cover" />
+                  </div>
                   {vendor.isVerified && (
                     <div className="absolute -bottom-1 -right-1 bg-primary text-black p-1 rounded-full border-2 border-white shadow-lg">
-                       <ShieldCheck className="w-5 h-5" />
+                       <ShieldCheck className="w-3.5 h-3.5" />
                     </div>
                   )}
                </div>
                
-               <div className="space-y-1">
-                  <h2 className="text-2xl font-black text-black tracking-tight">{vendor.name}</h2>
-                  <div className="flex items-center justify-center gap-3">
-                     <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                        <span className="text-sm font-bold text-black">{vendor.rating}</span>
-                        <span className="text-xs text-zinc-400">({vendor.reviews.length} reviews)</span>
+               <div className="space-y-0.5">
+                  <h2 className="text-xl font-black text-black tracking-tight leading-none">{vendor.name}</h2>
+                  <div className="flex items-center justify-center gap-2">
+                     <div className="flex items-center gap-0.5">
+                        <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                        <span className="text-[11px] font-bold text-black">{vendor.rating}</span>
+                        <span className="text-[10px] text-zinc-400 font-bold">({vendor.reviews.length})</span>
                      </div>
-                     <Separator orientation="vertical" className="h-3 bg-zinc-200" />
+                     <div className="w-1 h-1 rounded-full bg-zinc-200" />
                      <div className="flex items-center gap-1">
-                        <Award className="w-4 h-4 text-primary" />
-                        <span className="text-xs font-bold text-zinc-600">{vendor.experience}</span>
+                        <Award className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-[10px] font-bold text-zinc-500">{vendor.experience}</span>
                      </div>
                   </div>
                </div>
                
-               <div className="grid grid-cols-2 w-full gap-4 pt-4">
-                  <div className="bg-zinc-50 p-4 rounded-3xl flex flex-col items-center gap-1 border border-zinc-100">
-                     <span className="text-lg font-black text-black leading-none">{vendor.completed}</span>
-                     <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Jobs Done</span>
+               <div className="grid grid-cols-2 w-full gap-3 pt-2">
+                  <div className="bg-zinc-50/50 p-3 rounded-2xl flex flex-col items-center gap-0.5 border border-zinc-100">
+                     <span className="text-sm font-black text-black leading-none">{vendor.completed}</span>
+                     <span className="text-[8px] uppercase font-black text-zinc-400 tracking-wider">Jobs Done</span>
                   </div>
-                  <div className="bg-zinc-50 p-4 rounded-3xl flex flex-col items-center gap-1 border border-zinc-100">
-                     <span className="text-lg font-black text-black leading-none">98%</span>
-                     <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Reliability</span>
+                  <div className="bg-zinc-50/50 p-3 rounded-2xl flex flex-col items-center gap-0.5 border border-zinc-100">
+                     <span className="text-sm font-black text-black leading-none">98%</span>
+                     <span className="text-[8px] uppercase font-black text-zinc-400 tracking-wider">Reliability</span>
                   </div>
                </div>
             </div>
          </CardContent>
+         
+         <AnimatePresence>
+           {showVerificationInfo && (
+             <motion.div 
+               initial={{ opacity: 0, height: 0 }}
+               animate={{ opacity: 1, height: "auto" }}
+               exit={{ opacity: 0, height: 0 }}
+               className="overflow-hidden bg-primary/5 rounded-b-[2rem] border-t border-primary/10"
+             >
+                <div className="p-4 space-y-3">
+                   <h4 className="text-[9px] font-black uppercase tracking-widest text-primary-foreground/60">Verification Details</h4>
+                   <div className="grid grid-cols-2 gap-2">
+                      {['Identity', 'Vehicle', 'Insurance', 'Address'].map((check) => (
+                        <div key={check} className="flex items-center gap-2 text-[9px] font-bold text-zinc-600">
+                           <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                           {check} Verified
+                        </div>
+                      ))}
+                   </div>
+                </div>
+             </motion.div>
+           )}
+         </AnimatePresence>
       </Card>
 
       {/* Main Content Tabs */}

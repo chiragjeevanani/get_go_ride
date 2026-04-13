@@ -10,6 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from "react-router-dom";
+import goodsImg from "@/assets/categories/Truck-removebg-preview.png";
+import houseImg from "@/assets/categories/shifting.jpg";
+import passengerImg from "@/assets/categories/passenger-removebg-preview.png";
+import emergencyImg from "@/assets/categories/Emergency-removebg-preview.png";
+import bikeImg from "@/assets/categories/Bike-removebg-preview.png";
+import autoImg from "@/assets/categories/auto-removebg-preview.png";
+import cabImg from "@/assets/categories/cab-removebg-preview.png";
 
 const CreateRequirement = () => {
   const navigate = useNavigate();
@@ -209,11 +216,11 @@ const CreateRequirement = () => {
         );
       case 2:
         const services = [
-          { id: "goods", title: "Goods Transport", icon: <Truck className="w-4 h-4" />, desc: "Commercial or bulk items" },
-          { id: "house", title: "House Shifting", icon: <Home className="w-4 h-4" />, desc: "Furniture & household items" },
-          { id: "passenger", title: "Passenger", icon: <Users className="w-4 h-4" />, desc: "Taxis, Rickshaws, Buses" },
-          { id: "emergency", title: "Emergency", icon: <AlertTriangle className="w-4 h-4" />, desc: "Instant response services" },
-          { id: "construction", title: "Construction", icon: <Package className="w-4 h-4" />, desc: "Building & heavy material" },
+          { id: "goods", title: "Goods Transport", image: goodsImg, desc: "Commercial or bulk items" },
+          { id: "house", title: "House Shifting", image: houseImg, desc: "Furniture & household items" },
+          { id: "passenger", title: "Passenger", image: passengerImg, desc: "Taxis, Rickshaws, Buses" },
+          { id: "emergency", title: "Emergency", image: emergencyImg, desc: "Instant response services" },
+          { id: "construction", title: "Construction", image: goodsImg, desc: "Building & heavy material" },
         ];
         return (
           <div className="grid grid-cols-1 gap-2.5">
@@ -227,8 +234,12 @@ const CreateRequirement = () => {
                 onClick={() => { updateData("serviceType", s.id); updateData("vehicleType", ""); }}
               >
                 <CardContent className="p-2.5 flex items-center gap-3">
-                  <div className={cn("p-2.5 rounded-lg", formData.serviceType === s.id ? "bg-primary text-black" : "bg-zinc-50 text-zinc-400")}>
-                    {s.icon}
+                  <div className={cn("w-10 h-10 rounded-lg overflow-hidden shrink-0", formData.serviceType === s.id ? "bg-primary/20" : "bg-zinc-50")}>
+                    <img 
+                      src={s.image} 
+                      alt={s.title} 
+                      className="w-full h-full object-contain p-1"
+                    />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-black text-black">{s.title}</span>
@@ -243,31 +254,31 @@ const CreateRequirement = () => {
       case 3:
         const vehicleOptions = {
           goods: [
-            { id: "mini", title: "2.5 Tonnes - 8 ft", details: "LCV • 4 Tyres • Open Body", icon: "🚛", mostBooked: true },
-            { id: "tempo", title: "3 Tonnes - 10 ft", details: "LCV • 4 Tyres • Open Body", icon: "🚚" },
-            { id: "eicher", title: "5 Tonnes - 14 ft", details: "ICV • 6 Tyres • Closed Container", icon: "🚛" },
-            { id: "trailer", title: "7 Tonnes - 17 ft", details: "HCV • 6 Tyres • High Deck", icon: "🚛" },
+            { id: "mini", title: "2.5 Tonnes - 8 ft", details: "LCV • 4 Tyres • Open Body", image: goodsImg, mostBooked: true },
+            { id: "tempo", title: "3 Tonnes - 10 ft", details: "LCV • 4 Tyres • Open Body", image: goodsImg },
+            { id: "eicher", title: "5 Tonnes - 14 ft", details: "ICV • 6 Tyres • Closed Container", image: goodsImg },
+            { id: "trailer", title: "7 Tonnes - 17 ft", details: "HCV • 6 Tyres • High Deck", image: goodsImg },
           ],
           house: [
-            { id: "ace", title: "Tata Ace - 7 ft", details: "4 Tyres • Small Furniture", icon: "🚛", mostBooked: true },
-            { id: "pickup", title: "Bolero Pickup", details: "4 Tyres • Medium Load", icon: "🚚" },
-            { id: "14ft", title: "Eicher 14ft", details: "6 Tyres • Household Bulky", icon: "🚛" },
+            { id: "ace", title: "Tata Ace - 7 ft", details: "4 Tyres • Small Furniture", image: goodsImg, mostBooked: true },
+            { id: "pickup", title: "Bolero Pickup", details: "4 Tyres • Medium Load", image: goodsImg },
+            { id: "14ft", title: "Eicher 14ft", details: "6 Tyres • Household Bulky", image: goodsImg },
           ],
           passenger: [
-            { id: "auto", title: "Rickshaw / Auto", details: "3 Seats • City Travel", icon: "🛺", mostBooked: true },
-            { id: "mini", title: "Mini Sedan", details: "4 Seats • AC Comfort", icon: "🚗" },
-            { id: "suv", title: "Premium SUV", details: "6-7 Seats • Large Trunk", icon: "🚙" },
-            { id: "bus", title: "Minibus / Tempo", details: "12-24 Seats • Group Tour", icon: "🚌" },
+            { id: "bike", title: "Bike / Scooter", details: "1 Seat • Single Parcel", image: bikeImg, mostBooked: true },
+            { id: "auto", title: "Rickshaw / Auto", details: "3 Seats • City Travel", image: autoImg },
+            { id: "mini", title: "Mini Sedan", details: "4 Seats • AC Comfort", image: cabImg },
+            { id: "bus", title: "Minibus / Tempo", details: "12-24 Seats • Group Tour", image: passengerImg },
           ],
           emergency: [
-            { id: "basic", title: "Basic Ambulance", details: "First Aid • Oxygen Support", icon: "🚑", mostBooked: true },
-            { id: "icu", title: "ICU Ventilator", details: "Critical Care • Life Support", icon: "🏥" },
-            { id: "tow", title: "Towing Truck", details: "24/7 Roadside Recovery", icon: "🏗️" },
+            { id: "basic", title: "Basic Ambulance", details: "First Aid • Oxygen Support", image: emergencyImg, mostBooked: true },
+            { id: "icu", title: "ICU Ventilator", details: "Critical Care • Life Support", image: emergencyImg },
+            { id: "tow", title: "Towing Truck", details: "24/7 Roadside Recovery", image: goodsImg },
           ],
           construction: [
-            { id: "tipper", title: "Tipper Truck", details: "6 Tyres • Sand/Brick", icon: "🚛", mostBooked: true },
-            { id: "jcb", title: "JCB / Loader", details: "Heavy Excavator", icon: "🚜" },
-            { id: "crane", title: "Mobile Crane", details: "Lifting 10T+", icon: "🏗️" },
+            { id: "tipper", title: "Tipper Truck", details: "6 Tyres • Sand/Brick", image: goodsImg, mostBooked: true },
+            { id: "jcb", title: "JCB / Loader", details: "Heavy Excavator", image: goodsImg },
+            { id: "crane", title: "Mobile Crane", details: "Lifting 10T+", image: goodsImg },
           ]
         };
         const currentOptions = vehicleOptions[formData.serviceType] || vehicleOptions.goods;
@@ -294,9 +305,15 @@ const CreateRequirement = () => {
                   )}
                   <CardContent className="p-3 flex items-center gap-4">
                     <div className={cn(
-                        "text-xl p-3 rounded-lg transition-all",
-                        formData.vehicleType === v.id ? "bg-primary shadow-inner rotate-3" : "bg-zinc-50"
-                    )}>{v.icon}</div>
+                        "w-12 h-12 rounded-lg overflow-hidden transition-all shrink-0",
+                        formData.vehicleType === v.id ? "bg-primary shadow-inner rotate-3 scale-110" : "bg-zinc-50"
+                    )}>
+                      <img 
+                        src={v.image} 
+                        alt={v.title} 
+                        className="w-full h-full object-contain p-1"
+                      />
+                    </div>
                     <div className="flex flex-col">
                       <span className="font-black text-black text-xs">{v.title}</span>
                       <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-tighter">{v.details}</span>

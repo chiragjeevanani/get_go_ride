@@ -6,11 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 const RequestList = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("active");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("All");
   const [requests, setRequests] = useState([
     {
       id: "REQ-101",
@@ -57,16 +61,40 @@ const RequestList = () => {
     }
   }, []);
 
-  const filteredRequests = activeTab === "active" 
-    ? requests.filter(r => r.status === "Responding" || r.status === "Finalized")
-    : requests.filter(r => r.status === "Completed" || r.status === "Cancelled");
+  const filteredRequests = requests.filter(r => {
+    // Tab Filter
+    const tabMatch = activeTab === "active" 
+      ? (r.status === "Responding" || r.status === "Finalized")
+      : (r.status === "Completed" || r.status === "Cancelled");
+    
+    // Status Filter
+    const statusMatch = filterStatus === "All" || r.status === filterStatus;
+    
+    // Search Filter
+    const searchMatch = r.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                       r.service.toLowerCase().includes(searchQuery.toLowerCase());
+                       
+    return tabMatch && statusMatch && searchMatch;
+  });
+
+  const statuses = activeTab === "active" 
+    ? ["All", "Responding", "Finalized"]
+    : ["All", "Completed", "Cancelled"];
 
   return (
     <div className="space-y-4 pb-20 pt-2">
       <header className="flex justify-between items-center py-2 border-b-2 border-primary/20 -mx-4 px-4 sticky top-0 bg-white/80 backdrop-blur-lg z-30">
         <h1 className="text-sm font-black text-black uppercase tracking-widest">My Requests</h1>
-        <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full bg-zinc-50 border border-zinc-100">
-           <Filter className="w-4 h-4 text-zinc-600" />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className={cn(
+            "w-8 h-8 rounded-full transition-colors",
+            showFilters ? "bg-primary text-black" : "bg-zinc-50 border border-zinc-100 text-zinc-600"
+          )}
+          onClick={() => setShowFilters(!showFilters)}
+        >
+           <Filter className="w-4 h-4" />
         </Button>
       </header>
 
@@ -79,8 +107,40 @@ const RequestList = () => {
 
       <div className="relative group">
          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-         <Input placeholder="Search request ID or service" className="pl-10 bg-white border-zinc-100 shadow-sm h-10 text-xs" />
+         <Input 
+          placeholder="Search request ID or service" 
+          className="pl-10 bg-white border-zinc-100 shadow-sm h-10 text-xs focus-visible:ring-primary/30" 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+         />
       </div>
+
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="flex flex-wrap gap-2 py-2">
+              {statuses.map(status => (
+                <Badge
+                  key={status}
+                  variant={filterStatus === status ? "default" : "secondary"}
+                  className={cn(
+                    "cursor-pointer px-3 py-1 rounded-full text-[10px] uppercase font-black tracking-widest transition-all",
+                    filterStatus === status ? "bg-primary text-black" : "bg-zinc-100 text-zinc-400 border-none"
+                  )}
+                  onClick={() => setFilterStatus(status)}
+                >
+                  {status}
+                </Badge>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="space-y-4">
         {filteredRequests.map((req, index) => (
