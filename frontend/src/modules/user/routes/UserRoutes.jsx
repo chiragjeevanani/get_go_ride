@@ -13,6 +13,7 @@ import ProfilePage from "../pages/ProfilePage";
 import PaymentMethods from "../pages/PaymentMethods";
 import SavedAddresses from "../pages/SavedAddresses";
 import SupportPage from "../pages/SupportPage";
+import LocationSearchPage from "../pages/LocationSearchPage";
 
 const UserRoutes = () => {
   return (
@@ -25,6 +26,7 @@ const UserRoutes = () => {
         <Route index element={<Dashboard />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="post-requirement" element={<CreateRequirement />} />
+        <Route path="search-location" element={<LocationSearchPage />} />
         <Route path="requests" element={<RequestList />} />
         <Route path="request/:id" element={<RequestDetails />} />
         <Route path="vendor/:id" element={<VendorProfile />} />

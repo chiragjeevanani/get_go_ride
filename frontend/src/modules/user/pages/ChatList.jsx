@@ -50,92 +50,88 @@ const ChatList = () => {
     }
   ];
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20">
-      <header className="flex flex-col gap-4">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20">
+      <header className="flex flex-col gap-1.5 py-1.5 border-b-2 border-primary/20 -mx-4 px-4 sticky top-0 bg-white/80 backdrop-blur-lg z-30">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-black text-black tracking-tight">Messages</h1>
-          <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500">
-            <Filter className="w-5 h-5" />
-          </div>
+          <h1 className="text-lg font-black text-black tracking-tighter uppercase">Messages</h1>
         </div>
 
         <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-black transition-colors" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 group-focus-within:text-black transition-colors" />
           <Input 
             placeholder="Search conversations..." 
-            className="pl-12 h-14 bg-zinc-50 border-none rounded-2xl text-sm font-medium focus-visible:ring-primary/30"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 h-8.5 bg-zinc-50 border-none rounded-lg text-[10px] font-medium focus-visible:ring-primary/30"
           />
         </div>
       </header>
 
-      <div className="flex gap-2 p-1 bg-zinc-100 rounded-2xl w-fit">
-        <button 
-          onClick={() => setActiveTab("all")}
-          className={cn(
-            "px-6 py-2 rounded-xl text-xs font-black transition-all",
-            activeTab === "all" ? "bg-white text-black shadow-sm" : "text-zinc-500"
-          )}
-        >
-          ALL
-        </button>
-        <button 
-          onClick={() => setActiveTab("unread")}
-          className={cn(
-            "px-6 py-2 rounded-xl text-xs font-black transition-all",
-            activeTab === "unread" ? "bg-white text-black shadow-sm" : "text-zinc-500"
-          )}
-        >
-          UNREAD
-        </button>
-        <button 
-          onClick={() => setActiveTab("archived")}
-          className={cn(
-            "px-6 py-2 rounded-xl text-xs font-black transition-all",
-            activeTab === "archived" ? "bg-white text-black shadow-sm" : "text-zinc-500"
-          )}
-        >
-          ARCHIVED
-        </button>
+      <div className="flex gap-1.5 p-1 bg-zinc-100 rounded-xl w-fit">
+        {["all", "unread", "archived"].map((tab) => (
+          <button 
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={cn(
+              "px-4 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all",
+              activeTab === tab ? "bg-white text-black shadow-sm" : "text-zinc-500 hover:text-zinc-700"
+            )}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
-      <div className="space-y-3">
-        {chats.map((chat) => (
+      <div className="flex flex-col gap-2.5">
+        {chats
+          .filter(c => {
+            if (activeTab === "unread") return c.unread > 0;
+            if (activeTab === "archived") return c.status === "archived";
+            return true;
+          })
+          .filter(c => c.vendorName.toLowerCase().includes(searchQuery.toLowerCase()))
+          .map((chat) => (
           <motion.div
             key={chat.id}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate(`/user/chat/${chat.requestId}/${chat.vendorId}`)}
           >
-            <Card className="border-none shadow-premium hover:shadow-md transition-all cursor-pointer group overflow-hidden relative">
+            <Card className="border-2 border-primary/10 shadow-sm hover:shadow-md transition-all cursor-pointer group overflow-hidden relative rounded-xl bg-white">
               {chat.unread > 0 && (
                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
               )}
-              <CardContent className="p-4 flex items-center gap-4">
+              <CardContent className="p-3 flex items-center gap-3">
                 <div className="relative">
-                  <div className="w-14 h-14 rounded-2xl bg-zinc-100 overflow-hidden border-2 border-white shadow-sm ring-1 ring-zinc-100">
+                  <div className="w-12 h-12 rounded-lg bg-zinc-100 overflow-hidden border border-zinc-50 shadow-sm">
                     <img src={chat.avatar} alt="vendor" className="w-full h-full object-cover" />
                   </div>
                   {chat.unread > 0 && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-black text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                    <div className="absolute -top-1 -right-1 w-4.5 h-4.5 bg-primary text-black text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
                       {chat.unread}
                     </div>
                   )}
                 </div>
 
                 <div className="flex-1 flex flex-col min-w-0">
-                  <div className="flex justify-between items-start mb-0.5">
-                    <span className="font-black text-black truncate">{chat.vendorName}</span>
-                    <span className="text-[10px] font-bold text-zinc-400 whitespace-nowrap">{chat.time}</span>
+                  <div className="flex justify-between items-center mb-0.5">
+                    <span className="font-black text-black text-xs truncate uppercase tracking-tight">{chat.vendorName}</span>
+                    <span className="text-[9px] font-black text-zinc-400 whitespace-nowrap uppercase tracking-tighter">{chat.time}</span>
                   </div>
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">
+                  <span className="text-[9px] font-black text-primary uppercase tracking-widest mb-1 truncate">
                     {chat.requirement}
                   </span>
-                  <p className="text-xs text-zinc-500 line-clamp-1 group-hover:text-zinc-900 transition-colors">
+                  <p className="text-[11px] font-bold text-zinc-500 line-clamp-1 group-hover:text-zinc-900 transition-colors">
                     {chat.lastMessage}
                   </p>
                 </div>
                 
-                <ChevronRight className="w-5 h-5 text-zinc-200 group-hover:text-black group-hover:translate-x-1 transition-all" />
+                <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-black group-hover:translate-x-0.5 transition-all" />
               </CardContent>
             </Card>
           </motion.div>

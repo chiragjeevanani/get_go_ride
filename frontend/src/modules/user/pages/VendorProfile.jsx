@@ -134,7 +134,7 @@ const VendorProfile = () => {
                   <div className="p-2 bg-primary text-black rounded-xl">
                      <ShieldCheck className="w-5 h-5" />
                   </div>
-                  <h4 className="font-bold text-black text-sm">Safar Verified Provider</h4>
+                  <h4 className="font-bold text-black text-sm">Getgoride Verified Provider</h4>
                </div>
                <ul className="space-y-2">
                   {['KYC Documents Verified', 'Vehicle Insurance Active', 'Clean Service Record', 'Address Verified'].map((item, i) => (

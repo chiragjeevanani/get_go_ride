@@ -50,24 +50,24 @@ const RequestList = () => {
     : requests.filter(r => r.status === "Completed" || r.status === "Cancelled");
 
   return (
-    <div className="space-y-6">
-      <header className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-black">My Requests</h1>
-        <Button variant="ghost" size="icon" className="rounded-full bg-zinc-100">
-           <Filter className="w-5 h-5 text-zinc-600" />
+    <div className="space-y-4 pb-20 pt-2">
+      <header className="flex justify-between items-center py-2 border-b-2 border-primary/20 -mx-4 px-4 sticky top-0 bg-white/80 backdrop-blur-lg z-30">
+        <h1 className="text-sm font-black text-black uppercase tracking-widest">My Requests</h1>
+        <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full bg-zinc-50 border border-zinc-100">
+           <Filter className="w-4 h-4 text-zinc-600" />
         </Button>
       </header>
 
       <Tabs defaultValue="active" className="w-full" onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 bg-zinc-100 p-1 rounded-2xl h-12">
-          <TabsTrigger value="active" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm">Active</TabsTrigger>
-          <TabsTrigger value="history" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm">History</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 bg-zinc-100 p-1 rounded-xl h-10">
+          <TabsTrigger value="active" className="rounded-lg text-[10px] font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">Active</TabsTrigger>
+          <TabsTrigger value="history" className="rounded-lg text-[10px] font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">History</TabsTrigger>
         </TabsList>
       </Tabs>
 
       <div className="relative group">
-         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-         <Input placeholder="Search request ID or service" className="pl-12 bg-white border-none shadow-sm h-12" />
+         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+         <Input placeholder="Search request ID or service" className="pl-10 bg-white border-zinc-100 shadow-sm h-10 text-xs" />
       </div>
 
       <div className="space-y-4">
@@ -140,7 +140,7 @@ const RequestList = () => {
       </div>
       
       <Button 
-        className="w-full h-14 rounded-2xl bg-white border border-zinc-200 text-black hover:bg-zinc-50 shadow-sm"
+        className="w-full h-11 rounded-xl bg-white border border-zinc-200 text-black hover:bg-zinc-50 shadow-sm font-bold text-xs"
         onClick={() => navigate("/user/post-requirement")}
       >
         Post New Requirement

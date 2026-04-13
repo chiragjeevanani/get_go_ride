@@ -7,10 +7,10 @@ const UserMainLayout = () => {
   const location = useLocation();
 
   const navItems = [
-    { icon: <Home className="w-5 h-5" />, label: "Home", path: "/user/dashboard" },
-    { icon: <Package className="w-5 h-5" />, label: "Requests", path: "/user/requests" },
-    { icon: <MessageSquare className="w-5 h-5" />, label: "Chats", path: "/user/chats" },
-    { icon: <User className="w-5 h-5" />, label: "Profile", path: "/user/profile" },
+    { icon: <Home className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Home", path: "/user/dashboard" },
+    { icon: <Package className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Requests", path: "/user/requests" },
+    { icon: <MessageSquare className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Chats", path: "/user/chats" },
+    { icon: <User className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Profile", path: "/user/profile" },
   ];
 
   const hideNavPaths = ["post-requirement", "chat/", "finalize", "vendor", "request/", "payments", "addresses", "support"];
@@ -19,7 +19,7 @@ const UserMainLayout = () => {
   return (
     <div className={cn(
       "flex flex-col min-h-screen bg-white text-black font-sans",
-      !shouldHideNav ? "pb-24" : "pb-0"
+      !shouldHideNav ? "pb-20" : "pb-0"
     )}>
       <main className="flex-1 w-full max-w-md mx-auto relative overflow-hidden">
         <AnimatePresence mode="popLayout" initial={false}>
@@ -29,7 +29,7 @@ const UserMainLayout = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="p-4"
+            className="pt-0 px-4 pb-4"
           >
             <Outlet />
           </motion.div>
@@ -38,7 +38,7 @@ const UserMainLayout = () => {
 
       {/* Bottom Navigation for Mobile-First experience */}
       {!shouldHideNav && (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-zinc-100 safe-area-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.05)] rounded-t-[2.5rem] max-w-md mx-auto h-20 px-4">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-zinc-100 safe-area-bottom shadow-[0_-8px_30px_rgba(0,0,0,0.06)] rounded-t-3xl max-w-md mx-auto h-16 px-6">
           <div className="flex justify-around items-center h-full gap-1">
             {navItems.map((item) => {
               const isActive = location.pathname.includes(item.path.split('/').pop());
@@ -46,17 +46,17 @@ const UserMainLayout = () => {
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  className="flex-1 flex flex-col items-center justify-center relative h-[70%] transition-all duration-300 group"
+                  className="flex-1 flex flex-col items-center justify-center relative h-[80%] transition-all duration-300 group rounded-2xl"
                 >
-                  {/* Subtle highlight behind the active tab */}
+                  {/* Square highlight behind the active tab */}
                   {isActive && (
                     <motion.div
                       layoutId="activeTabPill"
-                      className="absolute inset-0 bg-primary rounded-2xl z-0 shadow-lg shadow-primary/20"
+                      className="absolute inset-x-0.5 inset-y-0.5 bg-primary rounded-xl z-0 shadow-[0_4px_12px_rgba(255,214,0,0.4)]"
                       initial={false}
                       transition={{ 
                          type: "spring", 
-                         stiffness: 380, 
+                         stiffness: 450, 
                          damping: 30 
                       }}
                     />
@@ -76,8 +76,8 @@ const UserMainLayout = () => {
                       {item.icon}
                     </motion.div>
                     <span className={cn(
-                      "text-[9px] font-black uppercase tracking-tighter transition-all duration-300",
-                      isActive ? "text-black" : "text-zinc-400"
+                      "text-[9px] font-black uppercase tracking-[0.05em] transition-all duration-300",
+                      isActive ? "text-black scale-105" : "text-zinc-400"
                     )}>
                       {item.label}
                     </span>

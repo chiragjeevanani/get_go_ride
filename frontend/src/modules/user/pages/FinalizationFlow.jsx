@@ -116,7 +116,7 @@ const FinalizationFlow = () => {
            <div className="flex items-start gap-3 p-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-[11px] text-zinc-500">
               <ShieldCheck className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
               <p className="leading-relaxed">
-                 By confirming this service, you agree to Safar Setto's <span className="text-primary underline">Escrow Terms</span> and <span className="text-primary underline">Service Policy</span>. Your payment is held securely and only released after service completion.
+                 By confirming this service, you agree to Getgoride's <span className="text-primary underline">Escrow Terms</span> and <span className="text-primary underline">Service Policy</span>. Your payment is held securely and only released after service completion.
               </p>
            </div>
            

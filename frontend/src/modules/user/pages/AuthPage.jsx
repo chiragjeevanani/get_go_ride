@@ -48,8 +48,8 @@ const AuthPage = () => {
                      </motion.div>
                   </div>
                   <div className="text-center space-y-2">
-                     <h1 className="text-3xl font-black text-black tracking-tighter">Safar <span className="text-primary">Setto</span></h1>
-                     <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest leading-relaxed">Your Journey, <br/>Multiple Quotes, One Platform</p>
+                     <h1 className="text-3xl font-black text-black tracking-tighter">Getgo<span className="text-primary">ride</span></h1>
+                     <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest leading-relaxed">Vehicle Booking App</p>
                   </div>
                </div>
                <div className="space-y-4">
