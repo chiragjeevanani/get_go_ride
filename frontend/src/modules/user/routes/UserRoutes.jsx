@@ -14,6 +14,7 @@ import PaymentMethods from "../pages/PaymentMethods";
 import SavedAddresses from "../pages/SavedAddresses";
 import SupportPage from "../pages/SupportPage";
 import LocationSearchPage from "../pages/LocationSearchPage";
+import NearbyVehicles from "../pages/NearbyVehicles";
 
 const UserRoutes = () => {
   return (
@@ -26,6 +27,7 @@ const UserRoutes = () => {
         <Route index element={<Dashboard />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="post-requirement" element={<CreateRequirement />} />
+        <Route path="nearby-vehicles" element={<NearbyVehicles />} />
         <Route path="search-location" element={<LocationSearchPage />} />
         <Route path="requests" element={<RequestList />} />
         <Route path="request/:id" element={<RequestDetails />} />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Filter, Package, ChevronRight, Clock, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,7 @@ import { motion } from "framer-motion";
 const RequestList = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("active");
-
-  const requests = [
+  const [requests, setRequests] = useState([
     {
       id: "REQ-101",
       service: "House Shifting (1BHK)",
@@ -43,7 +42,20 @@ const RequestList = () => {
         responses: 3,
         isNew: false,
     }
-  ];
+  ]);
+
+  useEffect(() => {
+    // Load persisted requests from localStorage
+    const savedRequests = JSON.parse(localStorage.getItem("user_requests") || "[]");
+    if (savedRequests.length > 0) {
+      setRequests(prev => {
+        // Filter out any duplicates just in case
+        const existingIds = new Set(prev.map(r => r.id));
+        const uniqueSaved = savedRequests.filter(r => !existingIds.has(r.id));
+        return [...uniqueSaved, ...prev];
+      });
+    }
+  }, []);
 
   const filteredRequests = activeTab === "active" 
     ? requests.filter(r => r.status === "Responding" || r.status === "Finalized")

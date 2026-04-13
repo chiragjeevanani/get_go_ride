@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Search, MapPin, Truck, Home, Users, AlertTriangle, 
   Hammer, Plus, ArrowRight, Package, ChevronRight, X, MapPinned
@@ -16,6 +16,21 @@ const Dashboard = () => {
   const [pickup, setPickup] = useState("");
   const [drop, setDrop] = useState("");
   const [showAllCategories, setShowAllCategories] = useState(false);
+  const [recentRequests, setRecentRequests] = useState([
+    { id: "REQ-101", service: "House Shifting", status: "Responding", responses: 4, date: "Today, 12:30 PM" },
+    { id: "REQ-102", service: "Goods Transport", status: "Finalized", responses: 5, date: "Yesterday" },
+  ]);
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem("user_requests") || "[]");
+    if (saved.length > 0) {
+      setRecentRequests(prev => {
+        const existingIds = new Set(prev.map(r => r.id));
+        const unique = saved.filter(r => !existingIds.has(r.id));
+        return [...unique, ...prev].slice(0, 5); // Show latest 5
+      });
+    }
+  }, []);
 
   const categories = [
     { id: "goods", title: "Goods Transport", icon: <Truck className="w-5 h-5 text-black" />, bg: "bg-primary" },
@@ -23,11 +38,6 @@ const Dashboard = () => {
     { id: "passenger", title: "Passenger", icon: <Users className="w-5 h-5 text-black" />, bg: "bg-primary" },
     { id: "emergency", title: "Emergency", icon: <AlertTriangle className="w-5 h-5 text-black" />, bg: "bg-primary" },
     { id: "construction", title: "Construction", icon: <Hammer className="w-5 h-5 text-black" />, bg: "bg-primary" },
-  ];
-
-  const recentRequests = [
-    { id: "REQ-101", service: "House Shifting", status: "Responding", responses: 4, date: "Today, 12:30 PM" },
-    { id: "REQ-102", service: "Goods Transport", status: "Finalized", responses: 5, date: "Yesterday" },
   ];
 
   const handlePostRequirement = () => {

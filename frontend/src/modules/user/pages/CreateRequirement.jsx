@@ -577,7 +577,24 @@ const CreateRequirement = () => {
   };
 
   const handleFinalSubmit = () => {
-    // Navigate to requests tracking with success animation
+    // Generate a new request object from form data
+    const newRequest = {
+      id: `REQ-${Math.floor(Math.random() * 900) + 200}`,
+      service: `${formData.serviceType.charAt(0).toUpperCase() + formData.serviceType.slice(1)} - ${formData.vehicleType || 'Any'}`,
+      pickup: formData.pickup || "Current Location",
+      dropoff: formData.drops[0] || "Destination",
+      date: formData.date ? new Date(formData.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : "Today",
+      status: "Responding",
+      responses: 0,
+      isNew: true,
+      price: "₹1,733"
+    };
+
+    // Save to localStorage to simulate a database for the prototype
+    const existing = JSON.parse(localStorage.getItem("user_requests") || "[]");
+    localStorage.setItem("user_requests", JSON.stringify([newRequest, ...existing]));
+
+    // Navigate to requests tracking
     navigate("/user/requests");
   };
 

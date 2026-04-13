@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { Home, Package, MessageSquare, User } from "lucide-react";
+import { Home, Package, MessageSquare, User, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -8,6 +8,7 @@ const UserMainLayout = () => {
 
   const navItems = [
     { icon: <Home className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Home", path: "/user/dashboard" },
+    { icon: <MapPin className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Nearby", path: "/user/nearby-vehicles" },
     { icon: <Package className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Requests", path: "/user/requests" },
     { icon: <MessageSquare className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Chats", path: "/user/chats" },
     { icon: <User className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Profile", path: "/user/profile" },
