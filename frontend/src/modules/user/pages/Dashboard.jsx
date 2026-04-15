@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Search, MapPin, Truck, Home, Users, AlertTriangle, 
   Hammer, Plus, ArrowRight, Package, ChevronRight, X, MapPinned
@@ -10,24 +10,39 @@ import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import goodsImg from "@/assets/categories/Truck-removebg-preview.png";
+import houseImg from "@/assets/categories/shifting.jpg";
+import passengerImg from "@/assets/categories/passenger-removebg-preview.png";
+import emergencyImg from "@/assets/categories/Emergency-removebg-preview.png";
+import truck2Img from "@/assets/categories/truck2-removebg-preview.png";
+import profileImg from "@/assets/profile.jpg";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [pickup, setPickup] = useState("");
   const [drop, setDrop] = useState("");
   const [showAllCategories, setShowAllCategories] = useState(false);
-
-  const categories = [
-    { id: "goods", title: "Goods Transport", icon: <Truck className="w-5 h-5 text-black" />, bg: "bg-primary" },
-    { id: "house", title: "House Shifting", icon: <Home className="w-5 h-5 text-black" />, bg: "bg-primary" },
-    { id: "passenger", title: "Passenger", icon: <Users className="w-5 h-5 text-black" />, bg: "bg-primary" },
-    { id: "emergency", title: "Emergency", icon: <AlertTriangle className="w-5 h-5 text-black" />, bg: "bg-primary" },
-    { id: "construction", title: "Construction", icon: <Hammer className="w-5 h-5 text-black" />, bg: "bg-primary" },
-  ];
-
-  const recentRequests = [
+  const [recentRequests, setRecentRequests] = useState([
     { id: "REQ-101", service: "House Shifting", status: "Responding", responses: 4, date: "Today, 12:30 PM" },
     { id: "REQ-102", service: "Goods Transport", status: "Finalized", responses: 5, date: "Yesterday" },
+  ]);
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem("user_requests") || "[]");
+    if (saved.length > 0) {
+      setRecentRequests(prev => {
+        const existingIds = new Set(prev.map(r => r.id));
+        const unique = saved.filter(r => !existingIds.has(r.id));
+        return [...unique, ...prev].slice(0, 5); // Show latest 5
+      });
+    }
+  }, []);
+
+  const categories = [
+    { id: "goods", title: "Goods Transport", image: goodsImg },
+    { id: "house", title: "House Shifting", image: houseImg },
+    { id: "passenger", title: "Passenger", image: passengerImg },
+    { id: "emergency", title: "Emergency", image: emergencyImg },
   ];
 
   const handlePostRequirement = () => {
@@ -58,7 +73,7 @@ const Dashboard = () => {
             onClick={() => navigate("/user/profile")}
             className="w-8 h-8 rounded-lg bg-zinc-50 overflow-hidden border border-white shadow-sm ring-1 ring-zinc-50 cursor-pointer active:scale-90 transition-transform"
           >
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="avatar" className="w-full h-full object-cover" />
+            <img src={profileImg} alt="avatar" className="w-full h-full object-cover" />
           </div>
         </div>
       </header>
@@ -146,12 +161,18 @@ const Dashboard = () => {
               onClick={() => navigate(`/user/post-requirement?cat=${cat.id}`)}
               className="cursor-pointer"
             >
-              <Card className="border-2 border-primary/20 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl overflow-hidden bg-white">
-                <CardContent className="p-3.5 flex flex-col gap-2.5">
-                  <div className={`p-2.5 rounded-lg w-fit ${cat.bg}`}>
-                    {cat.icon}
+              <Card className="border-2 border-primary/20 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl overflow-hidden bg-white group">
+                <CardContent className="p-0 flex flex-col">
+                  <div className="w-full h-20 overflow-hidden relative flex items-center justify-center p-1 bg-zinc-50/30">
+                    <img 
+                      src={cat.image} 
+                      alt={cat.title} 
+                      className="w-full h-full object-contain p-1 transition-transform duration-500 group-hover:scale-110"
+                    />
                   </div>
-                  <span className="font-black text-black text-xs tracking-tight">{cat.title}</span>
+                  <div className="p-2 text-center border-t border-zinc-100 bg-white">
+                    <span className="font-black text-black text-[10px] uppercase tracking-tighter leading-none">{cat.title}</span>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -208,8 +229,8 @@ const Dashboard = () => {
             Register Now
           </Button>
         </div>
-        <div className="absolute -right-6 -bottom-6 opacity-10">
-          <Truck className="w-32 h-32 rotate-[-15deg] fill-primary" />
+        <div className="absolute -right-6 -bottom-6 opacity-20 w-32 h-32 rotate-[-15deg]">
+          <img src={truck2Img} alt="truck" className="w-full h-full object-contain brightness-0 opacity-40" />
         </div>
       </Card>
 

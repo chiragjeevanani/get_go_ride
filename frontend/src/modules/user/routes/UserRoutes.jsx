@@ -14,6 +14,10 @@ import PaymentMethods from "../pages/PaymentMethods";
 import SavedAddresses from "../pages/SavedAddresses";
 import SupportPage from "../pages/SupportPage";
 import LocationSearchPage from "../pages/LocationSearchPage";
+import NearbyVehicles from "../pages/NearbyVehicles";
+import FavoriteVendors from "../pages/FavoriteVendors";
+import NotificationSettings from "../pages/NotificationSettings";
+import SecuritySettings from "../pages/SecuritySettings";
 
 const UserRoutes = () => {
   return (
@@ -26,6 +30,7 @@ const UserRoutes = () => {
         <Route index element={<Dashboard />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="post-requirement" element={<CreateRequirement />} />
+        <Route path="nearby-vehicles" element={<NearbyVehicles />} />
         <Route path="search-location" element={<LocationSearchPage />} />
         <Route path="requests" element={<RequestList />} />
         <Route path="request/:id" element={<RequestDetails />} />
@@ -36,6 +41,9 @@ const UserRoutes = () => {
         <Route path="profile" element={<ProfilePage />} />
         <Route path="payments" element={<PaymentMethods />} />
         <Route path="addresses" element={<SavedAddresses />} />
+        <Route path="vendors" element={<FavoriteVendors />} />
+        <Route path="alerts" element={<NotificationSettings />} />
+        <Route path="security" element={<SecuritySettings />} />
         <Route path="support" element={<SupportPage />} />
       </Route>
     </Routes>

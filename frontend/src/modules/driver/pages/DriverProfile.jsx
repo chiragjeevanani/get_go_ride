@@ -1,32 +1,25 @@
-import React from "react";
+import React, { useState, useRef } from "react";
 import { 
-  User, Settings, Package, Heart, CreditCard, 
-  HelpCircle, LogOut, ChevronRight, Edit3, 
-  ShieldCheck, Bell, MapPin 
+  User, Car, MapPin, IndianRupee, Camera, 
+  ChevronRight, CheckCircle, ShieldCheck, LogOut, Edit3, Settings,
+  BarChart2, Star, Zap, Bell, Shield, HelpCircle
 } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useDriverState } from "../hooks/useDriverState";
+import { cn } from "@/lib/utils";
 import profileImg from "@/assets/profile.jpg";
 
-const ProfilePage = () => {
+const DriverProfile = () => {
   const navigate = useNavigate();
-
-  const user = {
-    name: "Felix Karanth",
-    phone: "+91 98765 43210",
-    avatar: profileImg,
-    membership: "Gold",
-    requests: 24,
-    saved: 12
-  };
-
-  const [avatar, setAvatar] = useState(user.avatar);
+  const { driver, setDriver } = useDriverState();
   const fileInputRef = useRef(null);
+  const [avatar, setAvatar] = useState(profileImg);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -37,21 +30,26 @@ const ProfilePage = () => {
   };
 
   const menuItems = [
-    { icon: <Package className="w-4 h-4" />, label: "Order History", desc: "View past and active requests", path: "/user/requests" },
-    { icon: <CreditCard className="w-4 h-4" />, label: "Payments", desc: "Manage cards and methods", path: "/user/payments" },
-    { icon: <MapPin className="w-4 h-4" />, label: "Addresses", desc: "Select frequent locations", path: "/user/addresses" },
-    { icon: <Heart className="w-4 h-4" />, label: "Vendors", desc: "Your favorite providers", path: "/user/vendors" },
-    { icon: <Bell className="w-4 h-4" />, label: "Alerts", desc: "Control notification settings", path: "/user/alerts" },
-    { icon: <ShieldCheck className="w-4 h-4" />, label: "Security", desc: "Account protection tools", path: "/user/security" },
-    { icon: <HelpCircle className="w-4 h-4" />, label: "Support", desc: "Get help with requests", path: "/user/support" },
+    { icon: <Car className="w-4 h-4" />, label: "Vehicle Details", desc: "Manage your registered vehicles", path: "/driver/profile/vehicle" },
+    { icon: <IndianRupee className="w-4 h-4" />, label: "Pricing & Service Areas", desc: "Set your per-km rates and routes", path: "/driver/profile/pricing" },
+    { icon: <ShieldCheck className="w-4 h-4" />, label: "Subscription", desc: "View plan and payment history", path: "/driver/subscription" },
+    { icon: <BarChart2 className="w-4 h-4" />, label: "Performance", desc: "View leads and conversion stats", path: "/driver/analytics" },
+    { icon: <Bell className="w-4 h-4" />, label: "Alerts", desc: "Control notification settings", path: "/driver/profile/alerts" },
+    { icon: <Shield className="w-4 h-4" />, label: "Account Security", desc: "Verification and passwords", path: "/driver/profile/security" },
+    { icon: <HelpCircle className="w-4 h-4" />, label: "Help & Support", desc: "Get help with leads or app", path: "/driver/profile/support" },
   ];
 
   return (
-    <div className="space-y-3 pb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-3 pb-8"
+    >
       {/* Profile Header */}
       <header className="flex justify-between items-center py-1.5 border-b-2 border-primary/20 -mx-4 px-4 sticky top-0 bg-white/80 backdrop-blur-lg z-30">
-        <h1 className="text-xs font-black text-black uppercase tracking-widest">Profile</h1>
-        <div className="w-7"></div> {/* Spacer for symmetry */}
+        <h1 className="text-xs font-black text-black uppercase tracking-widest">Driver Profile</h1>
+        <div className="w-7"></div>
       </header>
 
       <div className="flex flex-col items-center gap-2.5 pt-1.5">
@@ -64,7 +62,7 @@ const ProfilePage = () => {
              onChange={handleAvatarChange}
            />
            <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden ring-1 ring-zinc-100">
-              <img src={avatar} alt="User Avatar" className="w-full h-full object-cover" />
+              <img src={avatar} alt="Driver Avatar" className="w-full h-full object-cover" />
            </div>
            <Button 
             onClick={() => fileInputRef.current.click()}
@@ -75,37 +73,49 @@ const ProfilePage = () => {
            </Button>
         </div>
         <div className="text-center space-y-0 relative">
-           <h1 className="text-lg font-black text-black tracking-tighter uppercase italic">{user.name}</h1>
-           <p className="text-[10px] text-zinc-400 font-black tracking-widest uppercase">{user.phone}</p>
-            <div className="flex items-center justify-center pt-1.5">
+           <h1 className="text-lg font-black text-black tracking-tighter uppercase italic">{driver.name}</h1>
+           <p className="text-[10px] text-zinc-400 font-black tracking-widest uppercase">{driver.phone}</p>
+            <div className="flex items-center justify-center pt-1.5 gap-2">
+               <Badge className="bg-emerald-500 text-white hover:bg-emerald-600 border-none rounded-md text-[9px] px-2.5 py-0.5 font-black tracking-widest uppercase">
+                  Verified Driver
+               </Badge>
                <Badge className="bg-primary text-black hover:bg-primary border-none rounded-md text-[9px] px-2.5 py-0.5 font-black tracking-widest uppercase">
-                  {user.membership} Member
+                  {driver.rating} ★
                </Badge>
             </div>
          </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Completion Meter Section */}
+      <div className="px-1">
+        <Card className="border-2 border-primary/10 shadow-sm bg-white rounded-xl overflow-hidden p-3 space-y-2">
+           <div className="flex justify-between items-center px-1">
+              <span className="text-[9px] font-black text-black uppercase tracking-widest">Profile Completion</span>
+              <span className="text-[9px] font-black text-primary uppercase">{driver.profileProgress}%</span>
+           </div>
+           <Progress value={driver.profileProgress} className="h-1.5 bg-primary/5" />
+        </Card>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-2.5">
          <Card className="border-2 border-primary/10 shadow-sm bg-white rounded-xl overflow-hidden">
             <CardContent className="p-2.5 flex flex-col items-center">
-                <span className="text-lg font-black text-black">{user.requests}</span>
-                <span className="text-[8px] uppercase font-black text-zinc-400 tracking-widest">Total Requests</span>
+                <span className="text-lg font-black text-black">{driver.completedLeads}</span>
+                <span className="text-[8px] uppercase font-black text-zinc-400 tracking-widest">Completed Leads</span>
             </CardContent>
          </Card>
          <Card className="border-2 border-primary/10 shadow-sm bg-white rounded-xl overflow-hidden">
             <CardContent className="p-2.5 flex flex-col items-center">
-                <span className="text-lg font-black text-black">{user.saved}</span>
-                <span className="text-[8px] uppercase font-black text-zinc-400 tracking-widest">Saved Vendors</span>
+                <span className="text-lg font-black text-black">{driver.isOnline ? "Online" : "Offline"}</span>
+                <span className="text-[8px] uppercase font-black text-zinc-400 tracking-widest">Service Status</span>
             </CardContent>
          </Card>
       </div>
 
-      {/* Quick Settings */}
-      {/* Quick Settings */}
+      {/* Menu Settings */}
       <div className="space-y-2.5">
-         <h3 className="text-[10px] uppercase font-black text-zinc-400 tracking-[0.2em] px-1">Settings & Preferences</h3>
+         <h3 className="text-[10px] uppercase font-black text-zinc-400 tracking-[0.2em] px-1">Account & Fleet</h3>
          <div className="space-y-1.5">
             {menuItems.map((item, idx) => (
                <Card 
@@ -134,15 +144,15 @@ const ProfilePage = () => {
          <Button 
            variant="ghost" 
            className="w-full h-10 rounded-xl text-red-500 border border-red-100 bg-red-50/20 hover:bg-red-50 transition-colors font-black text-[11px] uppercase tracking-widest group"
-           onClick={() => navigate("/user/auth")}
+           onClick={() => navigate("/driver/auth")}
          >
             <LogOut className="w-3.5 h-3.5 mr-2 group-hover:translate-x-0.5 transition-transform" />
             Logout Account
          </Button>
-         <p className="text-center text-[8px] text-zinc-300 font-black uppercase tracking-[0.3em] pt-3">Version 1.0.4 • Getgoride</p>
+         <p className="text-center text-[8px] text-zinc-300 font-black uppercase tracking-[0.3em] pt-3">Version 1.0.42 (Beta) • Safar Setto</p>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
-export default ProfilePage;
+export default DriverProfile;

@@ -1,20 +1,20 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { Home, Package, MessageSquare, User, MapPin } from "lucide-react";
+import { Home, Zap, MessageSquare, User, BarChart2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
-const UserMainLayout = () => {
+const DriverMainLayout = () => {
   const location = useLocation();
 
   const navItems = [
-    { icon: <Home className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Home", path: "/user/dashboard" },
-    { icon: <MapPin className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Nearby", path: "/user/nearby-vehicles" },
-    { icon: <Package className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Requests", path: "/user/requests" },
-    { icon: <MessageSquare className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Chats", path: "/user/chats" },
-    { icon: <User className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Profile", path: "/user/profile" },
+    { icon: <Home className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Home", path: "/driver/dashboard" },
+    { icon: <Zap className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Leads", path: "/driver/leads" },
+    { icon: <MessageSquare className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Chats", path: "/driver/chats" },
+    { icon: <BarChart2 className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Stats", path: "/driver/analytics" },
+    { icon: <User className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Profile", path: "/driver/profile" },
   ];
 
-  const hideNavPaths = ["post-requirement", "chat/", "finalize", "vendor", "request/", "payments", "addresses", "support"];
+  const hideNavPaths = ["auth", "subscribe", "leads/", "chat/"];
   const shouldHideNav = hideNavPaths.some(path => location.pathname.includes(path));
 
   return (
@@ -22,19 +22,8 @@ const UserMainLayout = () => {
       "flex flex-col min-h-screen bg-white text-black font-sans",
       !shouldHideNav ? "pb-20" : "pb-0"
     )}>
-      <main className="flex-1 w-full max-w-md mx-auto relative overflow-hidden">
-        <AnimatePresence mode="popLayout" initial={false}>
-          <motion.div
-            key={location.pathname.split('/')[2] || 'home'}
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="pt-0 px-4 pb-4"
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
+      <main className="flex-1 w-full max-w-md mx-auto relative overflow-hidden px-4 pb-4">
+        <Outlet />
       </main>
 
       {/* Bottom Navigation for Mobile-First experience */}
@@ -52,7 +41,7 @@ const UserMainLayout = () => {
                   {/* Square highlight behind the active tab */}
                   {isActive && (
                     <motion.div
-                      layoutId="activeTabPill"
+                      layoutId="driverActiveTabPill"
                       className="absolute inset-x-0.5 inset-y-0.5 bg-primary rounded-xl z-0 shadow-[0_4px_12px_rgba(255,214,0,0.4)]"
                       initial={false}
                       transition={{ 
@@ -93,4 +82,4 @@ const UserMainLayout = () => {
   );
 };
 
-export default UserMainLayout;
+export default DriverMainLayout;
