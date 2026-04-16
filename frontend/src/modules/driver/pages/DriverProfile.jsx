@@ -47,9 +47,9 @@ const DriverProfile = () => {
       className="space-y-3 pb-8"
     >
       {/* Profile Header */}
-      <header className="flex justify-between items-center py-1.5 border-b-2 border-primary/20 -mx-4 px-4 sticky top-0 bg-white/80 backdrop-blur-lg z-30">
-        <h1 className="text-xs font-black text-black uppercase tracking-widest">Driver Profile</h1>
-        <div className="w-7"></div>
+      <header className="flex justify-between items-center py-4 -mx-4 px-4 sticky top-0 bg-white/95 backdrop-blur-md z-30 w-full mb-2">
+        <div className="w-10"></div>
+        <div className="w-10"></div>
       </header>
 
       <div className="flex flex-col items-center gap-2.5 pt-1.5">
@@ -72,14 +72,14 @@ const DriverProfile = () => {
               <Edit3 className="w-2.5 h-2.5 text-black" />
            </Button>
         </div>
-        <div className="text-center space-y-0 relative">
-           <h1 className="text-lg font-black text-black tracking-tighter uppercase italic">{driver.name}</h1>
-           <p className="text-[10px] text-zinc-400 font-black tracking-widest uppercase">{driver.phone}</p>
-            <div className="flex items-center justify-center pt-1.5 gap-2">
-               <Badge className="bg-emerald-500 text-white hover:bg-emerald-600 border-none rounded-md text-[9px] px-2.5 py-0.5 font-black tracking-widest uppercase">
+        <div className="text-center space-y-0.5 relative">
+           <h1 className="text-xl font-bold text-zinc-900 tracking-tight">{driver.name}</h1>
+           <p className="text-xs text-zinc-500 font-semibold tracking-tight">{driver.phone}</p>
+            <div className="flex items-center justify-center pt-2 gap-2">
+               <Badge className="bg-emerald-500 text-white hover:bg-emerald-600 border-none rounded-lg text-[10px] px-3 py-0.5 font-bold tracking-tight">
                   Verified Driver
                </Badge>
-               <Badge className="bg-primary text-black hover:bg-primary border-none rounded-md text-[9px] px-2.5 py-0.5 font-black tracking-widest uppercase">
+               <Badge className="bg-primary text-zinc-900 hover:bg-primary border-none rounded-lg text-[10px] px-3 py-0.5 font-bold tracking-tight">
                   {driver.rating} ★
                </Badge>
             </div>
@@ -90,66 +90,66 @@ const DriverProfile = () => {
       <div className="px-1">
         <Card className="border-2 border-primary/10 shadow-sm bg-white rounded-xl overflow-hidden p-3 space-y-2">
            <div className="flex justify-between items-center px-1">
-              <span className="text-[9px] font-black text-black uppercase tracking-widest">Profile Completion</span>
-              <span className="text-[9px] font-black text-primary uppercase">{driver.profileProgress}%</span>
+              <span className="text-[10px] font-bold text-zinc-700 tracking-tight">Profile Completion</span>
+              <span className="text-[10px] font-bold text-primary">{driver.profileProgress}%</span>
            </div>
            <Progress value={driver.profileProgress} className="h-1.5 bg-primary/5" />
         </Card>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-2.5">
-         <Card className="border-2 border-primary/10 shadow-sm bg-white rounded-xl overflow-hidden">
-            <CardContent className="p-2.5 flex flex-col items-center">
-                <span className="text-lg font-black text-black">{driver.completedLeads}</span>
-                <span className="text-[8px] uppercase font-black text-zinc-400 tracking-widest">Completed Leads</span>
+      <div className="grid grid-cols-2 gap-3">
+         <Card className="border-2 border-primary/5 shadow-sm bg-zinc-50/30 rounded-xl overflow-hidden">
+            <CardContent className="p-3 flex flex-col items-center">
+                <span className="text-xl font-bold text-zinc-900">{driver.completedLeads}</span>
+                <span className="text-[10px] font-bold text-zinc-500 tracking-tight">Completed Leads</span>
             </CardContent>
          </Card>
-         <Card className="border-2 border-primary/10 shadow-sm bg-white rounded-xl overflow-hidden">
-            <CardContent className="p-2.5 flex flex-col items-center">
-                <span className="text-lg font-black text-black">{driver.isOnline ? "Online" : "Offline"}</span>
-                <span className="text-[8px] uppercase font-black text-zinc-400 tracking-widest">Service Status</span>
+         <Card className="border-2 border-primary/5 shadow-sm bg-zinc-50/30 rounded-xl overflow-hidden">
+            <CardContent className="p-3 flex flex-col items-center">
+                <span className="text-xl font-bold text-zinc-900">{driver.isOnline ? "Online" : "Offline"}</span>
+                <span className="text-[10px] font-bold text-zinc-500 tracking-tight">Service Status</span>
             </CardContent>
          </Card>
       </div>
 
       {/* Menu Settings */}
-      <div className="space-y-2.5">
-         <h3 className="text-[10px] uppercase font-black text-zinc-400 tracking-[0.2em] px-1">Account & Fleet</h3>
-         <div className="space-y-1.5">
+      <div className="space-y-3">
+         <h3 className="text-[10px] font-bold text-zinc-500 tracking-tight px-1 uppercase">Account & Fleet</h3>
+         <div className="space-y-2">
             {menuItems.map((item, idx) => (
                <Card 
                  key={idx} 
-                 className="border border-zinc-100 shadow-sm hover:shadow-md transition-all cursor-pointer group rounded-xl bg-white"
+                 className="border-none shadow-sm hover:shadow-md transition-all cursor-pointer group rounded-xl bg-zinc-50/50"
                  onClick={() => navigate(item.path)}
                >
-                  <CardContent className="p-2.5 flex items-center justify-between">
-                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-zinc-50 rounded-lg text-zinc-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors border border-zinc-100/50">
+                  <CardContent className="p-3 flex items-center justify-between">
+                     <div className="flex items-center gap-3.5">
+                        <div className="w-9 h-9 bg-white rounded-xl text-zinc-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors border border-zinc-100 shadow-sm flex items-center justify-center">
                            {item.icon}
                         </div>
                         <div className="flex flex-col">
-                           <span className="text-xs font-black text-black uppercase tracking-tight">{item.label}</span>
-                           <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-tighter">{item.desc}</span>
+                           <span className="text-[11px] font-bold text-zinc-900 tracking-tight">{item.label}</span>
+                           <span className="text-[9px] text-zinc-500 font-semibold tracking-tight">{item.desc}</span>
                         </div>
                      </div>
-                     <ChevronRight className="w-3.5 h-3.5 text-zinc-200 group-hover:text-black transition-colors" />
+                     <ChevronRight className="w-3.5 h-3.5 text-zinc-300 group-hover:text-zinc-600 transition-colors" />
                   </CardContent>
                </Card>
             ))}
          </div>
       </div>
 
-      <div className="pt-1">
+      <div className="pt-2">
          <Button 
            variant="ghost" 
-           className="w-full h-10 rounded-xl text-red-500 border border-red-100 bg-red-50/20 hover:bg-red-50 transition-colors font-black text-[11px] uppercase tracking-widest group"
+           className="w-full h-11 rounded-xl text-red-500 border border-red-100 bg-red-50/20 hover:bg-red-50 transition-colors font-bold text-xs tracking-tight group"
            onClick={() => navigate("/driver/auth")}
          >
-            <LogOut className="w-3.5 h-3.5 mr-2 group-hover:translate-x-0.5 transition-transform" />
+            <LogOut className="w-4 h-4 mr-2 group-hover:translate-x-0.5 transition-transform" />
             Logout Account
          </Button>
-         <p className="text-center text-[8px] text-zinc-300 font-black uppercase tracking-[0.3em] pt-3">Version 1.0.42 (Beta) • Safar Setto</p>
+         <p className="text-center text-[8px] text-zinc-400 font-bold tracking-tight pt-4 italic">Version 1.0.42 Beta • Safar Setto</p>
       </div>
     </motion.div>
   );

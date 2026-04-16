@@ -30,7 +30,7 @@ const UserMainLayout = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="pt-0 px-4 pb-4"
+            className="pt-0 pb-4"
           >
             <Outlet />
           </motion.div>

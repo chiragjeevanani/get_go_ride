@@ -14,7 +14,7 @@ const DriverMainLayout = () => {
     { icon: <User className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Profile", path: "/driver/profile" },
   ];
 
-  const hideNavPaths = ["auth", "subscribe", "leads/", "chat/"];
+  const hideNavPaths = ["auth", "subscribe", "leads/", "chat/", "profile/", "checkout"];
   const shouldHideNav = hideNavPaths.some(path => location.pathname.includes(path));
 
   return (
@@ -22,7 +22,7 @@ const DriverMainLayout = () => {
       "flex flex-col min-h-screen bg-white text-black font-sans",
       !shouldHideNav ? "pb-20" : "pb-0"
     )}>
-      <main className="flex-1 w-full max-w-md mx-auto relative overflow-hidden px-4 pb-4">
+      <main className="flex-1 w-full max-w-md mx-auto relative overflow-hidden pb-4">
         <Outlet />
       </main>
 

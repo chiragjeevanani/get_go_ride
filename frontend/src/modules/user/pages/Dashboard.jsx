@@ -52,11 +52,11 @@ const Dashboard = () => {
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20">
       {/* Logo & Profile Header */}
-      <header className="flex justify-between items-center py-1.5 border-b-2 border-primary/20 -mx-4 px-4 sticky top-0 bg-white/80 backdrop-blur-lg z-30">
+      <header className="flex justify-between items-center py-1.5 px-4 border-b-2 border-primary/20 sticky top-0 bg-white/80 backdrop-blur-lg z-30">
         <div className="flex items-center h-6 w-fit relative overflow-visible -ml-6">
           <img 
             src="/getgoride_logo_no_bg.png" 
-            alt="GetGoRide Logo" 
+            alt="GetGoLoad Logo" 
             className="h-28 w-auto object-contain object-left drop-shadow-md relative z-10" 
           />
         </div>
@@ -79,7 +79,7 @@ const Dashboard = () => {
       </header>
 
       {/* Hero: Post Requirement Quick Section */}
-      <section className="relative pt-1 px-1">
+      <section className="relative pt-1 px-4">
          <div className="space-y-4 relative z-10">
             <div className="space-y-0.5 px-2">
                <h2 className="text-xl font-black text-black tracking-tight leading-none">Post requirement</h2>
@@ -139,12 +139,12 @@ const Dashboard = () => {
        </section>
 
       {/* Featured Service Categories */}
-      <section className="space-y-4 pt-4">
+      <section className="space-y-4 pt-4 px-4">
         <div className="flex justify-between items-end px-1">
-          <h2 className="text-lg font-black tracking-tight text-zinc-900 border-l-4 border-primary pl-3">Categories</h2>
+          <h2 className="text-lg font-bold tracking-tight text-zinc-900 border-l-4 border-primary pl-3">Categories</h2>
           <span 
             onClick={() => setShowAllCategories(!showAllCategories)}
-            className="text-primary text-xs font-black uppercase tracking-widest cursor-pointer hover:opacity-80 transition-opacity"
+            className="text-primary text-xs font-bold tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
           >
             {showAllCategories ? "Show Less" : "See All"}
           </span>
@@ -171,7 +171,7 @@ const Dashboard = () => {
                     />
                   </div>
                   <div className="p-2 text-center border-t border-zinc-100 bg-white">
-                    <span className="font-black text-black text-[10px] uppercase tracking-tighter leading-none">{cat.title}</span>
+                    <span className="font-bold text-zinc-900 text-[10px] tracking-tight leading-none">{cat.title}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -181,12 +181,12 @@ const Dashboard = () => {
       </section>
 
       {/* Recent Activity / Requirements */}
-      <section className="space-y-4">
+      <section className="space-y-4 px-4">
         <div className="flex justify-between items-center px-1">
-          <h2 className="text-sm font-black tracking-tight text-primary border-l-2 border-primary/20 pl-2 uppercase">Recent Requirements</h2>
+          <h2 className="text-sm font-bold tracking-tight text-primary border-l-2 border-primary/20 pl-2">Recent Requirements</h2>
           <span 
             onClick={() => navigate("/user/requests")}
-            className="text-black text-[10px] font-black uppercase tracking-widest cursor-pointer hover:opacity-70 transition-opacity"
+            className="text-zinc-500 text-[10px] font-bold tracking-tight cursor-pointer hover:opacity-70 transition-opacity"
           >
             View All
           </span>
@@ -202,18 +202,18 @@ const Dashboard = () => {
                   </div>
                   <div className="flex flex-col">
                     <span className="font-black text-black text-xs">{req.service}</span>
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">{req.date}</span>
+                    <span className="text-[10px] text-zinc-400 font-bold tracking-wider">{req.date}</span>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                   <div className={cn(
-                      "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-tighter",
-                      req.status === "Responding" ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                   )}>
-                      {req.status}
-                   </div>
-                   <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{req.responses} Responses</span>
-                </div>
+                 <div className="flex flex-col items-end gap-1">
+                    <div className={cn(
+                       "px-2 py-0.5 rounded-lg text-[9px] font-bold tracking-tight",
+                       req.status === "Responding" ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                    )}>
+                       {req.status}
+                    </div>
+                    <span className="text-[9px] font-semibold text-zinc-400 tracking-tight">{req.responses} Responses</span>
+                 </div>
               </CardContent>
             </Card>
           ))}
@@ -221,7 +221,8 @@ const Dashboard = () => {
       </section>
 
       {/* Banner / Promotion */}
-      <Card className="bg-primary/5 border-none p-6 relative overflow-hidden">
+      <div className="px-4">
+        <Card className="bg-primary/5 border-none p-6 relative overflow-hidden">
         <div className="space-y-2 relative z-10">
           <h3 className="font-bold text-black tracking-tight">Become a Vendor?</h3>
           <p className="text-xs text-zinc-500 max-w-[200px]">Register your vehicle and start earning by providing services.</p>
@@ -233,6 +234,7 @@ const Dashboard = () => {
           <img src={truck2Img} alt="truck" className="w-full h-full object-contain brightness-0 opacity-40" />
         </div>
       </Card>
+    </div>
 
       {/* Floating CTA for New Requirement */}
     </div>

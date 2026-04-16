@@ -10,6 +10,12 @@ import ChatListPage from "../pages/ChatListPage";
 import DriverProfile from "../pages/DriverProfile";
 import SubscriptionManagement from "../pages/SubscriptionManagement";
 import AnalyticsPage from "../pages/AnalyticsPage";
+import VehicleDetails from "../pages/VehicleDetails";
+import PricingAndAreas from "../pages/PricingAndAreas";
+import NotificationAlerts from "../pages/NotificationAlerts";
+import AccountSecurity from "../pages/AccountSecurity";
+import HelpSupport from "../pages/HelpSupport";
+import CheckoutPage from "../pages/CheckoutPage";
 
 const DriverRoutes = () => {
   return (
@@ -27,6 +33,12 @@ const DriverRoutes = () => {
         <Route path="profile" element={<DriverProfile />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="subscription" element={<SubscriptionManagement />} />
+        <Route path="profile/vehicle" element={<VehicleDetails />} />
+        <Route path="profile/pricing" element={<PricingAndAreas />} />
+        <Route path="profile/alerts" element={<NotificationAlerts />} />
+        <Route path="profile/security" element={<AccountSecurity />} />
+        <Route path="profile/support" element={<HelpSupport />} />
+        <Route path="checkout/:id" element={<CheckoutPage />} />
       </Route>
     </Routes>
   );

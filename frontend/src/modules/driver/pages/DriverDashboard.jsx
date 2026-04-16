@@ -17,30 +17,29 @@ const DriverDashboard = () => {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-6 pb-20 pt-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="pb-20 min-h-screen bg-white"
     >
       {/* Header */}
-      <header className="flex justify-between items-center py-2 px-1">
-        <div className="flex items-center gap-3">
+      <header className="flex justify-between items-center py-3 px-4 border-b-2 border-yellow-400 sticky top-0 bg-white/90 backdrop-blur-md z-30 w-full mb-4">
+        <div className="flex items-center gap-2.5">
           <div 
              onClick={() => navigate("/driver/profile")}
-             className="w-10 h-10 rounded-xl bg-zinc-50 overflow-hidden border-2 border-primary/20 shadow-sm cursor-pointer active:scale-90 transition-transform"
+             className="w-9 h-9 rounded-xl bg-zinc-50 overflow-hidden border-2 border-primary/20 shadow-sm cursor-pointer active:scale-90 transition-transform"
           >
             <img src={profileImg} alt="avatar" className="w-full h-full object-cover" />
           </div>
           <div className="flex flex-col">
-            <h2 className="text-lg font-black text-black leading-none tracking-tight">Hi, {driver.name.split(' ')[0]}</h2>
-            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{driver.vehicle}</p>
+            <h2 className="text-base font-bold text-zinc-900 leading-none tracking-tight">Hi, {driver.name.split(' ')[0]}</h2>
+            <p className="text-[10px] font-semibold text-zinc-500 tracking-tight">{driver.vehicle}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-zinc-50/50 p-1.5 px-3 rounded-2xl border border-zinc-100">
+        <div className="flex items-center gap-2.5 bg-zinc-50/50 p-1 px-2.5 rounded-xl border border-zinc-100">
           <span className={cn(
-            "text-[9px] font-black uppercase tracking-widest",
-            driver.isOnline ? "text-emerald-500" : "text-zinc-400"
+            "text-[10px] font-bold tracking-tight",
+            driver.isOnline ? "text-emerald-600" : "text-zinc-500"
           )}>
             {driver.isOnline ? "Online" : "Offline"}
           </span>
@@ -51,6 +50,8 @@ const DriverDashboard = () => {
           />
         </div>
       </header>
+      
+      <div className="px-4 space-y-4 pt-1">
 
       {/* Stats Grid */}
       <section className="grid grid-cols-2 gap-3">
@@ -88,41 +89,42 @@ const DriverDashboard = () => {
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
          >
-           <Card className="bg-primary/5 border-2 border-dashed border-primary/40 p-4 relative overflow-hidden group">
-             <div className="relative z-10 space-y-3">
-               <div className="space-y-1">
-                 <h3 className="font-black text-sm text-black uppercase tracking-tight">Activate your account</h3>
-                 <p className="text-[11px] text-zinc-500 font-bold leading-relaxed">Your profile is hidden from customers until you subscribe.</p>
-               </div>
-               <Button 
-                 onClick={() => navigate("/driver/subscribe")}
-                 className="w-full h-10 bg-primary text-black font-black text-[10px] uppercase tracking-[0.15em] rounded-xl shadow-lg shadow-primary/20"
-               >
-                 View Plans & Activate
-               </Button>
+           <Card className="bg-primary/5 border-2 border-dashed border-primary/40 p-3 relative overflow-hidden group">
+             <div className="relative z-10 space-y-2">
+                <div className="space-y-0.5">
+                  <h3 className="font-bold text-xs text-zinc-900 tracking-tight">Activate Your Account</h3>
+                  <p className="text-[10px] text-zinc-500 font-bold leading-relaxed">Your profile is hidden from customers until you subscribe.</p>
+                </div>
+                <Button 
+                  onClick={() => navigate("/driver/subscribe")}
+                  className="w-full h-9 bg-primary text-zinc-900 font-bold text-[10px] tracking-tight rounded-xl shadow-lg shadow-primary/20 transition-all"
+                >
+                  View Plans & Activate
+                </Button>
              </div>
-             <Shield className="absolute -right-4 -bottom-4 w-24 h-24 text-primary opacity-10 rotate-[-15deg]" />
+             <Shield className="absolute -right-4 -bottom-4 w-20 h-20 text-primary opacity-10 rotate-[-15deg]" />
            </Card>
          </motion.div>
       )}
 
       {/* Quick Actions */}
-      <section className="space-y-4">
-        <h3 className="text-xs font-black tracking-widest text-zinc-400 uppercase px-1">Quick Actions</h3>
+      <section className="space-y-3">
+        <h3 className="text-[10px] font-bold tracking-widest text-zinc-400 uppercase px-1">Quick Fleet Actions</h3>
         <div className="grid grid-cols-3 gap-2">
            {[
-             { label: "My Pricing", path: "/driver/profile" },
-             { label: "Vehicle", path: "/driver/profile" },
-             { label: "Stats", path: "/driver/analytics" }
+             { label: "My Pricing", path: "/driver/profile/pricing" },
+             { label: "Vehicle Info", path: "/driver/profile/vehicle" },
+             { label: "Leads Stats", path: "/driver/analytics" }
            ].map((action, i) => (
-             <Button 
-               key={i} 
-               variant="outline" 
-               className="h-16 flex flex-col gap-1 border-zinc-100 rounded-2xl bg-white hover:bg-zinc-50 hover:border-primary/20 transition-all font-black text-[9px] uppercase tracking-tighter text-zinc-500"
+              <Button 
+                key={i} 
+                variant="outline" 
+                className="h-16 flex flex-col items-center justify-center gap-1.5 border-2 border-zinc-100 rounded-none bg-white hover:bg-zinc-900 hover:border-zinc-900 hover:text-white transition-all font-black text-[9px] tracking-widest text-zinc-600 uppercase shadow-sm active:scale-95 shadow-zinc-100"
                onClick={() => navigate(action.path)}
              >
+               <div className="w-1 h-1 bg-primary rounded-full mb-1 group-hover:bg-white"></div>
                {action.label}
-             </Button>
+              </Button>
            ))}
         </div>
       </section>
@@ -130,11 +132,11 @@ const DriverDashboard = () => {
       {/* Recent Leads Preview */}
       <section className="space-y-4">
         <div className="flex justify-between items-center px-1">
-          <h3 className="text-xs font-black tracking-widest text-zinc-400 uppercase">Incoming Leads</h3>
+          <h3 className="text-xs font-bold tracking-tight text-zinc-500">Incoming Leads</h3>
           <Button 
              variant="ghost" 
              onClick={() => navigate("/driver/leads")}
-             className="text-[10px] font-black uppercase tracking-widest text-primary p-0 h-auto hover:bg-transparent"
+             className="text-[10px] font-bold tracking-tight text-primary p-0 h-auto hover:bg-transparent"
           >
             See All <ChevronRight className="w-3 h-3 ml-0.5" />
           </Button>
@@ -150,7 +152,8 @@ const DriverDashboard = () => {
             />
           ))}
         </div>
-      </section>
+        </section>
+      </div>
     </motion.div>
   );
 };

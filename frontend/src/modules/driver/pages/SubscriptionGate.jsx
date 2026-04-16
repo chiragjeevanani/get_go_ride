@@ -55,27 +55,27 @@ const SubscriptionGate = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white max-w-md mx-auto relative overflow-hidden flex flex-col pt-12 pb-8 px-6">
+    <div className="min-h-screen bg-white max-w-md mx-auto relative overflow-hidden flex flex-col pt-8 pb-6 px-5">
       {/* Background patterns */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
       
-      <div className="relative z-10 space-y-8 flex flex-col h-full">
+      <div className="relative z-10 space-y-6 flex flex-col h-full">
         {/* Header */}
-        <div className="space-y-3 text-center">
-          <div className="w-20 h-20 bg-primary/10 rounded-3xl mx-auto flex items-center justify-center relative shadow-inner">
-             <Shield className="w-10 h-10 text-primary" strokeWidth={2.5} />
-             <div className="absolute -top-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center border-4 border-white">
-                <Check className="w-3 h-3 text-black font-black" strokeWidth={4} />
+        <div className="space-y-2 text-center">
+          <div className="w-16 h-16 bg-primary/10 rounded-2xl mx-auto flex items-center justify-center relative shadow-inner">
+             <Shield className="w-8 h-8 text-primary" strokeWidth={2.5} />
+             <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center border-4 border-white">
+                <Check className="w-2.5 h-2.5 text-zinc-900 font-bold" strokeWidth={4} />
              </div>
           </div>
-          <div className="space-y-1">
-            <h1 className="text-2xl font-black text-black tracking-tight leading-tight">Activate Account</h1>
-            <p className="text-sm font-bold text-zinc-400 leading-relaxed max-w-[240px] mx-auto uppercase tracking-wider">Start receiving leads and grow your business today</p>
+          <div className="space-y-0.5">
+            <h1 className="text-xl font-bold text-zinc-900 tracking-tight leading-tight">Activate Account</h1>
+            <p className="text-[10px] font-bold text-zinc-400 leading-relaxed max-w-[200px] mx-auto tracking-tight">Start receiving leads and grow your business today</p>
           </div>
         </div>
 
         {/* Plan Selection */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.id}
@@ -86,26 +86,26 @@ const SubscriptionGate = () => {
               className="cursor-pointer"
             >
               <Card className={cn(
-                "relative border-2 rounded-3xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
-                plan.featured ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-zinc-100 bg-white"
+                "relative border-2 rounded-2xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
+                plan.featured ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-zinc-50 bg-white"
               )}>
                 {plan.badge && (
-                  <div className="absolute -top-3 left-6">
-                    <Badge className="bg-primary text-black font-black text-[9px] uppercase tracking-widest px-2.5 py-1 border-2 border-white">
+                  <div className="absolute -top-2.5 left-4">
+                    <Badge className="bg-primary text-zinc-900 font-bold text-[8px] tracking-tight px-2 py-0.5 border-2 border-white">
                       {plan.badge}
                     </Badge>
                   </div>
                 )}
-                <CardContent className="p-5 flex items-center justify-between">
+                <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-0.5">{plan.name}</span>
+                    <span className="text-[9px] font-bold tracking-tight text-zinc-500 mb-0.5">{plan.name}</span>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-black text-black">{plan.price}</span>
-                      <span className="text-xs font-bold text-zinc-400">{plan.period}</span>
+                      <span className="text-xl font-bold text-zinc-900">{plan.price}</span>
+                      <span className="text-[10px] font-bold text-zinc-400">{plan.period}</span>
                     </div>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-white border border-zinc-100 flex items-center justify-center shadow-sm">
-                    <ArrowRight className={cn("w-5 h-5", plan.featured ? "text-primary" : "text-zinc-200")} />
+                  <div className="w-10 h-10 rounded-xl bg-white border border-zinc-100 flex items-center justify-center shadow-sm">
+                    <ArrowRight className={cn("w-4 h-4", plan.featured ? "text-primary" : "text-zinc-200")} />
                   </div>
                 </CardContent>
               </Card>
@@ -114,28 +114,31 @@ const SubscriptionGate = () => {
         </div>
 
         {/* Benefits Checklist */}
-        <section className="bg-zinc-50/50 rounded-3xl p-6 border border-zinc-100 space-y-4">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 text-center">Benefits include</h3>
-          <div className="grid grid-cols-1 gap-3">
+        <section className="bg-zinc-50/50 rounded-2xl p-4 border border-zinc-100 space-y-3">
+          <h3 className="text-[10px] font-bold tracking-tight text-zinc-400 text-center">Benefits include</h3>
+          <div className="grid grid-cols-1 gap-2.5">
             {benefits.map((benefit, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Check className="w-3 h-3 text-primary stroke-[4]" />
+              <div key={i} className="flex items-center gap-2.5">
+                <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Check className="w-2.5 h-2.5 text-primary stroke-[4]" />
                 </div>
-                <span className="text-xs font-bold text-zinc-600">{benefit}</span>
+                <span className="text-[11px] font-bold text-zinc-600">{benefit}</span>
               </div>
             ))}
           </div>
         </section>
 
         {/* Sticky CTA Button (Fake interaction since plans are clickable) */}
-        <div className="mt-auto pt-6 text-center">
-           <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mb-4">Secure payment via UPI or Cards</p>
+        <div className="mt-auto pt-4 text-center">
+           <p className="text-[9px] text-zinc-400 font-bold tracking-tight mb-3">Secure payment via Upi or Cards</p>
            <motion.div
-             animate={{ scale: [1, 1.02, 1] }}
+             animate={{ scale: [1, 1.01, 1] }}
              transition={{ duration: 2, repeat: Infinity }}
            >
-             <Button className="w-full h-16 rounded-3xl bg-primary text-black text-lg font-black shadow-2xl shadow-primary/30 active:scale-95 transition-all">
+             <Button 
+               onClick={() => handleActivate("quarterly")}
+               className="w-full h-12 rounded-xl bg-primary text-zinc-900 text-base font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all"
+             >
                 Activate Premium Now
              </Button>
            </motion.div>

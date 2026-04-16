@@ -17,16 +17,16 @@ export const LeadCard = ({ lead, onAccept, onReject, onView, className }) => {
       className={cn("w-full", className)}
     >
       <Card className="border-2 border-primary/20 shadow-premium hover:shadow-md transition-all rounded-2xl overflow-hidden bg-white">
-        <CardContent className="p-4">
-          <div className="flex justify-between items-start mb-3">
+        <CardContent className="p-3">
+          <div className="flex justify-between items-start mb-2">
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-zinc-50 rounded-lg text-zinc-400 border border-zinc-100">
-                <Package className="w-4 h-4" />
+              <div className="p-1.5 bg-zinc-50 rounded-lg text-zinc-400 border border-zinc-100">
+                <Package className="w-3.5 h-3.5" />
               </div>
               <div>
-                <h4 className="font-black text-black text-sm leading-tight">{lead.service}</h4>
+                <h4 className="font-black text-black text-xs leading-tight">{lead.service}</h4>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">{lead.id}</span>
+                  <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">{lead.id}</span>
                 </div>
               </div>
             </div>
@@ -42,29 +42,29 @@ export const LeadCard = ({ lead, onAccept, onReject, onView, className }) => {
             )}
           </div>
 
-          <div className="space-y-3 mb-4">
-            <div className="relative pl-6 space-y-3">
-              <div className="absolute left-1 top-1.5 bottom-1.5 w-0.5 bg-zinc-100"></div>
+          <div className="space-y-2 mb-3">
+            <div className="relative pl-5 space-y-2">
+              <div className="absolute left-0.5 top-1 bottom-1 w-0.5 bg-zinc-100"></div>
               
               <div className="relative">
-                <div className="absolute -left-[22px] top-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-white"></div>
-                <p className="text-[11px] font-bold text-zinc-600 leading-tight truncate">{lead.pickup}</p>
+                <div className="absolute -left-[21px] top-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-white"></div>
+                <p className="text-[10px] font-bold text-zinc-600 leading-tight truncate">{lead.pickup}</p>
               </div>
               
               <div className="relative">
-                <div className="absolute -left-[22px] top-0.5 w-2 h-2 rounded-full bg-red-500 ring-4 ring-white"></div>
-                <p className="text-[11px] font-bold text-zinc-600 leading-tight truncate">{lead.drop}</p>
+                <div className="absolute -left-[21px] top-0.5 w-1.5 h-1.5 rounded-full bg-red-500 ring-2 ring-white"></div>
+                <p className="text-[10px] font-bold text-zinc-600 leading-tight truncate">{lead.drop}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 px-1">
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-zinc-300" />
-                <span className="text-[10px] font-black uppercase text-zinc-400 tracking-tight">{lead.date}</span>
+            <div className="flex items-center gap-4 px-0.5">
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3 text-zinc-300" />
+                <span className="text-[9px] font-black uppercase text-zinc-400 tracking-tight">{lead.date}</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-zinc-300" />
-                <span className="text-[10px] font-black uppercase text-zinc-400 tracking-tight">{lead.distance}</span>
+              <div className="flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-zinc-300" />
+                <span className="text-[9px] font-black uppercase text-zinc-400 tracking-tight">{lead.distance}</span>
               </div>
             </div>
           </div>
@@ -73,13 +73,13 @@ export const LeadCard = ({ lead, onAccept, onReject, onView, className }) => {
             <Button 
               variant="outline" 
               onClick={() => onReject?.(lead.id)}
-              className="flex-1 h-10 rounded-xl border-zinc-100 text-zinc-400 font-black text-[10px] uppercase tracking-wider hover:bg-zinc-50 hover:text-zinc-600"
+              className="flex-1 h-8 rounded-xl border-zinc-100 text-zinc-400 font-black text-[9px] uppercase tracking-wider hover:bg-zinc-50 hover:text-zinc-600"
             >
               Reject
             </Button>
             <Button 
               onClick={() => onView?.(lead.id)}
-              className="flex-1 h-10 rounded-xl bg-primary text-black font-black text-[10px] uppercase tracking-wider shadow-lg shadow-primary/20 active:scale-95 transition-all"
+              className="flex-1 h-8 rounded-xl bg-primary text-black font-black text-[9px] uppercase tracking-wider shadow-lg shadow-primary/20 active:scale-95 transition-all"
             >
               View & Accept
             </Button>
