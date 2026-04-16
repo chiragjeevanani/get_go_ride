@@ -1,5 +1,5 @@
 @import "tailwindcss";
-
+@custom-variant dark (&:where(.dark, .dark *));
 @theme {
   --color-primary: #facc15;
   --color-primary-foreground: #000000;
@@ -67,7 +67,112 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+
+/* Admin Theme Variables - Monochrome Minimalist + Branding Accent */
+@layer base {
+  .admin-theme {
+    /* Pure Elite Monochrome Palette */
+    &.dark {
+      --color-background-admin: #09090b; /* Zinc 950 */
+      --color-surface-admin: #18181b; /* Zinc 900 */
+      --color-surface-hover-admin: #27272a; /* Zinc 800 */
+      --color-text-admin: #fafafa;
+      --color-text-muted-admin: #a1a1aa;
+      --color-border-admin: #27272a;
+      --color-primary-admin: #ffffff; /* High Contrast White */
+      --color-primary-foreground-admin: #09090b;
+      --color-accent-admin: #facc15; /* Safar Setto Yellow - BRAND ONLY */
+      --radius-admin: 0.5rem;
+    }
+
+    &.light {
+      --color-background-admin: #ffffff;
+      --color-surface-admin: #fafafa;
+      --color-surface-hover-admin: #f4f4f5;
+      --color-text-admin: #09090b;
+      --color-text-muted-admin: #71717a;
+      --color-border-admin: #e4e4e7;
+      --color-primary-admin: #09090b; /* High Contrast Black */
+      --color-primary-foreground-admin: #ffffff;
+      --color-accent-admin: #facc15;
+      --radius-admin: 0.5rem;
+    }
+  }
+}
+
+/* Admin Utility Classes */
+.admin-card {
+  background-color: var(--color-surface-admin);
+  border: 1px solid var(--color-border-admin);
+  border-radius: var(--radius-admin);
+  @apply shadow-sm transition-all duration-300;
+}
+
+.admin-table-row:hover {
+  background-color: var(--color-surface-hover-admin);
+  @apply cursor-pointer transition-colors;
+}
+
+/* Elite Overrides */
+.admin-theme {
+  transition: all 0.3s ease;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Core Admin Variables are handling basics, component-level CSS/Tailwind handles the rest. */
+
+/* Logo Specific - The Only Major Yellow */
+.admin-logo-accent {
+  background-color: var(--color-accent-admin) !important;
+}
+
+.admin-logo-text {
+  color: var(--color-accent-admin) !important;
+}
+
+/* Active Nav Indicator - Minimal Yellow Accent */
+.admin-nav-indicator {
+  position: absolute;
+  left: 0;
+  width: 2px;
+  height: 1rem;
+  background-color: var(--color-accent-admin);
+  border-radius: 0 4px 4px 0;
+}
+
+.admin-theme .font-bold {
+  font-weight: 600 !important;
+}
+
+.admin-theme .italic {
+  font-style: normal !important;
+}
+
+.admin-theme .uppercase {
+  letter-spacing: 0.05em !important;
+}
+
+/* Input Styles */
+.admin-theme input {
+  background-color: var(--color-surface-admin) !important;
+  border-color: var(--color-border-admin) !important;
+  color: var(--color-text-admin) !important;
+}
+
+.admin-theme .admin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.admin-theme .admin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-theme .admin-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-border-admin);
+  border-radius: 10px;
+}
+
+.admin-theme .admin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted-admin);
 }
