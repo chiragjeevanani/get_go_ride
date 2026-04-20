@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Truck, MessageSquare, 
   CreditCard, PieChart, Layers, ShieldCheck, 
   Settings, Bell, ChevronLeft, ChevronRight,
-  LogOut, Shield
+  LogOut, Shield, Activity
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,7 @@ const navGroups = [
     label: "Overview",
     items: [
       { path: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+      { path: "/admin/activity", icon: Activity, label: "Activity Feed" },
     ]
   },
   {

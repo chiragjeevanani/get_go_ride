@@ -13,6 +13,7 @@ const Categories = lazy(() => import('../pages/Categories'));
 const Moderation = lazy(() => import('../pages/Moderation'));
 const Settings = lazy(() => import('../pages/Settings'));
 const Notifications = lazy(() => import('../pages/Notifications'));
+const ActivityFeed = lazy(() => import('../pages/ActivityFeed'));
 
 // Placeholder Loading Component
 const PageLoading = () => (
@@ -29,6 +30,7 @@ const AdminRoutes = () => {
         <Route element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="activity" element={<ActivityFeed />} />
           <Route path="users" element={<UserManagement />} />
           {/* <Route path="users/:id" element={<UserDetail />} /> */}
           <Route path="vendors" element={<VendorManagement />} />
