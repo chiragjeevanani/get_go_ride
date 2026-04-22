@@ -16,8 +16,47 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { mockRevenueData, mockLeadsTrend } from '../data/mockData';
 import { cn } from "@/lib/utils";
+import { Toast } from '../components/common/Toast';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 const Revenue = () => {
+  const [timeFilter, setTimeFilter] = React.useState("This Quarter");
+  const [toast, setToast] = React.useState({ show: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  const handleExportCSV = () => {
+    // Generate CSV content from regionalData
+    const headers = ["City", "Leads", "Revenue", "Growth"];
+    const rows = regionalData.map(d => [d.city, d.leads, d.revenue.replace('₹', ''), d.growth]);
+    
+    const csvString = [
+      headers.join(","),
+      ...rows.map(row => row.join(","))
+    ].join("\n");
+
+    // Create download link and trigger it
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Revenue_Report_${timeFilter.replace(" ", "_")}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast(`Financial report for ${timeFilter} exported successfully`, 'success');
+  };
+
   const revenueStats = [
     { title: "Total Earnings", value: "₹24.8L", icon: IndianRupee, trend: "+18.2%", trendDirection: "up", color: "primary" },
     { title: "Platform Commission", value: "₹6.4L", icon: Zap, trend: "+32.5%", trendDirection: "up" },
@@ -46,14 +85,41 @@ const Revenue = () => {
         subtitle="Full spectrum analysis of platform monetization and regional impact" 
         actions={
           <div className="flex items-center gap-2">
-             <Button variant="outline" className="border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-400 text-[10px] font-black uppercase tracking-widest h-10 px-4 rounded-xl">
-                <Download className="w-4 h-4 mr-2" />
+             <Button 
+              variant="outline" 
+              className="border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 text-[10px] font-black uppercase tracking-widest h-10 px-4 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+              onClick={handleExportCSV}
+             >
+                <Download className="w-4 h-4 mr-2 text-primary" />
                 Export CSV
              </Button>
-             <Button className="bg-primary text-black font-black uppercase tracking-widest text-[10px] h-10 px-6 rounded-xl shadow-lg shadow-primary/20">
-                <Calendar className="w-4 h-4 mr-2" />
-                This Quarter
-             </Button>
+             
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                   <Button className="bg-primary text-black font-black uppercase tracking-widest text-[10px] h-10 px-6 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      {timeFilter}
+                   </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-900 rounded-xl p-1 shadow-2xl">
+                   {["This Month", "This Quarter", "This Year"].map((filter) => (
+                      <DropdownMenuItem 
+                        key={filter}
+                        onClick={() => {
+                          setTimeFilter(filter);
+                          showToast(`Analytics filtered for ${filter}`, 'success');
+                        }}
+                        className={cn(
+                          "flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors text-[10px] font-black uppercase tracking-widest",
+                          timeFilter === filter ? "bg-primary text-black" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                        )}
+                      >
+                         <Calendar className="w-3.5 h-3.5" />
+                         {filter}
+                      </DropdownMenuItem>
+                   ))}
+                </DropdownMenuContent>
+             </DropdownMenu>
           </div>
         }
       />
@@ -174,6 +240,13 @@ const Revenue = () => {
             </ChartCard>
          </div>
       </div>
+      
+      <Toast 
+        show={toast.show} 
+        message={toast.message} 
+        type={toast.type} 
+        onClose={() => setToast({ show: false, message: '', type: 'success' })} 
+      />
     </div>
   );
 };

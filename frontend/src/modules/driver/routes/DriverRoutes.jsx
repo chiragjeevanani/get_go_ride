@@ -16,6 +16,7 @@ import NotificationAlerts from "../pages/NotificationAlerts";
 import AccountSecurity from "../pages/AccountSecurity";
 import HelpSupport from "../pages/HelpSupport";
 import CheckoutPage from "../pages/CheckoutPage";
+import EarningsWallet from "../pages/EarningsWallet";
 
 const DriverRoutes = () => {
   return (
@@ -39,6 +40,7 @@ const DriverRoutes = () => {
         <Route path="profile/security" element={<AccountSecurity />} />
         <Route path="profile/support" element={<HelpSupport />} />
         <Route path="checkout/:id" element={<CheckoutPage />} />
+        <Route path="earnings" element={<EarningsWallet />} />
       </Route>
     </Routes>
   );

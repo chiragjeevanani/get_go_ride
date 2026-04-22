@@ -12,8 +12,58 @@ import { Button } from "@/components/ui/button";
 import { mockNotifications } from '../data/mockData';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Toast } from '../components/common/Toast';
 
 const Notifications = () => {
+  const [activeFilter, setActiveFilter] = React.useState('all');
+  const [notifications, setNotifications] = React.useState(mockNotifications);
+  const [toast, setToast] = React.useState({ show: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  const [digestSettings, setDigestSettings] = React.useState({
+    daily: true,
+    instant: true
+  });
+
+  const toggleDigest = (key) => {
+    const newState = !digestSettings[key];
+    setDigestSettings(prev => ({ ...prev, [key]: newState }));
+    showToast(`${key === 'daily' ? 'Daily Summary' : 'Instant Critical'} ${newState ? 'enabled' : 'disabled'}`, newState ? 'success' : 'info');
+  };
+
+  const handleMarkAllRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    showToast("All notifications marked as read");
+  };
+
+  const handleClearAll = () => {
+    setNotifications([]);
+    showToast("Notification center cleared", "error");
+  };
+
+  const handleDelete = (id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    showToast("Notification removed");
+  };
+
+  const filteredNotifications = notifications.filter(n => {
+    if (activeFilter === 'all') return true;
+    if (activeFilter === 'subs') return n.type === 'subscription';
+    return n.type === activeFilter;
+  });
+
+  const counts = {
+    all: notifications.length,
+    vendor: notifications.filter(n => n.type === 'vendor').length,
+    subs: notifications.filter(n => n.type === 'subscription').length,
+    leads: notifications.filter(n => n.type === 'leads').length,
+    system: notifications.filter(n => !['vendor', 'subscription', 'leads'].includes(n.type)).length,
+  };
+
   const getIcon = (type) => {
     switch (type) {
       case 'vendor': return <Truck className="w-5 h-5 text-primary" />;
@@ -39,10 +89,18 @@ const Notifications = () => {
         subtitle="Manage platform alerts and administrative reports" 
         actions={
           <div className="flex items-center gap-2">
-             <Button variant="outline" className="border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-400 text-[10px] font-black uppercase tracking-widest h-10 px-4 rounded-xl">
+             <Button 
+              variant="outline" 
+              onClick={handleMarkAllRead}
+              className="border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-400 text-[10px] font-black uppercase tracking-widest h-10 px-4 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-all"
+             >
                 Mark All Read
              </Button>
-             <Button variant="outline" className="border-rose-500/20 bg-rose-500/5 text-rose-500 text-[10px] font-black uppercase tracking-widest h-10 px-4 rounded-xl">
+             <Button 
+              variant="outline" 
+              onClick={handleClearAll}
+              className="border-rose-500/20 bg-rose-500/5 text-rose-500 text-[10px] font-black uppercase tracking-widest h-10 px-4 rounded-xl hover:bg-rose-500/10 transition-colors"
+             >
                 Clear All
              </Button>
           </div>
@@ -61,18 +119,29 @@ const Notifications = () => {
                   
                   <div className="space-y-2">
                      {[
-                       { id: 'all', label: 'All Alerts', count: 42 },
-                       { id: 'vendor', label: 'Vendor Events', count: 12 },
-                       { id: 'subs', label: 'Subscription Alerts', count: 8 },
-                       { id: 'leads', label: 'Leads activity', count: 15 },
-                       { id: 'system', label: 'System Health', count: 7 },
+                       { id: 'all', label: 'All Alerts', count: counts.all },
+                       { id: 'vendor', label: 'Vendor Events', count: counts.vendor },
+                       { id: 'subs', label: 'Subscription Alerts', count: counts.subs },
+                       { id: 'leads', label: 'Leads activity', count: counts.leads },
+                       { id: 'system', label: 'System Health', count: counts.system },
                      ].map((filter) => (
                        <button
                          key={filter.id}
-                         className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-900 dark:text-white transition-all group/btn"
+                         onClick={() => setActiveFilter(filter.id)}
+                         className={cn(
+                           "w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all group/btn",
+                           activeFilter === filter.id 
+                            ? "bg-primary/10 border-primary/20 text-primary" 
+                            : "bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 text-zinc-500 dark:text-zinc-400"
+                         )}
                        >
                          <span className="text-[10px] font-black uppercase tracking-widest">{filter.label}</span>
-                         <Badge className="bg-zinc-50 dark:bg-zinc-950 text-zinc-600 border-zinc-200 dark:border-zinc-800 text-[9px] group-hover/btn:bg-primary group-hover/btn:text-black transition-all">
+                         <Badge className={cn(
+                            "text-[9px] transition-all border-none",
+                            activeFilter === filter.id 
+                                ? "bg-primary text-black" 
+                                : "bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-500 group-hover/btn:bg-zinc-200 dark:group-hover/btn:bg-zinc-800"
+                         )}>
                             {filter.count}
                          </Badge>
                        </button>
@@ -87,27 +156,45 @@ const Notifications = () => {
                   <Settings className="w-4 h-4 text-zinc-500" />
                   Email Digest
                </h3>
-               <div className="space-y-4">
-                  <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900">
-                     <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Daily Summary</span>
-                     <div className="w-8 h-4 bg-emerald-500/20 rounded-full relative p-0.5 border border-emerald-500/20">
-                        <div className="w-3 h-3 bg-emerald-500 rounded-full absolute right-0.5" />
-                     </div>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900">
-                     <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Instant Critical</span>
-                     <div className="w-8 h-4 bg-emerald-500/20 rounded-full relative p-0.5 border border-emerald-500/20">
-                        <div className="w-3 h-3 bg-emerald-500 rounded-full absolute right-0.5" />
-                     </div>
-                  </div>
-               </div>
+                <div className="space-y-4">
+                   <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900">
+                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Daily Summary</span>
+                      <div 
+                        onClick={() => toggleDigest('daily')}
+                        className={cn(
+                          "w-8 h-4 rounded-full relative p-0.5 border cursor-pointer transition-all duration-300",
+                          digestSettings.daily ? "bg-emerald-500/20 border-emerald-500/20" : "bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
+                        )}
+                      >
+                         <div className={cn(
+                           "w-3 h-3 rounded-full transition-all duration-300 absolute top-0.5",
+                           digestSettings.daily ? "bg-emerald-500 translate-x-3.5" : "bg-zinc-400 translate-x-0"
+                         )} />
+                      </div>
+                   </div>
+                   <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900">
+                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Instant Critical</span>
+                      <div 
+                        onClick={() => toggleDigest('instant')}
+                        className={cn(
+                          "w-8 h-4 rounded-full relative p-0.5 border cursor-pointer transition-all duration-300",
+                          digestSettings.instant ? "bg-emerald-500/20 border-emerald-500/20" : "bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
+                        )}
+                      >
+                         <div className={cn(
+                           "w-3 h-3 rounded-full transition-all duration-300 absolute top-0.5",
+                           digestSettings.instant ? "bg-emerald-500 translate-x-3.5" : "bg-zinc-400 translate-x-0"
+                         )} />
+                      </div>
+                   </div>
+                </div>
             </div>
          </div>
 
          {/* Notifications List */}
          <div className="lg:col-span-3 space-y-4">
-            {mockNotifications.length > 0 ? (
-               mockNotifications.map((notification, i) => (
+            {filteredNotifications.length > 0 ? (
+               filteredNotifications.map((notification, i) => (
                   <motion.div 
                     key={notification.id}
                     initial={{ opacity: 0, y: 10, x: -10 }}
@@ -137,8 +224,23 @@ const Notifications = () => {
                         
                         {!notification.isRead && (
                            <div className="pt-3 flex gap-4">
-                              <Button variant="link" className="p-0 h-fit text-primary font-black uppercase text-[10px] tracking-widest">Review Issue</Button>
-                              <Button variant="link" className="p-0 h-fit text-zinc-600 font-black uppercase text-[10px] tracking-widest">Dismiss</Button>
+                              <Button 
+                                variant="link" 
+                                onClick={() => {
+                                  setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n));
+                                  showToast("Issue reviewed");
+                                }}
+                                className="p-0 h-fit text-primary font-black uppercase text-[10px] tracking-widest"
+                              >
+                                Review Issue
+                              </Button>
+                              <Button 
+                                variant="link" 
+                                onClick={() => handleDelete(notification.id)}
+                                className="p-0 h-fit text-zinc-600 font-black uppercase text-[10px] tracking-widest"
+                              >
+                                Dismiss
+                              </Button>
                            </div>
                         )}
                      </div>
@@ -165,6 +267,12 @@ const Notifications = () => {
             </div>
          </div>
       </div>
+       <Toast 
+        show={toast.show} 
+        message={toast.message} 
+        type={toast.type} 
+        onClose={() => setToast({ show: false, message: '', type: 'success' })} 
+      />
     </div>
   );
 };

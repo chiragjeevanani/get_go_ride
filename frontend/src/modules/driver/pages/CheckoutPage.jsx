@@ -49,7 +49,7 @@ const CheckoutPage = () => {
 
       <div className="flex-1 p-4 space-y-6">
         <AnimatePresence mode="wait">
-          {step !== 'success' && (
+          {step === 'payment' && (
             <motion.div 
                key="checkout-form"
                initial={{ opacity: 0, y: 10 }}
@@ -119,8 +119,6 @@ const CheckoutPage = () => {
                     </div>
                  </div>
               </section>
-
-
             </motion.div>
           )}
 

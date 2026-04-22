@@ -15,15 +15,46 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockSubscriptions, mockPlans } from '../data/mockData';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Toast } from '../components/common/Toast';
 
 const SubscriptionManagement = () => {
   const [activeTab, setActiveTab] = useState("subscriptions");
+  const [subscriptions, setSubscriptions] = useState(mockSubscriptions);
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
 
   const handleEditPlan = (plan) => {
     setSelectedPlan(plan);
     setIsPlanModalOpen(true);
+  };
+
+  const handleExtendSubscription = (id) => {
+    setSubscriptions(prev => prev.map(sub => {
+      if (sub.id === id) {
+        const currentExpiry = new Date(sub.expiryDate);
+        currentExpiry.setDate(currentExpiry.getDate() + 30);
+        const newExpiry = currentExpiry.toISOString().split('T')[0];
+        showToast(`Subscription for ${sub.vendorName} extended to ${newExpiry}`, 'success');
+        return { ...sub, expiryDate: newExpiry, status: 'Active' };
+      }
+      return sub;
+    }));
+  };
+
+  const handleCancelSubscription = (id) => {
+    setSubscriptions(prev => prev.map(sub => {
+      if (sub.id === id) {
+        showToast(`Subscription for ${sub.vendorName} has been cancelled`, 'error');
+        return { ...sub, status: 'Expired' };
+      }
+      return sub;
+    }));
   };
 
   const subscriptionColumns = [
@@ -77,13 +108,24 @@ const SubscriptionManagement = () => {
     },
     { 
       key: "actions", 
-      label: "", 
-      render: () => (
+      label: "ACTIONS", 
+      align: "right",
+      render: (_, row) => (
         <div className="flex justify-end gap-2">
-           <Button variant="ghost" size="sm" className="text-primary font-black uppercase text-[10px] tracking-widest">
+           <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-primary font-black uppercase text-[10px] tracking-widest hover:bg-primary/5"
+            onClick={() => handleExtendSubscription(row.id)}
+           >
               Extend
            </Button>
-           <Button variant="ghost" size="sm" className="text-zinc-600 font-black uppercase text-[10px] tracking-widest">
+           <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-rose-500 font-black uppercase text-[10px] tracking-widest hover:bg-rose-500/5"
+            onClick={() => handleCancelSubscription(row.id)}
+           >
               Cancel
            </Button>
         </div>
@@ -117,7 +159,7 @@ const SubscriptionManagement = () => {
          <TabsContent value="subscriptions" className="animate-in fade-in slide-in-from-left-4 duration-300">
             <DataTable 
               columns={subscriptionColumns} 
-              data={mockSubscriptions} 
+              data={subscriptions} 
               searchKey="vendorName"
               searchPlaceholder="Find subscription by vendor name..."
             />
@@ -198,54 +240,61 @@ const SubscriptionManagement = () => {
         description="Configure pricing, duration and access rules"
         size="md"
       >
-        <div className="space-y-6 pt-4">
+        <div className="space-y-4 pt-2">
            {/* Simple Form Layout */}
-           <div className="space-y-4">
-              <div className="space-y-1.5">
-                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Plan Name</label>
+           <div className="space-y-3">
+              <div className="space-y-1">
+                 <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Plan Name</label>
                  <input 
                    placeholder="e.g. Premium Yearly"
-                   className="w-full h-12 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary"
+                   className="w-full h-10 px-4 bg-zinc-50 border border-zinc-100 rounded-lg text-xs font-bold text-zinc-900 focus:outline-none focus:border-primary"
                    defaultValue={selectedPlan?.name}
                  />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Pricing (₹)</label>
+              <div className="grid grid-cols-2 gap-3">
+                 <div className="space-y-1">
+                    <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Pricing (₹)</label>
                     <input 
                       type="number" 
                       placeholder="999"
-                      className="w-full h-12 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary"
+                      className="w-full h-10 px-4 bg-zinc-50 border border-zinc-100 rounded-lg text-xs font-bold text-zinc-900 focus:outline-none focus:border-primary"
                       defaultValue={selectedPlan?.price}
                     />
                  </div>
-                 <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Duration</label>
+                 <div className="space-y-1">
+                    <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Duration</label>
                     <input 
                       placeholder="e.g. 30 Days"
-                      className="w-full h-12 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary"
+                      className="w-full h-10 px-4 bg-zinc-50 border border-zinc-100 rounded-lg text-xs font-bold text-zinc-900 focus:outline-none focus:border-primary"
                       defaultValue={selectedPlan?.duration}
                     />
                  </div>
               </div>
-              <div className="space-y-1.5 pt-2">
-                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Plan Features (Coming Soon)</label>
-                 <div className="p-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 text-[10px] font-black text-zinc-600 uppercase italic text-center">
+              <div className="space-y-1 pt-1">
+                 <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Plan Features</label>
+                 <div className="p-4 rounded-lg border border-dashed border-zinc-200 text-[9px] font-black text-zinc-400 uppercase italic text-center bg-zinc-50/50">
                     Feature management will be implemented in the next phase
                  </div>
               </div>
            </div>
 
-           <div className="pt-8 flex gap-3">
-              <Button className="flex-1 bg-primary text-black font-black uppercase text-[10px] tracking-widest h-12 rounded-xl shadow-lg shadow-primary/20">
-                 Save Plan Configuration
+           <div className="pt-4 flex gap-2">
+              <Button className="flex-1 bg-primary text-black font-black uppercase text-[9px] tracking-widest h-10 rounded-lg shadow-md shadow-primary/20">
+                 Save Plan
               </Button>
-              <Button variant="ghost" onClick={() => setIsPlanModalOpen(false)} className="px-6 text-zinc-500 font-black uppercase text-[10px] tracking-widest">
+              <Button variant="ghost" onClick={() => setIsPlanModalOpen(false)} className="px-4 text-zinc-400 font-black uppercase text-[9px] tracking-widest">
                  Cancel
               </Button>
            </div>
         </div>
       </Modal>
+
+      <Toast 
+        show={toast.show} 
+        message={toast.message} 
+        type={toast.type} 
+        onClose={() => setToast({ show: false, message: '', type: 'success' })} 
+      />
     </div>
   );
 };

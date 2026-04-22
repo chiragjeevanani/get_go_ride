@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 const LeadsScreen = () => {
   const navigate = useNavigate();
-  const { leads, rejectLead } = useDriverState();
+  const { leads, rejectLead, driver } = useDriverState();
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -94,12 +94,31 @@ const LeadsScreen = () => {
           {filteredLeads.length > 0 ? (
             <div className="flex flex-col gap-4">
               {filteredLeads.map((lead, index) => (
-                <LeadCard 
-                  key={lead.id} 
-                  lead={lead} 
-                  onReject={rejectLead}
-                  onView={(id) => navigate(`/driver/leads/${id}`)}
-                />
+                <div key={lead.id} className="relative group">
+                  <div className={cn(
+                    "transition-all duration-300",
+                    !driver.isSubscribed && index > 0 ? "filter blur-[2px] opacity-60 pointer-events-none" : ""
+                  )}>
+                    <LeadCard 
+                      lead={lead} 
+                      onReject={rejectLead}
+                      onView={(id) => navigate(`/driver/leads/${id}`)}
+                    />
+                  </div>
+                  {!driver.isSubscribed && index > 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center z-20">
+                       <Button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate("/driver/subscribe");
+                        }}
+                        className="bg-zinc-900/90 text-primary border border-primary/20 backdrop-blur-md rounded-xl h-10 px-6 font-black text-[10px] tracking-widest shadow-2xl active:scale-95 transition-all"
+                       >
+                          <Lock className="w-4 h-4 mr-2" /> UNLOCK THIS LEAD
+                       </Button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           ) : (

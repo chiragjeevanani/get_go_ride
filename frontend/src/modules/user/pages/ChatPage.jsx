@@ -37,6 +37,25 @@ const ChatPage = () => {
     quote: "₹3,500"
   };
 
+  // Negotiation State
+  const [showCounterModal, setShowCounterModal] = useState(false);
+  const [counterPrice, setCounterPrice] = useState("");
+
+  const handleCounterOffer = () => {
+    if (!counterPrice) return;
+    const newMessage = {
+      id: Date.now(),
+      sender: "user",
+      type: "offer",
+      text: `Counter Offer: ₹${counterPrice}`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: "sent"
+    };
+    setMessages([...messages, newMessage]);
+    setCounterPrice("");
+    setShowCounterModal(false);
+  };
+
   const handleSend = () => {
     if (!message.trim()) return;
     const newMessage = {
@@ -58,112 +77,113 @@ const ChatPage = () => {
 
   return (
     <div className="flex flex-col h-screen -m-4 bg-zinc-50 relative overflow-hidden">
-      {/* Chat Header */}
+      {/* ... header & toolbar & messages ... */}
       <header className="bg-white border-b border-zinc-100 p-4 pt-8 sticky top-0 z-40 safe-area-top shadow-sm flex items-center justify-between">
-        <div className="flex items-center gap-3">
-           <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => navigate(-1)}>
-              <ChevronLeft className="w-6 h-6" />
-           </Button>
-           <div className="w-10 h-10 rounded-full border-2 border-primary/20 bg-zinc-100 flex items-center justify-center font-black text-black text-xs overflow-hidden">
-              <img src={vendor.avatar} alt="logo" className="w-full h-full object-cover" />
-           </div>
-           <div className="flex flex-col overflow-hidden">
-              <div className="flex items-center gap-1">
-                 <h4 className="font-bold text-black text-sm truncate">{vendor.name}</h4>
-                 {vendor.isVerified && <ShieldCheck className="w-3.5 h-3.5 text-primary fill-primary/10" />}
-              </div>
-              <div className="flex items-center gap-1.5">
-                 <div className="flex items-center gap-0.5">
-                    <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
-                    <span className="text-[10px] font-bold">{vendor.rating}</span>
-                 </div>
-                 <div className="w-1 h-1 rounded-full bg-emerald-500"></div>
-                 <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Online</span>
-              </div>
-           </div>
-        </div>
-        <div className="flex items-center gap-1 relative">
-           <Button 
-            variant="ghost" 
-            size="icon" 
-            className={cn("rounded-full transition-colors", showMenu ? "bg-zinc-100 text-black" : "text-zinc-400")}
-            onClick={() => setShowMenu(!showMenu)}
-           >
-              <MoreVertical className="w-5 h-5" />
-           </Button>
+         <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => navigate(-1)}>
+               <ChevronLeft className="w-6 h-6" />
+            </Button>
+            <div className="w-10 h-10 rounded-full border-2 border-primary/20 bg-zinc-100 flex items-center justify-center font-black text-black text-xs overflow-hidden">
+               <img src={vendor.avatar} alt="logo" className="w-full h-full object-cover" />
+            </div>
+            <div className="flex flex-col overflow-hidden">
+               <div className="flex items-center gap-1">
+                  <h4 className="font-bold text-black text-sm truncate">{vendor.name}</h4>
+                  {vendor.isVerified && <ShieldCheck className="w-3.5 h-3.5 text-primary fill-primary/10" />}
+               </div>
+               <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-0.5">
+                     <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
+                     <span className="text-[10px] font-bold">{vendor.rating}</span>
+                  </div>
+                  <div className="w-1 h-1 rounded-full bg-emerald-500"></div>
+                  <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Online</span>
+               </div>
+            </div>
+         </div>
+         <div className="flex items-center gap-1 relative">
+            <Button 
+             variant="ghost" 
+             size="icon" 
+             className={cn("rounded-full transition-colors", showMenu ? "bg-zinc-100 text-black" : "text-zinc-400")}
+             onClick={() => setShowMenu(!showMenu)}
+            >
+               <MoreVertical className="w-5 h-5" />
+            </Button>
 
-           <AnimatePresence>
-             {showMenu && (
-               <>
-                 <motion.div 
-                   initial={{ opacity: 0 }}
-                   animate={{ opacity: 1 }}
-                   exit={{ opacity: 0 }}
-                   className="fixed inset-0 z-40" 
-                   onClick={() => setShowMenu(false)}
-                 />
-                 <motion.div
-                   initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                   className="absolute right-0 top-12 w-48 bg-white rounded-xl shadow-xl border border-zinc-100 p-1.5 z-50 overflow-hidden"
-                 >
-                    {[
-                      { label: "View Profile", icon: Info, onClick: () => navigate(`/user/vendor/${vendorId}`) },
-                      { label: "Share Contact", icon: Send, onClick: () => {
-                        if (navigator.share) {
-                          navigator.share({ title: vendor.name, text: 'Vendor Contact', url: window.location.href });
-                        }
-                        setShowMenu(false);
-                      }},
-                      { label: "Block Vendor", icon: X, color: "text-red-500", onClick: () => {
-                        alert("Vendor blocked successfully");
-                        setShowMenu(false);
-                      }},
-                    ].map((item, i) => (
-                      <button 
-                        key={i}
-                        className={cn(
-                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-black uppercase tracking-tighter hover:bg-zinc-50 transition-colors",
-                          item.color || "text-zinc-600"
-                        )}
-                        onClick={() => {
-                          if (item.onClick) item.onClick();
-                          else setShowMenu(false);
-                        }}
-                      >
-                         <item.icon className="w-4 h-4" />
-                         {item.label}
-                      </button>
-                    ))}
-                 </motion.div>
-               </>
-             )}
-           </AnimatePresence>
-        </div>
+            <AnimatePresence>
+              {showMenu && (
+                <>
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowMenu(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                    className="absolute right-0 top-12 w-48 bg-white rounded-xl shadow-xl border border-zinc-100 p-1.5 z-50 overflow-hidden"
+                  >
+                     {[
+                       { label: "View Profile", icon: Info, onClick: () => navigate(`/user/vendor-profile/${vendorId}`) },
+                       { label: "Share Contact", icon: Send, onClick: () => {
+                         if (navigator.share) {
+                           navigator.share({ title: vendor.name, text: 'Vendor Contact', url: window.location.href });
+                         }
+                         setShowMenu(false);
+                       }},
+                       { label: "Block Vendor", icon: X, color: "text-red-500", onClick: () => {
+                         alert("Vendor blocked successfully");
+                         setShowMenu(false);
+                       }},
+                     ].map((item, i) => (
+                       <button 
+                         key={i}
+                         className={cn(
+                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-black uppercase tracking-tighter hover:bg-zinc-50 transition-colors",
+                           item.color || "text-zinc-600"
+                         )}
+                         onClick={() => {
+                           if (item.onClick) item.onClick();
+                           else setShowMenu(false);
+                         }}
+                       >
+                          <item.icon className="w-4 h-4" />
+                          {item.label}
+                       </button>
+                     ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+         </div>
       </header>
 
-      {/* Floating Summary Bar */}
-      <div className="hidden sm:block px-4 pt-2">
-         <Card className="bg-primary shadow-lg shadow-primary/20 border-none">
-            <CardContent className="p-3 flex items-center justify-between text-black">
-               <div className="flex items-center gap-3">
-                  <div className="p-2 bg-black/10 rounded-xl">
-                     <Package className="w-4 h-4 text-black" />
-                  </div>
-                  <div className="flex flex-col">
-                     <span className="text-[10px] opacity-80 uppercase font-black">Active Deal</span>
-                     <span className="text-sm font-bold truncate">House Shifting • {vendor.quote}</span>
-                  </div>
-               </div>
-               <Button size="sm" className="bg-white text-primary hover:bg-white/90 rounded-xl font-bold h-8 text-[10px]">
-                  Finalize Deal
-               </Button>
-            </CardContent>
-         </Card>
+      <div className="bg-white border-b border-zinc-100 p-2 px-4 flex gap-2 overflow-x-auto no-scrollbar relative z-30">
+         <Button 
+            onClick={() => navigate(`/user/finalize/${requestId}/${vendorId}`)}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl h-9 px-4 text-[10px] font-black uppercase tracking-widest shrink-0 border-none"
+         >
+            Accept {vendor.quote}
+         </Button>
+         <Button 
+            onClick={() => setShowCounterModal(true)}
+            className="bg-primary text-black hover:bg-yellow-400 rounded-xl h-9 px-4 text-[10px] font-black uppercase tracking-widest shrink-0 border-none"
+         >
+            Counter Offer
+         </Button>
+         <div className="w-px h-6 bg-zinc-100 self-center mx-1 shrink-0"></div>
+         <Button 
+            variant="ghost"
+            className="text-zinc-400 font-bold text-[9px] uppercase tracking-wider shrink-0 h-9 px-3"
+         >
+            Request Fleet Photos
+         </Button>
       </div>
 
-      {/* Messages List */}
       <div 
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-4 pb-32 space-y-2.5 no-scrollbar scroll-smooth"
@@ -188,12 +208,22 @@ const ChatPage = () => {
             >
                 <div className={cn(
                   "rounded-[1.25rem] text-[13px] leading-snug shadow-sm relative font-medium overflow-hidden",
+                  msg.type === "offer" ? "bg-zinc-900 text-white border-2 border-primary/40" :
                   msg.sender === "user" 
                     ? "bg-primary text-black rounded-tr-none shadow-primary/10 border border-primary/20" 
                     : "bg-white text-zinc-900 rounded-tl-none shadow-zinc-100 border border-zinc-100"
                )}>
                   {msg.image ? (
                     <img src={msg.image} alt="shared" className="max-w-full h-auto rounded-lg mb-1" />
+                  ) : msg.type === "offer" ? (
+                    <div className="p-4 space-y-2">
+                       <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-primary" />
+                          <span className="font-black uppercase tracking-widest text-[9px]">Offer Sent</span>
+                       </div>
+                       <p className="text-xl font-black text-primary tabular-nums">{msg.text.split(': ')[1]}</p>
+                       <p className="text-[8px] text-zinc-500 font-bold uppercase">Awaiting vendor response</p>
+                    </div>
                   ) : (
                     <div className="p-2.5 px-4">{msg.text}</div>
                   )}
@@ -212,7 +242,6 @@ const ChatPage = () => {
         </AnimatePresence>
       </div>
 
-      {/* Input Area */}
       <div className="p-4 pt-1 bg-white border-t border-zinc-100 pb-3">
         <div className="flex items-end gap-2 bg-zinc-50 p-2 rounded-[1.5rem] border border-zinc-200">
           <input 
@@ -268,24 +297,63 @@ const ChatPage = () => {
         </div>
       </div>
 
-      {/* Floating CTA for Mobile inside Chat */}
-      <div className="px-6 absolute bottom-24 left-0 right-0 z-20 sm:hidden">
-         <motion.div 
-           initial={{ y: 20, opacity: 0 }}
-           animate={{ y: 0, opacity: 1 }}
-           className="w-full"
-         >
-           <Button 
-             className="w-full bg-black text-primary h-11 shadow-xl shadow-black/40 rounded-xl border-none font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
-             onClick={() => navigate(`/user/finalize/${requestId}/${vendorId}`)}
-           >
-              <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-              </div>
-              Finalize Deal (₹3,500)
-           </Button>
-         </motion.div>
-      </div>
+      {/* Counter Offer Modal */}
+      <AnimatePresence>
+         {showCounterModal && (
+            <div className="fixed inset-0 z-[100] flex items-end justify-center">
+               <motion.div 
+                 initial={{ opacity: 0 }}
+                 animate={{ opacity: 1 }}
+                 exit={{ opacity: 0 }}
+                 onClick={() => setShowCounterModal(false)}
+                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+               />
+               <motion.div 
+                 initial={{ y: "100%" }}
+                 animate={{ y: 0 }}
+                 exit={{ y: "100%" }}
+                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                 className="relative w-full max-w-md bg-white rounded-t-[2.5rem] p-6 pb-10 shadow-2xl"
+               >
+                  <div className="w-12 h-1.5 bg-zinc-100 rounded-full mx-auto mb-6"></div>
+                  <div className="space-y-6">
+                     <div className="text-center space-y-1">
+                        <h3 className="text-lg font-black text-zinc-900 uppercase italic">Make a Counter Offer</h3>
+                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Vendor Quote: {vendor.quote}</p>
+                     </div>
+
+                     <div className="relative">
+                        <span className="absolute left-6 top-1/2 -translate-y-1/2 text-3xl font-black text-zinc-300 italic">₹</span>
+                        <input 
+                           type="number"
+                           placeholder="0"
+                           value={counterPrice}
+                           onChange={(e) => setCounterPrice(e.target.value)}
+                           className="w-full h-20 bg-zinc-50 rounded-[1.5rem] border-none text-center text-4xl font-black focus:ring-2 focus:ring-primary/20 outline-none tabular-nums"
+                        />
+                     </div>
+
+                     <div className="flex gap-3">
+                        <Button 
+                          variant="ghost"
+                          onClick={() => setShowCounterModal(false)}
+                          className="flex-1 h-14 rounded-2xl font-black text-xs uppercase tracking-widest border border-zinc-100"
+                        >
+                           Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleCounterOffer}
+                          disabled={!counterPrice}
+                          className="flex-[2] h-14 rounded-2xl bg-zinc-900 text-primary font-black text-xs uppercase tracking-widest shadow-xl shadow-zinc-900/20"
+                        >
+                           Send Offer
+                        </Button>
+                     </div>
+                  </div>
+               </motion.div>
+            </div>
+         )}
+      </AnimatePresence>
     </div>
   );
 };

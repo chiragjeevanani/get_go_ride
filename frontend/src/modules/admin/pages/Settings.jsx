@@ -12,9 +12,17 @@ import { PageHeader } from '../components/common/PageHeader';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { Toast } from '../components/common/Toast';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = React.useState("Platform Info");
+  const [monetizationModel, setMonetizationModel] = React.useState("perc");
+  const [toast, setToast] = React.useState({ show: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
 
   const navItems = [
     { label: "Platform Info", icon: Globe },
@@ -30,7 +38,10 @@ const Settings = () => {
         title="System Settings" 
         subtitle="Configure platform operations, security, and integration rules" 
         actions={
-          <Button className="bg-primary text-black font-black uppercase tracking-widest text-[10px] h-10 px-6 rounded-xl shadow-lg shadow-primary/20">
+          <Button 
+            onClick={() => showToast("Configuration saved to cloud registry", "success")}
+            className="bg-primary text-black font-black uppercase tracking-widest text-[10px] h-10 px-6 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
+          >
              <Save className="w-4 h-4 mr-2" />
              Save All Changes
           </Button>
@@ -142,62 +153,79 @@ const Settings = () => {
 
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {[
-                        { id: 'perc', title: 'Percentage Based', desc: 'A share of the total deal value finalized between user & vendor.', icon: TrendingUp, selected: true },
-                        { id: 'fixed', title: 'Fixed Lead Fee', desc: 'A flat fee charged to the vendor for every successful lead secured.', icon: IndianRupee, selected: false },
+                        { id: 'perc', title: 'Percentage Based', desc: 'A share of the total deal value finalized between user & vendor.', icon: TrendingUp },
+                        { id: 'fixed', title: 'Fixed Lead Fee', desc: 'A flat fee charged to the vendor for every successful lead secured.', icon: IndianRupee },
                       ].map((model) => (
                         <button 
                           key={model.id}
+                          onClick={() => {
+                            setMonetizationModel(model.id);
+                            showToast(`Switched to ${model.title} model`);
+                          }}
                           className={cn(
                             "p-6 rounded-2xl border-2 text-left transition-all group relative overflow-hidden",
-                            model.selected ? "border-primary bg-primary/[0.03]" : "border-zinc-200 dark:border-zinc-900 hover:border-zinc-700"
+                            monetizationModel === model.id ? "border-primary bg-primary/[0.03]" : "border-zinc-200 dark:border-zinc-900 hover:border-zinc-700"
                           )}
                         >
                            <div className="relative z-10 space-y-4">
-                              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-colors", model.selected ? "bg-primary text-black" : "bg-zinc-100 dark:bg-zinc-900 text-zinc-500")}>
+                              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm", monetizationModel === model.id ? "bg-primary text-black" : "bg-zinc-100 dark:bg-zinc-900 text-zinc-500")}>
                                  <model.icon className="w-5 h-5" />
                               </div>
                               <div className="space-y-1">
-                                 <h4 className={cn("text-xs font-black uppercase tracking-widest", model.selected ? "text-zinc-900 dark:text-white" : "text-zinc-500")}>{model.title}</h4>
+                                 <h4 className={cn("text-xs font-black uppercase tracking-widest", monetizationModel === model.id ? "text-zinc-900 dark:text-white" : "text-zinc-500")}>{model.title}</h4>
                                  <p className="text-[10px] font-bold text-zinc-500 leading-relaxed uppercase tracking-tight">{model.desc}</p>
                               </div>
                            </div>
-                           {model.selected && <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" />}
+                           {monetizationModel === model.id && <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" />}
                         </button>
                       ))}
                    </div>
                 </div>
 
-                {/* Base Rates */}
-                <div className="admin-card p-8 border-zinc-200 dark:border-zinc-900 space-y-8">
-                   <div className="space-y-1">
-                      <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest">Base Commission Rates</h3>
-                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic">Default values applied across categories</p>
-                   </div>
+                 {/* Base Rates */}
+                 <div className="admin-card p-8 border-zinc-200 dark:border-zinc-900 space-y-8">
+                    <div className="space-y-1">
+                       <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest">
+                          {monetizationModel === 'perc' ? 'Base Commission Rates' : 'Fixed Fee Configuration'}
+                       </h3>
+                       <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic">Default values applied across categories</p>
+                    </div>
 
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Standard Rate (%)</label>
-                        <div className="relative">
-                           <input defaultValue="10" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary italic focus:outline-none focus:border-primary" />
-                           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-500">%</span>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Min. Guarantee (₹)</label>
-                        <div className="relative">
-                           <input defaultValue="50" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary italic focus:outline-none focus:border-primary" />
-                           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-500">₹</span>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">GST / Tax (%)</label>
-                        <div className="relative">
-                           <input defaultValue="18" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary italic focus:outline-none focus:border-primary" />
-                           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-500">%</span>
-                        </div>
-                      </div>
-                   </div>
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                       <div className="space-y-2">
+                         <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">
+                            {monetizationModel === 'perc' ? 'Standard Rate (%)' : 'Fixed Fee Per Lead (₹)'}
+                         </label>
+                         <div className="relative">
+                            <input 
+                              defaultValue={monetizationModel === 'perc' ? "10" : "150"} 
+                              className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary italic focus:outline-none focus:border-primary" 
+                            />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-500">
+                               {monetizationModel === 'perc' ? '%' : '₹'}
+                            </span>
+                         </div>
+                       </div>
+                       
+                       {monetizationModel === 'perc' && (
+                         <div className="space-y-2">
+                           <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Min. Guarantee (₹)</label>
+                           <div className="relative">
+                              <input defaultValue="50" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary italic focus:outline-none focus:border-primary" />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-500">₹</span>
+                           </div>
+                         </div>
+                       )}
+
+                       <div className="space-y-2">
+                         <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">GST / Tax (%)</label>
+                         <div className="relative">
+                            <input defaultValue="18" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary italic focus:outline-none focus:border-primary" />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-500">%</span>
+                         </div>
+                       </div>
+                    </div>
+                 </div>
 
                 {/* Category Overrides */}
                 <div className="admin-card p-8 border-zinc-200 dark:border-zinc-900 space-y-6">
@@ -276,6 +304,12 @@ const Settings = () => {
             )}
          </div>
       </div>
+      <Toast 
+        show={toast.show} 
+        message={toast.message} 
+        type={toast.type} 
+        onClose={() => setToast({ show: false, message: '', type: 'success' })} 
+      />
     </div>
   );
 };

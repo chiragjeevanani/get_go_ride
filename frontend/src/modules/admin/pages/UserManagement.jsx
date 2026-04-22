@@ -18,10 +18,50 @@ import {
 import { mockUsers } from '../data/mockData';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Toast } from '../components/common/Toast';
 
 const UserManagement = () => {
+  const [users, setUsers] = useState(mockUsers);
   const [selectedUser, setSelectedUser] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isMessageSent, setIsMessageSent] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  const handleToggleStatus = (userId) => {
+    setUsers(prev => prev.map(u => {
+      if (u.id === userId) {
+        const newStatus = u.status === 'Active' ? 'Blocked' : 'Active';
+        return { ...u, status: newStatus };
+      }
+      return u;
+    }));
+    
+    if (selectedUser?.id === userId) {
+      setSelectedUser(prev => {
+        const newStatus = prev.status === 'Active' ? 'Blocked' : 'Active';
+        showToast(`User account ${newStatus === 'Active' ? 'activated' : 'suspended'}`, newStatus === 'Active' ? 'success' : 'error');
+        return {
+          ...prev,
+          status: newStatus
+        };
+      });
+    } else {
+      const user = users.find(u => u.id === userId);
+      const newStatus = user.status === 'Active' ? 'Blocked' : 'Active';
+      showToast(`User account ${newStatus === 'Active' ? 'activated' : 'suspended'}`, newStatus === 'Active' ? 'success' : 'error');
+    }
+  };
+
+  const handleMessageUser = (user) => {
+    setIsMessageSent(true);
+    showToast(`Message successfully sent to ${user.name}`, 'success');
+    setTimeout(() => setIsMessageSent(false), 3000);
+  };
 
   const handleViewUser = (user) => {
     setSelectedUser(user);
@@ -92,25 +132,28 @@ const UserManagement = () => {
     },
     { 
       key: "actions", 
-      label: "", 
+      label: "ACTIONS", 
+      align: "right",
       render: (_, row) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0 text-zinc-500 hover:text-zinc-900 dark:text-white">
-              <MoreVertical className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white rounded-xl p-1 w-44">
-            <DropdownMenuItem className="gap-2 p-3 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors" onClick={() => handleViewUser(row)}>
-              <Eye className="w-4 h-4 text-primary" />
-              <span className="text-[10px] font-black uppercase tracking-widest">View Details</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2 p-3 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors">
-              <Ban className="w-4 h-4 text-rose-500" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Block Account</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0 text-zinc-500 hover:text-zinc-900 dark:text-white">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white rounded-xl p-1 w-44">
+              <DropdownMenuItem className="gap-2 p-3 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors" onClick={() => handleViewUser(row)}>
+                <Eye className="w-4 h-4 text-primary" />
+                <span className="text-[10px] font-black uppercase tracking-widest">View Details</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 p-3 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors" onClick={() => handleToggleStatus(row.id)}>
+                <Ban className={cn("w-4 h-4", row.status === 'Active' ? "text-rose-500" : "text-emerald-500")} />
+                <span className="text-[10px] font-black uppercase tracking-widest">{row.status === 'Active' ? 'Block Account' : 'Activate Account'}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       )
     }
   ];
@@ -124,7 +167,7 @@ const UserManagement = () => {
 
       <DataTable 
         columns={columns} 
-        data={mockUsers} 
+        data={users} 
         searchKey="name"
         searchPlaceholder="Find users by name or id..."
         onRowClick={handleViewUser}
@@ -139,48 +182,63 @@ const UserManagement = () => {
         size="lg"
       >
         {selectedUser && (
-          <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+          <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
             {/* User Hero */}
-            <div className="flex flex-col md:flex-row items-center gap-8 bg-zinc-50 dark:bg-zinc-950/50 p-8 rounded-[1.5rem] border border-zinc-200 dark:border-zinc-800/50 relative overflow-hidden group">
+            <div className="flex flex-col md:flex-row items-center gap-6 bg-zinc-50 border border-zinc-100 p-6 rounded-2xl relative overflow-hidden group">
                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-primary/10 transition-colors" />
                
-               <div className="w-24 h-24 rounded-3xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-4xl font-black text-primary p-1 shadow-2xl relative z-10 shrink-0">
-                  <div className="w-full h-full rounded-[1.25rem] bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
+               <div className="w-20 h-20 rounded-2xl bg-white border border-zinc-200 flex items-center justify-center text-2xl font-black text-primary shadow-lg relative z-10 shrink-0">
+                  <div className="w-full h-full rounded-2xl bg-zinc-50 flex items-center justify-center">
                     {selectedUser.name.split(' ').map(n => n[0]).join('')}
                   </div>
                </div>
 
-               <div className="flex-1 space-y-4 text-center md:text-left relative z-10">
+               <div className="flex-1 space-y-3 text-center md:text-left relative z-10">
                   <div className="space-y-1">
-                     <div className="flex flex-wrap items-center gap-3 justify-center md:justify-start">
-                        <h2 className="text-3xl font-black text-zinc-900 dark:text-white uppercase italic tracking-tighter">{selectedUser.name}</h2>
-                        <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-black text-[9px] uppercase tracking-[0.2em] px-3 py-1 rounded-full">
+                     <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
+                        <h2 className="text-2xl font-black text-zinc-900 uppercase italic tracking-tighter">{selectedUser.name}</h2>
+                        <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-black text-[8px] uppercase tracking-widest px-2 py-0.5 rounded-full">
                            {selectedUser.status}
                         </Badge>
                      </div>
-                     <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.25em]">Registered on: {selectedUser.joinDate}</p>
+                     <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Joined: {selectedUser.joinDate}</p>
                   </div>
                   
-                  <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                     <div className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                        <Phone className="w-4 h-4 text-primary" />
-                        <span className="text-xs font-black text-zinc-900 dark:text-white">{selectedUser.phone}</span>
+                  <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                     <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl border border-zinc-100">
+                        <Phone className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-[10px] font-black text-zinc-900">{selectedUser.phone}</span>
                      </div>
-                     <div className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                        <MapPin className="w-4 h-4 text-primary" />
-                        <span className="text-xs font-black text-zinc-900 dark:text-white uppercase tracking-tight">{selectedUser.location}</span>
+                     <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl border border-zinc-100">
+                        <MapPin className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-[10px] font-black text-zinc-900 uppercase tracking-tight">{selectedUser.location}</span>
                      </div>
                   </div>
                </div>
 
                <div className="flex flex-col gap-2 w-full md:w-auto shrink-0 relative z-10">
-                  <Button className="bg-primary text-black font-black uppercase tracking-widest text-[10px] h-11 rounded-xl shadow-lg shadow-primary/20">
-                     <UserCheck className="w-4 h-4 mr-2" />
-                     Message User
+                  <Button 
+                    className={cn(
+                      "bg-primary text-black font-black uppercase tracking-widest text-[9px] h-9 rounded-lg shadow-md transition-all",
+                      isMessageSent ? "bg-emerald-500 text-white shadow-emerald-500/20" : "shadow-primary/20"
+                    )}
+                    onClick={() => handleMessageUser(selectedUser)}
+                  >
+                     {isMessageSent ? <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> : <UserCheck className="w-3.5 h-3.5 mr-1" />}
+                     {isMessageSent ? 'Message Sent' : 'Message'}
                   </Button>
-                  <Button variant="outline" className="border-rose-500/20 bg-rose-500/5 text-rose-500 font-black uppercase tracking-widest text-[10px] h-11 rounded-xl hover:bg-rose-500/10">
-                     <Ban className="w-4 h-4 mr-2" />
-                     Suspend Access
+                  <Button 
+                    variant="outline" 
+                    className={cn(
+                      "font-black uppercase tracking-widest text-[9px] h-9 rounded-lg transition-colors",
+                      selectedUser.status === 'Active' 
+                        ? "border-rose-100 bg-rose-50 text-rose-500 hover:bg-rose-100" 
+                        : "border-emerald-100 bg-emerald-50 text-emerald-500 hover:bg-emerald-100"
+                    )}
+                    onClick={() => handleToggleStatus(selectedUser.id)}
+                  >
+                     <Ban className="w-3.5 h-3.5 mr-1" />
+                     {selectedUser.status === 'Active' ? 'Suspend' : 'Activate'}
                   </Button>
                </div>
             </div>
@@ -190,30 +248,35 @@ const UserManagement = () => {
               {[
                 { label: "Lifetime Bookings", value: selectedUser.totalRequests, color: "text-primary" },
                 { label: "Successful Hires", value: Math.floor(selectedUser.totalRequests * 0.8), color: "text-emerald-500" },
-                { label: "Revenue Contribution", value: "₹12.4K", color: "text-zinc-900 dark:text-white" }
+                { label: "Revenue", value: "₹12.4K", color: "text-zinc-900" }
               ].map((stat, i) => (
-                <div key={i} className="bg-zinc-50 dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-900 p-6 rounded-2xl flex flex-col gap-1 items-center md:items-start group hover:border-zinc-200 dark:border-zinc-800 transition-all">
-                  <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">{stat.label}</span>
-                  <span className={cn("text-2xl font-black italic tracking-tighter", stat.color)}>{stat.value}</span>
+                <div key={i} className="bg-white border border-zinc-100 p-4 rounded-xl flex flex-col gap-0.5 items-center md:items-start group hover:border-zinc-200 transition-all shadow-sm">
+                  <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">{stat.label}</span>
+                  <span className={cn("text-xl font-black italic tracking-tighter", stat.color)}>{stat.value}</span>
                 </div>
               ))}
             </div>
 
             {/* Tabs placeholder for Detail View */}
-            <div className="space-y-4">
-               <h3 className="text-xs font-black text-zinc-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  Recent Requirement History
+            <div className="space-y-3">
+               <h3 className="text-[10px] font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5 text-primary" />
+                  Recent Activity
                </h3>
                
                <div className="space-y-2">
                   {[1, 2].map((i) => (
-                    <div key={i} className="flex flex-col md:flex-row md:items-center justify-between p-5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl hover:border-zinc-700 transition-all">
-                       <div className="space-y-1">
-                          <h4 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-tight">House Shifting (Indore Local)</h4>
-                          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Completed on March 24, 2024 • ₹2,500 Lead Fee Paid</p>
+                    <div key={i} className="flex flex-col md:flex-row md:items-center justify-between p-2.5 px-4 bg-white border border-zinc-100 rounded-lg hover:border-primary/20 transition-all group/item shadow-sm">
+                       <div className="space-y-0">
+                          <h4 className="text-[11px] font-black text-zinc-900 uppercase tracking-tight">House Shifting (Indore Local)</h4>
+                          <p className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest italic">March 24, 2024 • ₹2,500 Lead Fee</p>
                        </div>
-                       <Button variant="ghost" size="sm" className="text-primary font-black uppercase text-[10px] tracking-widest mt-4 md:mt-0">
+                       <Button 
+                         variant="ghost" 
+                         size="sm" 
+                         className="text-primary font-black uppercase text-[8px] tracking-widest mt-2 md:mt-0 h-6 px-3 hover:bg-primary/5 rounded-md"
+                         onClick={() => alert('Opening requirement snapshot for: House Shifting (Indore Local)')}
+                       >
                           View Details
                        </Button>
                     </div>
@@ -223,6 +286,13 @@ const UserManagement = () => {
           </div>
         )}
       </Modal>
+
+      <Toast 
+        show={toast.show} 
+        message={toast.message} 
+        type={toast.type} 
+        onClose={() => setToast({ show: false, message: '', type: 'success' })} 
+      />
     </div>
   );
 };

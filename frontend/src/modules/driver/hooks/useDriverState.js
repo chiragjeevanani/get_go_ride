@@ -59,17 +59,28 @@ export const useDriverState = () => {
 
   const [leads, setLeads] = useState(mockLeads);
   const [activeLeads, setActiveLeads] = useState([]);
+  const [stats, setStats] = useState(() => {
+    const savedStats = localStorage.getItem('safar_driver_stats');
+    return savedStats ? JSON.parse(savedStats) : {
+      total: 142,
+      accepted: 86,
+      rejected: 56
+    };
+  });
   
   useEffect(() => {
     localStorage.setItem('safar_driver', JSON.stringify(driver));
   }, [driver]);
+
+  useEffect(() => {
+    localStorage.setItem('safar_driver_stats', JSON.stringify(stats));
+  }, [stats]);
 
   const toggleOnline = () => {
     setDriver(prev => ({ ...prev, isOnline: !prev.isOnline }));
   };
 
   const activateSubscription = (plan) => {
-    // In real app, this would involve payment
     setDriver(prev => ({ ...prev, isSubscribed: true }));
   };
 
@@ -78,17 +89,20 @@ export const useDriverState = () => {
     if (lead) {
       setActiveLeads(prev => [...prev, { ...lead, status: 'accepted' }]);
       setLeads(prev => prev.filter(l => l.id !== leadId));
+      setStats(prev => ({ ...prev, accepted: prev.accepted + 1 }));
     }
   };
 
   const rejectLead = (leadId) => {
     setLeads(prev => prev.filter(l => l.id !== leadId));
+    setStats(prev => ({ ...prev, rejected: prev.rejected + 1 }));
   };
 
   return {
     driver,
     leads,
     activeLeads,
+    stats,
     toggleOnline,
     activateSubscription,
     acceptLead,

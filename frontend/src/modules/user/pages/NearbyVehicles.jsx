@@ -125,6 +125,11 @@ const NearbyVehicles = () => {
     });
   };
 
+  const filteredVehicles = vehicles.filter(v => 
+    v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    v.type.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-white pb-20">
       {/* Compact Sticky Header */}
@@ -154,6 +159,18 @@ const NearbyVehicles = () => {
           >
             Change
           </Button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mt-2 relative">
+           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-300" />
+           <input 
+             type="text"
+             placeholder="Search bike, auto, truck..."
+             value={searchQuery}
+             onChange={(e) => setSearchQuery(e.target.value)}
+             className="w-full h-9 bg-zinc-50 border-none rounded-xl pl-9 pr-4 text-[10px] font-bold focus:ring-1 focus:ring-primary/30 outline-none"
+           />
         </div>
       </header>
 
@@ -189,11 +206,11 @@ const NearbyVehicles = () => {
         <section className="space-y-3">
            <div className="flex justify-between items-center px-1">
               <h2 className="text-sm font-black tracking-tight text-zinc-900 border-l-3 border-primary pl-2 uppercase italic">Nearby</h2>
-              <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[8px] font-black tracking-widest">{vehicles.length} VEHICLES</Badge>
+              <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[8px] font-black tracking-widest">{filteredVehicles.length} VEHICLES</Badge>
            </div>
 
            <div className="flex flex-col gap-2.5">
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="popLayout">
                  {isLoading ? (
                     [1, 2, 3, 4].map((i) => (
                        <motion.div
@@ -201,8 +218,8 @@ const NearbyVehicles = () => {
                           className="w-full h-24 bg-zinc-50 border border-zinc-100 rounded-xl animate-pulse"
                        />
                     ))
-                 ) : (
-                    vehicles.map((vehicle, idx) => (
+                 ) : filteredVehicles.length > 0 ? (
+                    filteredVehicles.map((vehicle, idx) => (
                        <motion.div
                           key={vehicle.id}
                           initial={{ opacity: 0, scale: 0.98 }}
@@ -249,7 +266,10 @@ const NearbyVehicles = () => {
                                    </div>
 
                                    <div className="flex gap-1.5 mt-2">
-                                      <Button className="h-7 px-3 bg-zinc-50 text-zinc-900 hover:bg-zinc-100 rounded-lg text-[8px] font-black uppercase tracking-widest border border-zinc-100 flex-1">
+                                      <Button 
+                                        onClick={() => navigate(`/user/vendor-profile/${vehicle.id}`)}
+                                        className="h-7 px-3 bg-zinc-50 text-zinc-900 hover:bg-zinc-100 rounded-lg text-[8px] font-black uppercase tracking-widest border border-zinc-100 flex-1"
+                                      >
                                          Info
                                       </Button>
                                       <Button 
@@ -264,6 +284,15 @@ const NearbyVehicles = () => {
                           </Card>
                        </motion.div>
                     ))
+                 ) : (
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="py-12 text-center space-y-2"
+                    >
+                       <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">No vehicles found</p>
+                       <Button variant="link" onClick={() => setSearchQuery("")} className="text-[10px] font-black text-primary uppercase">Clear Search</Button>
+                    </motion.div>
                  )}
               </AnimatePresence>
            </div>

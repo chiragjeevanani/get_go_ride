@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ChevronLeft, ChevronRight, Check, Truck, Home, Users, AlertTriangle, 
-  MapPin, Calendar, Clock, Weight, Package, FileText, Plus, Loader2 
+  MapPin, Calendar, Clock, Weight, Package, FileText, Plus, Loader2, X 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -72,12 +72,17 @@ const CreateRequirement = () => {
     }
   };
 
-  const handleLocSearch = (field, value) => {
-     if (field === 'pickup') updateData('pickup', value);
-     else updateData('drops', [value]); // Simplifying for now to single drop
+  const handleLocSearch = (field, value, index = null) => {
+     if (field === 'pickup') {
+       updateData('pickup', value);
+       setActiveLocField({ name: 'pickup' });
+     } else {
+       const newDrops = [...formData.drops];
+       newDrops[index] = value;
+       updateData('drops', newDrops);
+       setActiveLocField({ name: 'drop', index });
+     }
      
-     setActiveLocField(field);
-
      if (timeoutRef.current) clearTimeout(timeoutRef.current);
      if (value.length < 3) {
          setSuggestions([]);
@@ -90,13 +95,26 @@ const CreateRequirement = () => {
   };
 
   const handleSelectSuggestion = (suggestion) => {
-     if (activeLocField === "pickup") {
+     if (activeLocField?.name === "pickup") {
          updateData("pickup", suggestion.display_name);
      } else {
-         updateData("drops", [suggestion.display_name]);
+         const newDrops = [...formData.drops];
+         newDrops[activeLocField.index] = suggestion.display_name;
+         updateData("drops", newDrops);
      }
      setSuggestions([]);
      setActiveLocField(null);
+  };
+
+  const addDrop = () => {
+    updateData("drops", [...formData.drops, ""]);
+  };
+
+  const removeDrop = (index) => {
+    if (formData.drops.length > 1) {
+      const newDrops = formData.drops.filter((_, i) => i !== index);
+      updateData("drops", newDrops);
+    }
   };
 
   const updateData = (field, value) => {
@@ -155,18 +173,37 @@ const CreateRequirement = () => {
                         {locLoading && activeLocField === 'pickup' && <Loader2 className="w-3 h-3 animate-spin text-zinc-400" />}
                      </div>
 
-                     {/* Drop */}
-                     <div className={`flex items-center gap-2.5 px-3 h-11 rounded-xl border transition-all bg-white relative z-10 ${activeLocField === 'drop' ? 'border-primary ring-1 ring-primary/20' : 'border-zinc-100'}`}>
-                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.4)] flex-shrink-0"></div>
-                        <input 
-                           placeholder="Enter unloading point" 
-                           className="flex-1 bg-transparent border-none text-[12px] font-bold text-black focus:outline-none placeholder:text-zinc-300"
-                           value={formData.drops[0]}
-                           onChange={(e) => handleLocSearch('drop', e.target.value)}
-                           onFocus={() => setActiveLocField('drop')}
-                        />
-                        {locLoading && activeLocField === 'drop' && <Loader2 className="w-3 h-3 animate-spin text-zinc-400" />}
-                     </div>
+                     {/* Drops */}
+                     {formData.drops.map((drop, idx) => (
+                        <div key={idx} className="relative group">
+                           <div className={`flex items-center gap-2.5 px-3 h-11 rounded-xl border transition-all bg-white relative z-10 ${activeLocField?.name === 'drop' && activeLocField.index === idx ? 'border-primary ring-1 ring-primary/20' : 'border-zinc-100'}`}>
+                              <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.4)] flex-shrink-0"></div>
+                              <input 
+                                 placeholder={`Enter drop point ${idx + 1}`} 
+                                 className="flex-1 bg-transparent border-none text-[12px] font-bold text-black focus:outline-none placeholder:text-zinc-300"
+                                 value={drop}
+                                 onChange={(e) => handleLocSearch('drop', e.target.value, idx)}
+                                 onFocus={() => setActiveLocField({ name: 'drop', index: idx })}
+                              />
+                              {formData.drops.length > 1 && (
+                                 <button onClick={() => removeDrop(idx)} className="p-1 hover:bg-red-50 rounded-lg text-red-400">
+                                    <X className="w-3.5 h-3.5" />
+                                 </button>
+                              )}
+                              {locLoading && activeLocField?.name === 'drop' && activeLocField.index === idx && <Loader2 className="w-3 h-3 animate-spin text-zinc-400" />}
+                           </div>
+                        </div>
+                     ))}
+
+                     {/* Add Stop Button */}
+                     {formData.drops.length < 5 && (
+                        <button 
+                          onClick={addDrop}
+                          className="flex items-center gap-2 px-3 py-2 text-[10px] font-black text-primary uppercase tracking-widest hover:bg-primary/5 rounded-lg transition-all w-fit"
+                        >
+                           <Plus className="w-3.5 h-3.5" /> Add another stop
+                        </button>
+                     )}
                   </div>
 
                   {/* Suggestions Dropdown */}
@@ -325,6 +362,58 @@ const CreateRequirement = () => {
           </div>
         );
       case 4:
+        if (formData.serviceType === "house") {
+          const houseSizes = [
+            { id: "1bhk", title: "1 BHK", desc: "Small house / Flat", icon: Home },
+            { id: "2bhk", title: "2 BHK", desc: "Standard apartment", icon: Home },
+            { id: "3bhk", title: "3 BHK", desc: "Large family home", icon: Home },
+            { id: "villa", title: "Villa", desc: "Independent house", icon: Home },
+          ];
+          return (
+            <div className="space-y-4">
+               <div className="flex items-center gap-2 px-1">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-black/40">Home Size</h3>
+                  <div className="h-px flex-1 bg-zinc-50"></div>
+               </div>
+               <div className="grid grid-cols-2 gap-3">
+                  {houseSizes.map((size) => (
+                    <Card 
+                      key={size.id}
+                      onClick={() => updateData("houseSize", size.id)}
+                      className={cn(
+                        "cursor-pointer border-2 transition-all rounded-2xl overflow-hidden",
+                        formData.houseSize === size.id ? "border-primary bg-primary/5 shadow-md" : "border-zinc-50 bg-white"
+                      )}
+                    >
+                       <CardContent className="p-4 flex flex-col items-center gap-2 text-center">
+                          <div className={cn(
+                             "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                             formData.houseSize === size.id ? "bg-primary text-black" : "bg-zinc-50 text-zinc-400"
+                          )}>
+                             <size.icon className="w-5 h-5" />
+                          </div>
+                          <div className="space-y-0.5">
+                             <h4 className="text-sm font-black text-black">{size.title}</h4>
+                             <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter">{size.desc}</p>
+                          </div>
+                       </CardContent>
+                    </Card>
+                  ))}
+               </div>
+               
+               <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Additional Items</label>
+                  <textarea 
+                    placeholder="List specific items like Fridge, Sofa, etc." 
+                    className="w-full min-h-[80px] p-3 rounded-xl border border-input bg-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    value={formData.loadValue}
+                    onChange={(e) => updateData("loadValue", e.target.value)}
+                  ></textarea>
+               </div>
+            </div>
+          );
+        }
+
         if (formData.serviceType === "passenger") {
            return (
              <div className="space-y-5">

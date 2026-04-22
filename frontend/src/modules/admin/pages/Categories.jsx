@@ -14,11 +14,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { Toast } from '../components/common/Toast';
 
 const Categories = () => {
   const [activeTab, setActiveTab] = useState("service");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
   
   const [serviceCategories, setServiceCategories] = useState([
     { 
@@ -51,13 +62,93 @@ const Categories = () => {
     setIsFilterModalOpen(true);
   };
 
+  const handleEditCategory = (cat) => {
+    setEditingCategory(cat);
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleDeleteCategory = (id) => {
+    const cat = serviceCategories.find(c => c.id === id);
+    setServiceCategories(prev => prev.filter(c => c.id !== id));
+    showToast(`${cat?.name} removed successfully`, 'error');
+  };
+
+  const handleAddCategory = () => {
+    setEditingCategory(null);
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleSaveCategory = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const catData = {
+      name: formData.get('name'),
+      slug: formData.get('slug') || formData.get('name').toLowerCase().replace(/\s+/g, '-'),
+      icon: Briefcase // Default for new
+    };
+
+    if (editingCategory) {
+      setServiceCategories(prev => prev.map(c => c.id === editingCategory.id ? { ...c, ...catData } : c));
+      showToast('Category updated successfully', 'success');
+    } else {
+      const newCat = {
+        id: Date.now(),
+        ...catData,
+        count: 0,
+        filters: ["Standard Requirement"]
+      };
+      setServiceCategories(prev => [...prev, newCat]);
+      showToast('New category added successfully', 'success');
+    }
+    setIsCategoryModalOpen(false);
+  };
+
+  const handleEditVehicle = (vehicle) => {
+    setEditingVehicle(vehicle);
+    setIsVehicleModalOpen(true);
+  };
+
+  const handleDeleteVehicle = (id) => {
+    const v = vehicleTypes.find(item => item.id === id);
+    setVehicleTypes(prev => prev.filter(item => item.id !== id));
+    showToast(`${v?.name} removed from registry`, 'error');
+  };
+
+  const handleAddVehicle = () => {
+    setEditingVehicle(null);
+    setIsVehicleModalOpen(true);
+  };
+
+  const handleSaveVehicle = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const vData = {
+      name: formData.get('name'),
+      capacity: formData.get('capacity'),
+      icon: Truck
+    };
+
+    if (editingVehicle) {
+      setVehicleTypes(prev => prev.map(v => v.id === editingVehicle.id ? { ...v, ...vData } : v));
+      showToast('Vehicle class updated', 'success');
+    } else {
+      const newV = { id: Date.now(), ...vData };
+      setVehicleTypes(prev => [...prev, newV]);
+      showToast('New vehicle class registered', 'success');
+    }
+    setIsVehicleModalOpen(false);
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <PageHeader 
         title="Category Config" 
         subtitle="Manage available service categories and matching rules" 
         actions={
-          <Button className="bg-primary text-black font-black uppercase tracking-widest text-[10px] h-10 px-6 rounded-xl shadow-lg shadow-primary/20">
+          <Button 
+            onClick={handleAddCategory}
+            className="bg-primary text-black font-black uppercase tracking-widest text-[10px] h-10 px-6 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
+          >
              <Plus className="w-4 h-4 mr-2" />
              Add New
           </Button>
@@ -96,10 +187,20 @@ const Categories = () => {
                            </div>
                         </div>
                         <div className="flex gap-2">
-                           <Button variant="ghost" size="icon" className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-primary transition-all">
+                           <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleEditCategory(cat)}
+                            className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-primary hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
+                           >
                               <Edit2 className="w-4 h-4" />
                            </Button>
-                           <Button variant="ghost" size="icon" className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-rose-500 transition-all">
+                           <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleDeleteCategory(cat.id)}
+                            className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-rose-500 hover:bg-rose-500/5 transition-all"
+                           >
                               <Trash2 className="w-4 h-4" />
                            </Button>
                         </div>
@@ -130,13 +231,16 @@ const Categories = () => {
                   </motion.div>
                ))}
 
-               {/* Add Placeholder */}
-               <div className="admin-card p-6 border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-2 opacity-50 hover:opacity-100 transition-all cursor-pointer hover:border-primary/20 hover:bg-primary/5">
-                  <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center">
-                     <Plus className="w-4 h-4 text-zinc-400" />
-                  </div>
-                  <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Add New Category</span>
-               </div>
+                {/* Add Placeholder */}
+                <div 
+                  onClick={handleAddCategory}
+                  className="admin-card p-6 border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-2 opacity-50 hover:opacity-100 transition-all cursor-pointer hover:border-primary/20 hover:bg-primary/5"
+                >
+                   <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center">
+                      <Plus className="w-4 h-4 text-zinc-400" />
+                   </div>
+                   <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Add New Category</span>
+                </div>
             </div>
          </TabsContent>
 
@@ -233,10 +337,20 @@ const Categories = () => {
                         </div>
                      </div>
                      <div className="flex gap-2">
-                        <Button variant="ghost" size="icon" className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-primary transition-all">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleEditVehicle(vehicle)}
+                          className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-primary hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
+                        >
                            <Edit2 className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-rose-500 transition-all">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDeleteVehicle(vehicle.id)}
+                          className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-rose-500 hover:bg-rose-500/5 transition-all"
+                        >
                            <Trash2 className="w-4 h-4" />
                         </Button>
                      </div>
@@ -244,7 +358,10 @@ const Categories = () => {
                ))}
 
                {/* Add Placeholder */}
-               <div className="admin-card p-8 border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-2 opacity-50 hover:opacity-100 transition-all cursor-pointer hover:border-primary/20 hover:bg-primary/5">
+               <div 
+                onClick={handleAddVehicle}
+                className="admin-card p-8 border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-2 opacity-50 hover:opacity-100 transition-all cursor-pointer hover:border-primary/20 hover:bg-primary/5"
+               >
                   <Plus className="w-6 h-6 text-zinc-400" />
                   <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Define New Class</span>
                </div>
@@ -313,6 +430,99 @@ const Categories = () => {
           </div>
         )}
       </Modal>
+
+      {/* Category Management Modal */}
+      <Modal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+        title={editingCategory ? "Update Category" : "Define New Category"}
+        description="Configure service classification and public identifier"
+        size="sm"
+      >
+        <form onSubmit={handleSaveCategory} className="space-y-6 pt-2">
+           <div className="space-y-4">
+              <div className="space-y-1.5">
+                 <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Category Display Name</label>
+                 <input 
+                    name="name"
+                    required
+                    placeholder="e.g. Luxury Car Transport"
+                    defaultValue={editingCategory?.name}
+                    className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary transition-all"
+                 />
+              </div>
+              <div className="space-y-1.5">
+                 <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Service Identifier (Slug)</label>
+                 <input 
+                    name="slug"
+                    placeholder="e.g. luxury-transport"
+                    defaultValue={editingCategory?.slug}
+                    className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-500 italic focus:outline-none focus:border-primary transition-all"
+                 />
+                 <p className="px-1 text-[8px] font-bold text-zinc-400 uppercase italic">* Leave blank to auto-generate from name</p>
+              </div>
+           </div>
+
+           <div className="flex gap-2 pt-2">
+              <Button type="submit" className="flex-1 bg-primary text-black font-black uppercase text-[10px] tracking-widest h-12 rounded-xl shadow-lg shadow-primary/20">
+                 {editingCategory ? "Save Changes" : "Create Category"}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setIsCategoryModalOpen(false)} className="px-6 text-zinc-500 font-black uppercase text-[10px] tracking-widest">
+                 Cancel
+              </Button>
+           </div>
+        </form>
+      </Modal>
+
+      {/* Vehicle Management Modal */}
+      <Modal
+        isOpen={isVehicleModalOpen}
+        onClose={() => setIsVehicleModalOpen(false)}
+        title={editingVehicle ? "Update Vehicle Class" : "Register Vehicle Class"}
+        description="Define load capacity and classification for vendor vehicles"
+        size="sm"
+      >
+        <form onSubmit={handleSaveVehicle} className="space-y-6 pt-2">
+           <div className="space-y-4">
+              <div className="space-y-1.5">
+                 <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Vehicle Classification Name</label>
+                 <input 
+                    name="name"
+                    required
+                    placeholder="e.g. 14ft Closed Container"
+                    defaultValue={editingVehicle?.name}
+                    className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary transition-all"
+                 />
+              </div>
+              <div className="space-y-1.5">
+                 <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Payload Capacity (Text)</label>
+                 <input 
+                    name="capacity"
+                    required
+                    placeholder="e.g. 5 - 7 Ton"
+                    defaultValue={editingVehicle?.capacity}
+                    className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-500 italic focus:outline-none focus:border-primary transition-all"
+                 />
+              </div>
+           </div>
+
+           <div className="flex gap-2 pt-2">
+              <Button type="submit" className="flex-1 bg-primary text-black font-black uppercase text-[10px] tracking-widest h-12 rounded-xl shadow-lg shadow-primary/20">
+                 {editingVehicle ? "Update Registry" : "Register Class"}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setIsVehicleModalOpen(false)} className="px-6 text-zinc-500 font-black uppercase text-[10px] tracking-widest">
+                 Cancel
+              </Button>
+           </div>
+        </form>
+      </Modal>
+
+      <Toast 
+        show={toast.show} 
+        message={toast.message} 
+        type={toast.type} 
+        onClose={() => setToast({ show: false, message: '', type: 'success' })} 
+      />
     </div>
   );
 };

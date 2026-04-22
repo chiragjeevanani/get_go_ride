@@ -3,10 +3,12 @@ import UserRoutes from "./modules/user/routes/UserRoutes";
 import DriverRoutes from "./modules/driver/routes/DriverRoutes";
 import AdminRoutes from "./modules/admin/routes/AdminRoutes";
 import "./App.css";
+import { Toaster } from "sonner";
 
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" expand={true} richColors />
       <Routes>
         <Route path="/user/*" element={<UserRoutes />} />
         <Route path="/driver/*" element={<DriverRoutes />} />

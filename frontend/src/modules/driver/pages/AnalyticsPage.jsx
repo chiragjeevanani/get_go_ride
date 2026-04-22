@@ -11,17 +11,21 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { StatCard } from "../components/StatCard";
 import { cn } from "@/lib/utils";
+import { useDriverState } from "../hooks/useDriverState";
 
 const AnalyticsPage = () => {
   const navigate = useNavigate();
+  const { stats } = useDriverState();
   const [isPeriodOpen, setIsPeriodOpen] = React.useState(false);
   const [selectedPeriod, setSelectedPeriod] = React.useState('This Month');
 
+  const conversionRate = Math.round((stats.accepted / (stats.total || 1)) * 100);
+
   const primaryStats = [
-    { label: "Total Leads", value: "142", icon: Zap, trend: "+12%", color: "bg-blue-50 text-blue-500" },
-    { label: "Accepted", value: "86", icon: Target, trend: "+8%", color: "bg-emerald-50 text-emerald-500" },
-    { label: "Conversion", value: "61%", icon: TrendingUp, trend: "+5%", color: "bg-orange-50 text-orange-500" },
-    { label: "Earnings", value: "₹42k", icon: BarChart2, trend: "+15%", color: "bg-primary/10 text-primary" },
+    { label: "Total Leads", value: stats.total.toString(), icon: Zap, trend: "+12%", color: "bg-blue-50 text-blue-500" },
+    { label: "Accepted", value: stats.accepted.toString(), icon: Target, trend: "+8%", color: "bg-emerald-50 text-emerald-500" },
+    { label: "Conversion", value: `${conversionRate}%`, icon: TrendingUp, trend: "+5%", color: "bg-orange-50 text-orange-500" },
+    { label: "Earnings", value: `₹${(stats.accepted * 450 / 1000).toFixed(1)}k`, icon: BarChart2, trend: "+15%", color: "bg-primary/10 text-primary" },
   ];
 
   const weeklyData = [

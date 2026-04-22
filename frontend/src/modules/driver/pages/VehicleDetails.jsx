@@ -32,6 +32,24 @@ const VehicleDetails = () => {
     lastService: "Jan 12, 2026"
   });
 
+  const [fleetPhotos, setFleetPhotos] = React.useState([
+    "https://images.unsplash.com/photo-1606206591513-0ec969792078?q=80&w=400&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1580674684081-7617fbf3d745?q=80&w=400&auto=format&fit=crop"
+  ]);
+
+  const fileInputRef = React.useRef(null);
+
+  const handlePhotoUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFleetPhotos(prev => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const documents = [
     { name: "Driving License", status: "Verified", expiry: "2032", icon: FileText, color: "text-emerald-500", bg: "bg-emerald-50" },
     { name: "RC (Registration)", status: "Verified", expiry: "2029", icon: ShieldCheck, color: "text-emerald-500", bg: "bg-emerald-50" },
@@ -93,6 +111,47 @@ const VehicleDetails = () => {
             {/* Background design element */}
             <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-primary/10 rounded-full blur-[40px] pointer-events-none"></div>
          </Card>
+      </section>
+
+      {/* Vehicle Photos Gallery */}
+      <section className="space-y-4 px-1">
+         <div className="flex items-center justify-between">
+            <h3 className="text-[11px] font-bold tracking-tight text-zinc-500 uppercase flex items-center gap-2">
+               <Car className="w-3.5 h-3.5" /> Fleet Portfolio
+            </h3>
+            <Badge className="bg-primary/10 text-primary border-none text-[8px] font-black tracking-widest uppercase">Verified Gallery</Badge>
+         </div>
+
+         <div className="grid grid-cols-2 gap-3">
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              onChange={handlePhotoUpload}
+              className="hidden" 
+              accept="image/*"
+            />
+            {fleetPhotos.map((photo, i) => (
+              <div key={i} className="aspect-[4/3] rounded-2xl bg-zinc-50 border-2 border-zinc-100 overflow-hidden group relative cursor-pointer shadow-sm">
+                 <img 
+                    src={photo} 
+                    alt="Vehicle" 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                 />
+                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                    <Edit3 className="w-5 h-5 text-white" />
+                 </div>
+              </div>
+            ))}
+            <button 
+               onClick={() => fileInputRef.current.click()}
+               className="aspect-[4/3] rounded-2xl border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center gap-2 bg-zinc-50/30 hover:bg-zinc-50 hover:border-primary/40 transition-all group"
+            >
+               <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-zinc-100 shadow-sm group-hover:text-primary transition-colors">
+                  <Edit3 className="w-4 h-4" />
+               </div>
+               <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Add Photo</span>
+            </button>
+         </div>
       </section>
 
       {/* Verification Status List */}

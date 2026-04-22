@@ -196,7 +196,7 @@ const RequestDetails = () => {
                           size="sm" 
                           variant="ghost" 
                           className="text-primary hover:bg-transparent h-fit p-0 gap-1 text-xs font-bold"
-                          onClick={() => navigate(`/user/vendor/${vendor.id}`)}
+                          onClick={() => navigate(`/user/vendor-profile/${vendor.id}`)}
                        >
                           View Profile <ChevronRight className="w-4 h-4" />
                        </Button>

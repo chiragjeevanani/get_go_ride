@@ -18,7 +18,14 @@ export const mockVendors = [
     regNumber: "MP-09-AB-1234",
     capacity: "800kg",
     joinDate: "2024-01-05",
-    isVerified: true
+    isVerified: true,
+    status: "Verified",
+    documents: [
+      { id: 1, title: "Driver's License", status: "Verified", date: "Exp: 2028-12-10" },
+      { id: 2, title: "Vehicle Registration (RC)", status: "Verified", date: "Uploaded 2 days ago" },
+      { id: 3, title: "Commercial Insurance", status: "Verified", date: "Exp: 2025-06-20" },
+      { id: 4, title: "Identity Proof (Aadhar)", status: "Verified", date: "Verified by KYC" }
+    ]
   },
   { 
     id: "v2", 
@@ -31,7 +38,14 @@ export const mockVendors = [
     regNumber: "MP-04-XY-5678",
     capacity: "5 Ton",
     joinDate: "2023-10-15",
-    isVerified: true
+    isVerified: true,
+    status: "Verified",
+    documents: [
+      { id: 1, title: "Driver's License", status: "Verified", date: "Exp: 2026-05-15" },
+      { id: 2, title: "Vehicle Registration (RC)", status: "Verified", date: "Uploaded 1 month ago" },
+      { id: 3, title: "Commercial Insurance", status: "Rejected", date: "Expired" },
+      { id: 4, title: "Identity Proof (Aadhar)", status: "Verified", date: "Verified by KYC" }
+    ]
   },
   { 
     id: "v3", 
@@ -44,7 +58,14 @@ export const mockVendors = [
     regNumber: "MP-13-GH-9012",
     capacity: "1.2 Ton",
     joinDate: "2024-02-20",
-    isVerified: false
+    isVerified: false,
+    status: "Pending",
+    documents: [
+      { id: 1, title: "Driver's License", status: "Verified", date: "Exp: 2028-12-10" },
+      { id: 2, title: "Vehicle Registration (RC)", status: "Pending", date: "Uploaded 2 days ago" },
+      { id: 3, title: "Commercial Insurance", status: "Pending", date: "Review needed" },
+      { id: 4, title: "Identity Proof (Aadhar)", status: "Verified", date: "Verified by KYC" }
+    ]
   },
 ];
 

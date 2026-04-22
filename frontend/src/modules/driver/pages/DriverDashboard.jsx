@@ -4,16 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { StatCard } from "../components/StatCard";
 import { LeadCard } from "../components/LeadCard";
 import { useDriverState } from "../hooks/useDriverState";
 import { cn } from "@/lib/utils";
 import profileImg from "@/assets/profile.jpg";
+import { toast } from "sonner";
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { driver, leads, toggleOnline, acceptLead, rejectLead } = useDriverState();
+
+
 
   return (
     <motion.div 
@@ -110,11 +113,12 @@ const DriverDashboard = () => {
       {/* Quick Actions */}
       <section className="space-y-3">
         <h3 className="text-[10px] font-bold tracking-widest text-zinc-400 uppercase px-1">Quick Fleet Actions</h3>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
            {[
-             { label: "My Pricing", path: "/driver/profile/pricing" },
-             { label: "Vehicle Info", path: "/driver/profile/vehicle" },
-             { label: "Leads Stats", path: "/driver/analytics" }
+             { label: "Pricing", path: "/driver/profile/pricing" },
+             { label: "Vehicle", path: "/driver/profile/vehicle" },
+             { label: "Earnings", path: "/driver/earnings" },
+             { label: "Analytics", path: "/driver/analytics" }
            ].map((action, i) => (
               <Button 
                 key={i} 

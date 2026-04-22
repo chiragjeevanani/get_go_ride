@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   ChevronLeft, Send, Phone, Info, MoreVertical, 
-  Package, MapPin, CheckCircle2, ChevronDown, ChevronUp 
+  Package, MapPin, CheckCircle2, ChevronDown, ChevronUp, Banknote 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDriverState } from "../hooks/useDriverState";
 import { cn } from "@/lib/utils";
-import { 
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter 
-} from "@/components/ui/dialog";
 
 const DriverChatPage = () => {
   const { id } = useParams();
@@ -46,17 +43,6 @@ const DriverChatPage = () => {
     };
     setMessages([...messages, newMessage]);
     setMessage("");
-    
-    // Fake reply
-    setTimeout(() => {
-      const reply = {
-          id: messages.length + 2,
-          text: "Thanks, let me check and get back to you.",
-          sender: "user",
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages(prev => [...prev, reply]);
-    }, 2000);
   };
 
   const handleFinalize = () => {
@@ -69,10 +55,39 @@ const DriverChatPage = () => {
     { text: "Can we negotiate?", type: "negotiate" }
   ];
 
+  // Negotiation State
+  const [showCounterModal, setShowCounterModal] = useState(false);
+  const [counterPrice, setCounterPrice] = useState("");
+
+  const handleCounterOffer = () => {
+    if (!counterPrice) return;
+    const newMessage = {
+      id: messages.length + 1,
+      sender: "driver",
+      type: "offer",
+      text: `Proposal Sent: ₹${counterPrice}`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: "sent"
+    };
+    setMessages([...messages, newMessage]);
+    setCounterPrice("");
+    setShowCounterModal(false);
+    
+    // Fake user reaction
+    setTimeout(() => {
+        setMessages(prev => [...prev, {
+            id: Date.now(),
+            sender: "user",
+            text: "That seems fair. Can you start early?",
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]);
+    }, 1500);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-white max-w-md mx-auto relative overflow-hidden">
       {/* Sharp Header */}
-      <header className="bg-white border-b-2 border-yellow-400 p-4 sticky top-0 z-40 backdrop-blur-md bg-white/95">
+      <header className="bg-white border-b-2 border-yellow-400 p-4 sticky top-0 z-40 backdrop-blur-md bg-white/95 shadow-sm">
         <div className="flex items-center justify-between">
            <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" className="w-8 h-8 rounded-none bg-zinc-50 border border-zinc-100" onClick={() => navigate(-1)}>
@@ -100,13 +115,35 @@ const DriverChatPage = () => {
         </div>
       </header>
 
+      {/* Negotiation Hub (PRD 4.2) */}
+      <div className="bg-zinc-900 p-2.5 px-4 flex gap-3 overflow-x-auto no-scrollbar relative z-30 border-b-4 border-primary">
+         <Button 
+            onClick={handleFinalize}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-none h-9 px-4 text-[9px] font-black uppercase tracking-[0.2em] shrink-0 border-none shadow-lg shadow-emerald-500/20"
+         >
+            Accept Deal
+         </Button>
+         <Button 
+            onClick={() => setShowCounterModal(true)}
+            className="bg-white text-black hover:bg-zinc-100 rounded-none h-9 px-4 text-[9px] font-black uppercase tracking-[0.2em] shrink-0 border-none"
+         >
+            New Proposal
+         </Button>
+         <div className="w-[1px] h-6 bg-white/20 self-center shrink-0"></div>
+         <Button 
+            variant="ghost"
+            className="text-white/40 font-black text-[8px] uppercase tracking-widest shrink-0 h-9 px-3 hover:text-white"
+         >
+            Terms & Policy
+         </Button>
+      </div>
+
       {/* Message Stream */}
       <div 
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar bg-zinc-50/30"
-        style={{ paddingBottom: '160px' }} // Space for fixed input area
+        style={{ paddingBottom: '160px' }}
       >
-         {/* Request Context - Compact & Sharp */}
          <Card className="rounded-none border-2 border-zinc-100 shadow-none bg-white mb-6 overflow-hidden">
             <div 
                className="p-3 flex justify-between items-center cursor-pointer hover:bg-zinc-50 transition-colors"
@@ -153,21 +190,11 @@ const DriverChatPage = () => {
                               </div>
                            </div>
                         </div>
-                        <Button 
-                           onClick={() => navigate(`/driver/leads/${lead?.id}`)} 
-                           className="w-full h-8 bg-zinc-50 text-zinc-900 font-black text-[8px] uppercase tracking-widest border border-zinc-200 rounded-none hover:border-yellow-400 hover:text-yellow-600 transition-all font-black text-[9px]"
-                        >
-                           Examine Full Request
-                        </Button>
                      </div>
                   </motion.div>
                )}
             </AnimatePresence>
          </Card>
-
-         <div className="flex flex-col items-center gap-2 py-2">
-            <span className="text-[7px] font-black text-zinc-300 uppercase tracking-[0.3em]">Session Initialized • {messages[0]?.time}</span>
-         </div>
 
          {messages.map((msg) => (
             <motion.div
@@ -176,28 +203,34 @@ const DriverChatPage = () => {
                animate={{ opacity: 1, x: 0 }}
                className={cn(
                   "flex w-full mb-1",
-                  msg.sender === "driver" ? "justify-end" : msg.sender === "system" ? "justify-center" : "justify-start"
+                  msg.sender === "driver" ? "justify-end" : "justify-start"
                )}
             >
-               {msg.sender === "system" ? (
-                  <div className="py-4 flex flex-col items-center gap-2">
-                     <div className="px-4 py-1.5 bg-emerald-500 text-white font-black text-[8px] uppercase tracking-[0.2em] rounded-none shadow-lg shadow-emerald-500/20">
-                        {msg.text}
-                     </div>
-                  </div>
-               ) : (
                   <div className={cn(
-                     "max-w-[85%] p-3.5 border-2 shadow-sm relative",
+                     "max-w-[85%] border-2 shadow-sm relative overflow-hidden",
+                     msg.type === "offer" ? "bg-zinc-900 border-primary border-4 p-4" :
                      msg.sender === "driver" 
-                       ? "bg-white border-primary/40 text-zinc-900 rounded-none shadow-primary/5" 
-                       : "bg-white border-zinc-100 text-zinc-600 rounded-none"
+                       ? "bg-white border-primary/40 text-zinc-900 p-3.5 rounded-none shadow-primary/5" 
+                       : "bg-white border-zinc-100 text-zinc-600 p-3.5 rounded-none"
                   )}>
-                     <p className="text-[11px] font-black leading-relaxed uppercase tracking-tight">
-                        {msg.sender === "driver" && <span className="text-primary mr-1">●</span>}
-                        {msg.text}
-                     </p>
+                     {msg.type === "offer" ? (
+                        <div className="space-y-3">
+                           <div className="flex items-center justify-between">
+                              <Badge className="bg-primary text-black rounded-none text-[8px] font-black uppercase">Official Proposal</Badge>
+                              <span className="text-[10px] font-black text-white italic">SENT</span>
+                           </div>
+                           <p className="text-3xl font-black text-white tabular-nums tracking-tighter leading-none">₹{msg.text.split('₹')[1]}</p>
+                           <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em] border-t border-white/10 pt-2">Includes loading/unloading</p>
+                        </div>
+                     ) : (
+                        <p className="text-[11px] font-black leading-relaxed uppercase tracking-tight">
+                           {msg.sender === "driver" && <span className="text-primary mr-1">●</span>}
+                           {msg.text}
+                        </p>
+                     )}
                      <div className={cn(
-                        "flex items-center justify-end gap-1.5 mt-2 text-zinc-400"
+                        "flex items-center justify-end gap-1.5 mt-2",
+                        msg.type === "offer" ? "text-white/30" : "text-zinc-400"
                      )}>
                         <span className="text-[7px] uppercase font-black tracking-widest">{msg.time}</span>
                         {msg.sender === "driver" && (
@@ -205,14 +238,12 @@ const DriverChatPage = () => {
                         )}
                      </div>
                   </div>
-               )}
             </motion.div>
          ))}
       </div>
 
-      {/* Fixed Communication Terminal */}
+      {/* Communication Terminal */}
       <div className="absolute bottom-0 left-0 right-0 bg-white border-t-2 border-zinc-100 p-4 pt-4 max-w-md mx-auto z-50 shadow-2xl">
-         {/* Adaptive Quick Response Grid */}
          <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
             {quickReplies.map((reply, i) => (
                <Button
@@ -242,14 +273,60 @@ const DriverChatPage = () => {
                   <Send className="w-4 h-4 fill-current" />
                </button>
             </div>
-            <Button 
-               onClick={handleFinalize}
-               className="bg-emerald-500 text-white font-black text-[9px] uppercase tracking-widest rounded-none h-12 px-5 shadow-xl shadow-emerald-500/10 hover:bg-emerald-600 transition-all border-none shrink-0"
-            >
-               Finalize
-            </Button>
          </div>
       </div>
+
+      {/* Counter Proposal Modal */}
+      <AnimatePresence>
+         {showCounterModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+               <motion.div 
+                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                 onClick={() => setShowCounterModal(false)}
+                 className="absolute inset-0 bg-zinc-900/80 backdrop-blur-md"
+               />
+               <motion.div 
+                 initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                 className="relative w-full max-w-sm bg-white border-4 border-black p-6 shadow-2xl"
+               >
+                  <div className="space-y-6">
+                     <div className="text-center space-y-1">
+                        <h3 className="text-sm font-black text-black uppercase tracking-[0.2em] italic">Send New Proposal</h3>
+                        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Formal Counter-Offer</p>
+                     </div>
+
+                     <div className="relative">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-zinc-200">₹</div>
+                        <input 
+                           type="number"
+                           placeholder="Enter Amount"
+                           value={counterPrice}
+                           onChange={(e) => setCounterPrice(e.target.value)}
+                           className="w-full h-16 bg-zinc-50 border-2 border-zinc-100 text-center text-3xl font-black focus:border-primary outline-none tabular-nums uppercase"
+                        />
+                     </div>
+
+                     <div className="flex flex-col gap-2">
+                        <Button 
+                          onClick={handleCounterOffer}
+                          disabled={!counterPrice}
+                          className="w-full h-12 bg-zinc-900 text-primary font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all rounded-none"
+                        >
+                           Transmit Offer
+                        </Button>
+                        <Button 
+                          variant="ghost"
+                          onClick={() => setShowCounterModal(false)}
+                          className="w-full h-10 font-black text-zinc-400 text-[9px] uppercase tracking-widest hover:text-black rounded-none"
+                        >
+                           Dismiss
+                        </Button>
+                     </div>
+                  </div>
+               </motion.div>
+            </div>
+         )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -38,13 +38,19 @@ const VendorProfile = () => {
       { name: "Mahindra Bolero", capacity: "1.2T", count: 2 },
       { name: "Eicher 14ft", capacity: "2.5T", count: 1 },
     ],
+    gallery: [
+      "https://images.unsplash.com/photo-1606206591513-0ec969792078?q=80&w=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1580674684081-7617fbf3d745?q=80&w=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1519003722824-194d4455a60c?q=80&w=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1591768793355-74d7c86966b7?q=80&w=400&auto=format&fit=crop"
+    ],
     topRoutes: ["Mumbai - Pune", "Navi Mumbai - Thane", "Borivali - Mira Road"],
     about: "Shiv Logistics is a premier transport service provider in Mumbai. We specialize in household shifting, office relocation, and industrial goods transport with our fleet of well-maintained vehicles and trained staff."
   };
 
   return (
     <div className="space-y-6 pb-24 animate-in fade-in slide-in-from-right-4 duration-500">
-      {/* Header Sticky Container */}
+      {/* ... header ... */}
       <header className="sticky top-0 bg-white/80 backdrop-blur-md z-40 py-2.5 -mx-4 px-4 overflow-hidden flex items-center justify-between border-b border-zinc-100 shadow-sm">
          <Button 
             variant="ghost" 
@@ -135,13 +141,15 @@ const VendorProfile = () => {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="about" className="w-full">
-         <TabsList className="grid w-full grid-cols-3 bg-zinc-200 p-0.5 rounded-2xl h-12 mb-6">
-            <TabsTrigger value="about" className="rounded-xl text-[11px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">About</TabsTrigger>
-            <TabsTrigger value="vehicles" className="rounded-xl text-[11px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">Fleet</TabsTrigger>
-            <TabsTrigger value="reviews" className="rounded-xl text-[11px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">Reviews</TabsTrigger>
+         <TabsList className="grid w-full grid-cols-4 bg-zinc-200 p-0.5 rounded-2xl h-12 mb-6">
+            <TabsTrigger value="about" className="rounded-xl text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm px-1">About</TabsTrigger>
+            <TabsTrigger value="vehicles" className="rounded-xl text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm px-1">Fleet</TabsTrigger>
+            <TabsTrigger value="gallery" className="rounded-xl text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm px-1">Gallery</TabsTrigger>
+            <TabsTrigger value="reviews" className="rounded-xl text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm px-1">Reviews</TabsTrigger>
          </TabsList>
 
          <TabsContent value="about" className="space-y-6 m-0 animate-in fade-in duration-300">
+            {/* ... about content ... */}
             <div className="space-y-4">
                <h3 className="text-xs uppercase font-bold text-zinc-400 tracking-widest px-1">Biography</h3>
                <p className="text-sm text-zinc-600 leading-relaxed font-medium bg-white p-5 rounded-3xl border border-zinc-100 shadow-sm italic">
@@ -195,6 +203,20 @@ const VendorProfile = () => {
                        <Badge className="bg-zinc-100 text-zinc-600 border-none rounded-lg text-[10px] font-black">{v.count} Units</Badge>
                     </CardContent>
                  </Card>
+               ))}
+            </div>
+         </TabsContent>
+
+         <TabsContent value="gallery" className="space-y-4 m-0 animate-in fade-in duration-300">
+            <div className="grid grid-cols-2 gap-3">
+               {vendor.gallery.map((img, i) => (
+                 <motion.div 
+                   key={i} 
+                   whileHover={{ scale: 1.02 }}
+                   className="aspect-[4/3] rounded-2xl overflow-hidden border-2 border-zinc-50 shadow-sm"
+                 >
+                    <img src={img} alt={`Fleet ${i}`} className="w-full h-full object-cover" />
+                 </motion.div>
                ))}
             </div>
          </TabsContent>

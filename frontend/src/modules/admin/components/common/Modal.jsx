@@ -42,30 +42,30 @@ export const Modal = ({
                   exit={{ opacity: 0, scale: 0.95, y: 20 }}
                   transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
                   className={cn(
-                    "w-full bg-zinc-900 border border-zinc-800 rounded-[2rem] shadow-2xl relative overflow-hidden pointer-events-auto",
+                    "w-full bg-white border border-zinc-200 rounded-3xl shadow-2xl relative overflow-hidden pointer-events-auto",
                     sizes[size]
                   )}
                 >
                   {/* Header */}
-                  <div className="px-8 pt-8 pb-4 flex justify-between items-start">
+                  <div className="px-6 pt-6 pb-2 flex justify-between items-start">
                     <div className="space-y-1">
-                      <Dialog.Title className="text-2xl font-black text-white uppercase tracking-tight">
+                      <Dialog.Title className="text-xl font-black text-zinc-900 uppercase tracking-tight">
                         {title}
                       </Dialog.Title>
                       {description && (
-                        <Dialog.Description className="text-xs text-zinc-500 font-bold uppercase tracking-widest">
+                        <Dialog.Description className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
                           {description}
                         </Dialog.Description>
                       )}
                     </div>
                     
-                    <Dialog.Close className="p-2 rounded-xl bg-zinc-950/50 border border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-700 transition-all">
-                      <X className="w-5 h-5 text-zinc-500 hover:text-white transition-colors cursor-pointer" />
+                    <Dialog.Close className="p-2 rounded-xl bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:border-zinc-300 transition-all cursor-pointer">
+                      <X className="w-4 h-4" />
                     </Dialog.Close>
                   </div>
 
                   {/* Body */}
-                  <div className="px-8 pb-8 pt-2 overflow-y-auto max-h-[80vh] admin-scrollbar">
+                  <div className="px-6 pb-6 pt-2 overflow-y-auto max-h-[85vh] admin-scrollbar">
                     {children}
                   </div>
                 </motion.div>
