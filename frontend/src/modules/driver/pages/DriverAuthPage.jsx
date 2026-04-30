@@ -13,12 +13,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import Lottie from "lottie-react";
 import loginAnimation from "@/assets/Lottie/LoginPage.json";
 import { cn } from "@/lib/utils";
+import { authApi } from "@/lib/api";
+import { toast } from "sonner";
 
 const DriverAuthPage = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1); // 1: Splash/Onboarding, 2: Phone, 3: OTP, 4-7: Wizard
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState(["", "", "", ""]);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     vehicleType: "",
@@ -49,6 +52,53 @@ const DriverAuthPage = () => {
     newOtp[index] = value;
     setOtp(newOtp);
     if (value && index < 3) document.getElementById(`otp-${index + 1}`).focus();
+  };
+
+  const handleSendOtp = async () => {
+    try {
+      setLoading(true);
+      const res = await authApi.sendOtp(phoneNumber, 'vendor');
+      toast.success(res.message);
+      
+      if (res.data._devOtp) {
+        setOtp(res.data._devOtp.split(""));
+        toast.info(`Dev Mode: OTP is ${res.data._devOtp}`);
+      }
+      
+      setStep(3);
+    } catch (error) {
+      toast.error(error.message || "Failed to send OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    try {
+      setLoading(true);
+      const otpString = otp.join("");
+      const res = await authApi.verifyOtp(phoneNumber, otpString, 'vendor');
+      
+      const { accessToken, refreshToken, vendor, isNewUser } = res.data;
+      
+      localStorage.setItem('safar_token', accessToken);
+      localStorage.setItem('safar_refresh_token', refreshToken);
+      localStorage.setItem('safar_vendor', JSON.stringify(vendor));
+      
+      toast.success("Verified successfully!");
+
+      // If existing vendor and onboarding complete, go to dashboard
+      // Otherwise, start/continue the wizard
+      if (!isNewUser && vendor.onboardingComplete) {
+        navigate("/driver/dashboard");
+      } else {
+        setStep(4);
+      }
+    } catch (error) {
+      toast.error(error.message || "Invalid OTP");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleImageUpload = (e) => {
@@ -149,11 +199,11 @@ const DriverAuthPage = () => {
 
             <div className="pt-4">
                <Button 
-                 disabled={phoneNumber.length !== 10}
+                 disabled={phoneNumber.length !== 10 || loading}
                  className="w-full h-12 rounded-xl bg-primary text-zinc-900 text-sm font-bold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none transition-all"
-                 onClick={handleNext}
+                 onClick={handleSendOtp}
                >
-                  Send Otp
+                  {loading ? "Sending..." : "Send Otp"}
                </Button>
             </div>
           </div>
@@ -192,17 +242,17 @@ const DriverAuthPage = () => {
                
                <p className="text-center">
                   <span className="text-[10px] text-zinc-500 font-bold tracking-tight">Didn't receive code?</span> <br/>
-                  <Button variant="link" className="p-0 h-fit text-primary font-bold text-[9px] tracking-tight mt-1">Resend OTP in 56s</Button>
+                  <Button variant="link" className="p-0 h-fit text-primary font-bold text-[9px] tracking-tight mt-1" onClick={handleSendOtp}>Resend OTP</Button>
                </p>
             </div>
 
             <div className="pt-4">
                <Button 
-                 disabled={otp.some(d => !d)}
+                 disabled={otp.some(d => !d) || loading}
                  className="w-full h-12 rounded-xl bg-primary text-zinc-900 text-sm font-bold shadow-lg shadow-primary/20 transition-all"
-                 onClick={handleNext}
+                 onClick={handleVerifyOtp}
                >
-                  Verify Now
+                  {loading ? "Verifying..." : "Verify Now"}
                </Button>
             </div>
           </div>
@@ -308,8 +358,8 @@ const DriverAuthPage = () => {
                             formData.vehicleType === type ? "border-primary bg-primary/5" : "border-zinc-100 bg-white"
                           )}
                         >
-                          <span className="text-[11px] font-bold text-zinc-900">{type}</span>
-                          {formData.vehicleType === type && <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center"><Check className="w-2.5 h-2.5 text-zinc-900" strokeWidth={4} /></div>}
+                           <span className="text-[11px] font-bold text-zinc-900">{type}</span>
+                           {formData.vehicleType === type && <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center"><Check className="w-2.5 h-2.5 text-zinc-900" strokeWidth={4} /></div>}
                         </div>
                       ))}
                     </div>
@@ -458,7 +508,7 @@ const DriverAuthPage = () => {
            animate={{ opacity: 1, x: 0 }}
            exit={{ opacity: 0, x: -20 }}
            transition={{ duration: 0.3 }}
-        >
+         >
            {renderContent()}
         </motion.div>
       </AnimatePresence>
@@ -467,3 +517,4 @@ const DriverAuthPage = () => {
 };
 
 export default DriverAuthPage;
+

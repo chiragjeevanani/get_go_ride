@@ -11,12 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import Lottie from "lottie-react";
 import loginAnimation from "@/assets/Lottie/LoginPage.json";
+import { authApi } from "@/lib/api";
+import { toast } from "sonner";
 
 const AuthPage = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState(["", "", "", ""]);
+  const [loading, setLoading] = useState(false);
 
   const OnboardingSlides = [
     { title: "Find the Perfect Ride", desc: "Connect with verified vehicle owners for any transportation need.", icon: <Truck className="w-16 h-16 text-primary" /> },
@@ -32,6 +35,45 @@ const AuthPage = () => {
     newOtp[index] = value;
     setOtp(newOtp);
     if (value && index < 3) document.getElementById(`otp-${index + 1}`).focus();
+  };
+
+  const handleSendOtp = async () => {
+    try {
+      setLoading(true);
+      const res = await authApi.sendOtp(phoneNumber, 'user');
+      toast.success(res.message);
+      
+      // Auto-fill OTP in development/mock mode for easier testing
+      if (res.data._devOtp) {
+        setOtp(res.data._devOtp.split(""));
+        toast.info(`Dev Mode: OTP is ${res.data._devOtp}`);
+      }
+      
+      setStep(3);
+    } catch (error) {
+      toast.error(error.message || "Failed to send OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    try {
+      setLoading(true);
+      const otpString = otp.join("");
+      const res = await authApi.verifyOtp(phoneNumber, otpString, 'user');
+      
+      localStorage.setItem('safar_token', res.data.accessToken);
+      localStorage.setItem('safar_refresh_token', res.data.refreshToken);
+      localStorage.setItem('safar_user', JSON.stringify(res.data.user));
+      
+      toast.success("Login successful!");
+      navigate("/user/dashboard");
+    } catch (error) {
+      toast.error(error.message || "Invalid OTP");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderContent = () => {
@@ -107,11 +149,11 @@ const AuthPage = () => {
 
             <div className="pt-6">
                 <Button 
-                  disabled={phoneNumber.length !== 10}
+                  disabled={phoneNumber.length !== 10 || loading}
                   className="w-full h-12 rounded-xl bg-primary text-white text-base font-bold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none"
-                  onClick={handleNext}
+                  onClick={handleSendOtp}
                 >
-                   Send Otp
+                   {loading ? "Sending..." : "Send Otp"}
                 </Button>
             </div>
           </div>
@@ -146,19 +188,19 @@ const AuthPage = () => {
                     />
                   ))}
                </div>
-                              <p className="text-center">
+                               <p className="text-center">
                    <span className="text-sm text-zinc-500 font-bold">Didn't receive code?</span> <br/>
-                   <Button variant="link" className="p-0 h-fit text-primary font-bold text-[10px] tracking-tight">Resend Otp in 56s</Button>
+                   <Button variant="link" className="p-0 h-fit text-primary font-bold text-[10px] tracking-tight" onClick={handleSendOtp}>Resend Otp</Button>
                 </p>
             </div>
 
             <div className="pt-6">
                 <Button 
-                  disabled={otp.some(d => !d)}
+                  disabled={otp.some(d => !d) || loading}
                   className="w-full h-12 rounded-xl bg-primary text-white text-base font-bold shadow-lg shadow-primary/20"
-                  onClick={() => navigate("/user/dashboard")}
+                  onClick={handleVerifyOtp}
                 >
-                   Verify Now
+                   {loading ? "Verifying..." : "Verify Now"}
                 </Button>
             </div>
           </div>
@@ -177,7 +219,7 @@ const AuthPage = () => {
            animate={{ opacity: 1, x: 0 }}
            exit={{ opacity: 0, x: -20 }}
            transition={{ duration: 0.3 }}
-        >
+         >
            {renderContent()}
         </motion.div>
       </AnimatePresence>
@@ -186,3 +228,4 @@ const AuthPage = () => {
 };
 
 export default AuthPage;
+
