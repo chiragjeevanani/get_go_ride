@@ -21,7 +21,7 @@ export const ChartCard = ({ title, subtitle, children, actions }) => {
         )}
       </div>
       
-      <div className="h-[280px] w-full">
+      <div className="min-h-[280px] h-full w-full">
         {children}
       </div>
     </motion.div>

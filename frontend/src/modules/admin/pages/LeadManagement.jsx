@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Layers, MapPin, Calendar, 
   MessageSquare, User, CheckCircle2,
   Clock, ArrowRight, Filter,
   MoreVertical, Eye, Trash2,
-  Package, Info, Briefcase
+  Package, Info, Briefcase, Loader2
 } from "lucide-react";
 import { PageHeader } from '../components/common/PageHeader';
 import { DataTable } from '../components/common/DataTable';
@@ -17,16 +17,46 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { mockLeads } from '../data/mockData';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { adminApi } from '@/lib/api';
 
 const LeadManagement = () => {
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [isFullChatOpen, setIsFullChatOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const fetchLeads = async () => {
+    try {
+      setLoading(true);
+      const res = await adminApi.getAllRequirements({ limit: 100 });
+      setLeads((res.data || []).map(req => ({
+        id: req._id,
+        serviceType: req.serviceType,
+        userName: req.user?.name || 'Unknown User',
+        location: `${req.pickup?.address} to ${req.drops?.[0]?.address || 'Local'}`,
+        date: new Date(req.createdAt).toLocaleDateString(),
+        status: req.status === 'accepted' ? 'Finalized' : req.status === 'completed' ? 'Completed' : (req.status === 'bidding' ? 'Responded' : 'Pending'),
+        rawStatus: req.status,
+        description: req.items || req.notes || 'No description provided.',
+        responses: req.bids?.length || 0,
+        vehicleType: req.vehicleType,
+        weight: req.weight
+      })));
+    } catch (err) {
+      console.error('Failed to load leads:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeads();
+  }, []);
 
   const handleViewLead = (lead) => {
     setSelectedLead(lead);
@@ -160,7 +190,7 @@ const LeadManagement = () => {
 
       <DataTable 
         columns={columns} 
-        data={mockLeads} 
+        data={leads} 
         searchKey="serviceType"
         searchPlaceholder="Find leads by service category..."
         onRowClick={handleViewLead}

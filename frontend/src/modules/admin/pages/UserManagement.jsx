@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, Mail, Phone, MapPin, 
   Calendar, ShieldCheck, ShieldAlert,
-  MoreVertical, Eye, Ban, UserCheck
+  MoreVertical, Eye, Ban, UserCheck, Loader2
 } from "lucide-react";
 import { PageHeader } from '../components/common/PageHeader';
 import { DataTable } from '../components/common/DataTable';
@@ -15,45 +15,62 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { mockUsers } from '../data/mockData';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Toast } from '../components/common/Toast';
+import { adminApi } from '@/lib/api';
 
 const UserManagement = () => {
-  const [users, setUsers] = useState(mockUsers);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isMessageSent, setIsMessageSent] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const res = await adminApi.getAllUsers({ limit: 100 });
+      setUsers((res.data || []).map(u => ({
+        id: u._id,
+        name: u.name || 'Unknown',
+        phone: u.phone,
+        location: u.location || 'N/A',
+        status: u.status,
+        joinDate: new Date(u.createdAt).toLocaleDateString(),
+        totalRequests: 0 // Mocked until we aggregate
+      })));
+    } catch (err) {
+      showToast('Failed to load users', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
-  const handleToggleStatus = (userId) => {
-    setUsers(prev => prev.map(u => {
-      if (u.id === userId) {
-        const newStatus = u.status === 'Active' ? 'Blocked' : 'Active';
-        return { ...u, status: newStatus };
-      }
-      return u;
-    }));
+  const handleToggleStatus = async (userId) => {
+    const user = users.find(u => u.id === userId);
+    const newStatus = user.status === 'Active' ? 'Blocked' : 'Active';
     
-    if (selectedUser?.id === userId) {
-      setSelectedUser(prev => {
-        const newStatus = prev.status === 'Active' ? 'Blocked' : 'Active';
-        showToast(`User account ${newStatus === 'Active' ? 'activated' : 'suspended'}`, newStatus === 'Active' ? 'success' : 'error');
-        return {
-          ...prev,
-          status: newStatus
-        };
-      });
-    } else {
-      const user = users.find(u => u.id === userId);
-      const newStatus = user.status === 'Active' ? 'Blocked' : 'Active';
+    try {
+      await adminApi.updateUserStatus(userId, newStatus);
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+      
+      if (selectedUser?.id === userId) {
+        setSelectedUser(prev => ({ ...prev, status: newStatus }));
+      }
       showToast(`User account ${newStatus === 'Active' ? 'activated' : 'suspended'}`, newStatus === 'Active' ? 'success' : 'error');
+    } catch (err) {
+      showToast('Failed to update status', 'error');
     }
   };
 

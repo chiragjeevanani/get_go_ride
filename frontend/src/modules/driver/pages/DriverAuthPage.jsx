@@ -40,8 +40,8 @@ const DriverAuthPage = () => {
     }
   ];
 
-  const vehicleTypes = ["Mini Truck (Tata Ace)", "Pick-up (Bolero)", "Intermediate Truck (6-14ft)", "Heavy Truck", "Rickshaw"];
-  const serviceCategories = ["Goods Transport", "House Shifting", "Passenger", "Emergency"];
+  const vehicleTypes = ["Mini Truck (Tata Ace)", "Pick-up (Bolero)", "Intermediate Truck (6-14ft)", "Heavy Truck"];
+  const serviceCategories = ["Goods Transport", "House Shifting", "Emergency", "Construction"];
 
   const handleNext = () => setStep(s => s + 1);
   const handleBack = () => setStep(s => s - 1);
@@ -79,11 +79,11 @@ const DriverAuthPage = () => {
       const otpString = otp.join("");
       const res = await authApi.verifyOtp(phoneNumber, otpString, 'vendor');
       
-      const { accessToken, refreshToken, vendor, isNewUser } = res.data;
+      const { accessToken, refreshToken, vendor } = res.data;
       
-      localStorage.setItem('safar_token', accessToken);
-      localStorage.setItem('safar_refresh_token', refreshToken);
-      localStorage.setItem('safar_vendor', JSON.stringify(vendor));
+      localStorage.setItem('gtgl_token', accessToken);
+      localStorage.setItem('gtgl_refresh_token', refreshToken);
+      localStorage.setItem('gtgl_driver', JSON.stringify(vendor));
       
       toast.success("Verified successfully!");
 

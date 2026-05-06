@@ -7,7 +7,7 @@ process.env.OTP_PROVIDER = 'mock';
 process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'test_access_secret';
 process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test_refresh_secret';
 
-const TEST_DB = 'mongodb://localhost:27017/safarsetto_test';
+const TEST_DB = 'mongodb://localhost:27017/getgoload_test';
 
 beforeAll(async () => {
   // Only connect if not already connected

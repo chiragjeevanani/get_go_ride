@@ -149,7 +149,7 @@ const DriverProfile = () => {
             <LogOut className="w-4 h-4 mr-2 group-hover:translate-x-0.5 transition-transform" />
             Logout Account
          </Button>
-         <p className="text-center text-[8px] text-zinc-400 font-bold tracking-tight pt-4 italic">Version 1.0.42 Beta • Safar Setto</p>
+         <p className="text-center text-[8px] text-zinc-400 font-bold tracking-tight pt-4 italic">Version 1.0.42 Beta • GetGoLoad</p>
       </div>
     </motion.div>
   );

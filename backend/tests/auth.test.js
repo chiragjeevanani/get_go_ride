@@ -141,7 +141,7 @@ describe('POST /api/auth/admin/login', () => {
   it('should return 401 for non-existent admin', async () => {
     const res = await request(app)
       .post('/api/auth/admin/login')
-      .send({ email: 'nobody@safarsetto.com', password: 'wrongpass' });
+      .send({ email: 'nobody@getgoload.com', password: 'wrongpass' });
 
     expect(res.status).toBe(401);
     expect(res.body.error).toBe('INVALID_CREDENTIALS');

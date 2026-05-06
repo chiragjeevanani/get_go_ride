@@ -20,8 +20,7 @@ const LeadsScreen = () => {
   const categories = [
     { id: "all", label: "All Leads" },
     { id: "goods", label: "Goods" },
-    { id: "house", label: "House" },
-    { id: "passenger", label: "Passenger" },
+    { id: "house", label: "House Shifting" },
     { id: "emergency", label: "Emergency" }
   ];
 

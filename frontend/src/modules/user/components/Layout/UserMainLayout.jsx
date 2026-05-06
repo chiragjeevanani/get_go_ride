@@ -43,10 +43,12 @@ const UserMainLayout = () => {
           <div className="flex justify-around items-center h-full gap-1">
             {navItems.map((item) => {
               const isActive = location.pathname.includes(item.path.split('/').pop());
+              const hasToken = !!localStorage.getItem('gtgl_token');
+              const targetPath = (item.label === "Profile" && !hasToken) ? "/user/auth" : item.path;
               return (
                 <NavLink
                   key={item.path}
-                  to={item.path}
+                  to={targetPath}
                   className="flex-1 flex flex-col items-center justify-center relative h-[80%] transition-all duration-300 group rounded-2xl"
                 >
                   {/* Square highlight behind the active tab */}

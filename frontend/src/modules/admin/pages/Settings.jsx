@@ -6,31 +6,83 @@ import {
   Lock, Save, RefreshCw,
   Zap, AlertTriangle, Info,
   ExternalLink, ChevronRight,
-  TrendingUp, IndianRupee
+  TrendingUp, IndianRupee, Loader2
 } from "lucide-react";
 import { PageHeader } from '../components/common/PageHeader';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Toast } from '../components/common/Toast';
+import { settingsApi } from '@/lib/api';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = React.useState("Platform Info");
   const [monetizationModel, setMonetizationModel] = React.useState("perc");
   const [toast, setToast] = React.useState({ show: false, message: '', type: 'success' });
 
+  // Dynamic system configurations state
+  const [signupBonus, setSignupBonus] = React.useState("50");
+  const [maxWalletUsage, setMaxWalletUsage] = React.useState("500");
+  const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    fetchSystemSettings();
+  }, []);
+
+  const fetchSystemSettings = async () => {
+    try {
+      const res = await settingsApi.get();
+      if (res.success) {
+        setSignupBonus(res.data.walletSignupBonus?.toString() || "50");
+        setMaxWalletUsage(res.data.maxWalletUsage?.toString() || "500");
+      }
+    } catch (err) {
+      showToast("Failed to fetch system settings", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
+  const handleSaveAll = async () => {
+    setSaving(true);
+    try {
+      const res = await settingsApi.update({
+        walletSignupBonus: Number(signupBonus),
+        maxWalletUsage: Number(maxWalletUsage)
+      });
+      if (res.success) {
+        showToast("All system configurations saved successfully!", "success");
+      }
+    } catch (err) {
+      showToast(err.message || "Failed to update configurations", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const navItems = [
     { label: "Platform Info", icon: Globe },
-    { label: "Commission & Fees", icon: Zap },
+    { label: "Wallet Settings", icon: IndianRupee },
+    { label: "Commission & Fees", icon: TrendingUp },
     { label: "Notifications", icon: Bell },
     { label: "Security & Access", icon: Lock },
     { label: "System health", icon: Database },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-[400px] flex flex-col justify-center items-center gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="text-[10px] font-black tracking-widest uppercase text-zinc-500">Loading system settings...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -39,10 +91,11 @@ const Settings = () => {
         subtitle="Configure platform operations, security, and integration rules" 
         actions={
           <Button 
-            onClick={() => showToast("Configuration saved to cloud registry", "success")}
+            onClick={handleSaveAll}
+            disabled={saving}
             className="bg-primary text-black font-black uppercase tracking-widest text-[10px] h-10 px-6 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
           >
-             <Save className="w-4 h-4 mr-2" />
+             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
              Save All Changes
           </Button>
         }
@@ -97,11 +150,11 @@ const Settings = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                       <div className="space-y-2">
                         <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Application Name</label>
-                        <input defaultValue="Safar Setto" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-xs font-black text-zinc-900 dark:text-white focus:outline-none focus:border-primary" />
+                        <input defaultValue="GetGoLoad" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-xs font-black text-zinc-900 dark:text-white focus:outline-none focus:border-primary" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Support Email</label>
-                        <input defaultValue="support@safarsetto.com" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-xs font-black text-zinc-900 dark:text-white focus:outline-none focus:border-primary" />
+                        <input defaultValue="support@getgoload.com" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-xs font-black text-zinc-900 dark:text-white focus:outline-none focus:border-primary" />
                       </div>
                       <div className="space-y-2 md:col-span-2">
                         <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Platform Tagline</label>
@@ -138,6 +191,62 @@ const Settings = () => {
                         </div>
                       ))}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "Wallet Settings" && (
+              <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+                {/* Wallet System Settings Section */}
+                <div className="admin-card p-8 border-zinc-200 dark:border-zinc-900 space-y-8 relative overflow-hidden group">
+                  <div className="space-y-1 relative z-10">
+                      <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                        <IndianRupee className="w-4 h-4 text-primary" />
+                        Wallet System Configurations
+                      </h3>
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic">Define sign-up rewards & maximum wallet balance usage ceilings</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Default Sign Up Reward (INR)</label>
+                        <div className="relative">
+                          <input 
+                            type="number"
+                            value={signupBonus} 
+                            onChange={(e) => setSignupBonus(e.target.value)}
+                            className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary focus:outline-none focus:border-primary" 
+                          />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-zinc-400 uppercase">₹ Bonus</span>
+                        </div>
+                        <p className="text-[8px] text-zinc-400 font-bold uppercase block px-1 leading-normal">Free starting wallet balance awarded to users upon successful registration</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Max Wallet Balance Usage Per Booking (INR)</label>
+                        <div className="relative">
+                          <input 
+                            type="number"
+                            value={maxWalletUsage} 
+                            onChange={(e) => setMaxWalletUsage(e.target.value)}
+                            className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary focus:outline-none focus:border-primary" 
+                          />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-zinc-400 uppercase">₹ Max Limit</span>
+                        </div>
+                        <p className="text-[8px] text-zinc-400 font-bold uppercase block px-1 leading-normal">Sets the maximum wallet funds a user can apply toward a single logistics transaction</p>
+                      </div>
+                  </div>
+
+                  {/* Summary preview */}
+                  <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 space-y-1 relative z-10">
+                     <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Operational Summary:</h4>
+                     <p className="text-[9px] text-zinc-500 font-extrabold uppercase leading-relaxed">
+                       Newly registered users will start with a free promotional balance of <span className="text-zinc-950 font-black">₹{signupBonus}</span>.
+                       When finalizing bookings, users are allowed to apply up to <span className="text-zinc-950 font-black">₹{maxWalletUsage}</span> directly from their wallet balance to subsidize their final bid payout.
+                     </p>
+                  </div>
+
+                  <IndianRupee className="absolute -right-4 -bottom-4 w-32 h-32 text-primary opacity-[0.02] rotate-[-15deg] group-hover:opacity-[0.05] transition-opacity" />
                 </div>
               </div>
             )}
@@ -267,11 +376,11 @@ const Settings = () => {
             )}
 
             {/* Empty States for other tabs */}
-            {!["Platform Info", "Commission & Fees"].includes(activeTab) && (
+            {!["Platform Info", "Commission & Fees", "Wallet Settings"].includes(activeTab) && (
               <div className="admin-card p-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-transparent flex flex-col items-center justify-center gap-4 text-center">
                  <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center">
                     <SettingsIcon className="w-8 h-8 text-zinc-700 animate-spin-slow" />
-                 </div>
+                  </div>
                  <div className="space-y-1">
                     <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest italic">{activeTab} Module</h3>
                     <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest max-w-[250px]">The {activeTab.toLowerCase()} configuration interface is currently being optimized for deployment.</p>

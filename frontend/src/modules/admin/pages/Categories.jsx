@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Plus, Edit2, Trash2, 
@@ -6,7 +6,7 @@ import {
   ChevronRight, Save, X,
   Briefcase, Package, CarFront,
   Tags, Settings2, Activity,
-  Scale, Zap
+  Scale, Zap, Loader2
 } from "lucide-react";
 import { PageHeader } from '../components/common/PageHeader';
 import { Modal } from '../components/common/Modal';
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Toast } from '../components/common/Toast';
+import { categoryApi } from '@/lib/api';
 
 const Categories = () => {
   const [activeTab, setActiveTab] = useState("service");
@@ -24,32 +25,31 @@ const Categories = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [serviceCategories, setServiceCategories] = useState([]);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
-  
-  const [serviceCategories, setServiceCategories] = useState([
-    { 
-      id: 1, name: "House Shifting", slug: "house-shifting", count: 120, icon: Briefcase,
-      filters: ["Floor Number", "Lift Availability", "Packing Required", "Volume (BHK)"]
-    },
-    { 
-      id: 2, name: "Goods Transport", slug: "goods-transport", count: 450, icon: Package,
-      filters: ["Material Type", "Fragile", "Weight (KG)", "Loading Help"]
-    },
-    { 
-      id: 3, name: "Passenger Service", slug: "passenger", count: 85, icon: CarFront,
-      filters: ["Passenger Count", "Luggage Count", "AC/Non-AC", "Round Trip"]
-    },
-    { 
-      id: 4, name: "Emergency Dispatch", slug: "emergency", count: 32, icon: Truck,
-      filters: ["Severity Level", "Medical Equipment", "Patient Support", "Priority"]
-    },
-  ]);
 
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    setLoading(true);
+    try {
+      const res = await categoryApi.getAll();
+      setServiceCategories(res.data);
+    } catch (err) {
+      showToast(err.message || 'Failed to load categories', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const [vehicleTypes, setVehicleTypes] = useState([
     { id: 1, name: "Mini Truck (Tata Ace)", capacity: "800kg", icon: Truck },
     { id: 2, name: "Pick-up (Bolero)", capacity: "1.2 - 1.5 Ton", icon: Truck },
@@ -67,10 +67,15 @@ const Categories = () => {
     setIsCategoryModalOpen(true);
   };
 
-  const handleDeleteCategory = (id) => {
-    const cat = serviceCategories.find(c => c.id === id);
-    setServiceCategories(prev => prev.filter(c => c.id !== id));
-    showToast(`${cat?.name} removed successfully`, 'error');
+  const handleDeleteCategory = async (id) => {
+    if (!window.confirm('Are you sure? This will remove the service category.')) return;
+    try {
+      await categoryApi.delete(id);
+      setServiceCategories(prev => prev.filter(c => c._id !== id));
+      showToast('Category removed successfully', 'error');
+    } catch (err) {
+      showToast(err.message || 'Failed to delete', 'error');
+    }
   };
 
   const handleAddCategory = () => {
@@ -78,29 +83,30 @@ const Categories = () => {
     setIsCategoryModalOpen(true);
   };
 
-  const handleSaveCategory = (e) => {
+  const handleSaveCategory = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const catData = {
       name: formData.get('name'),
       slug: formData.get('slug') || formData.get('name').toLowerCase().replace(/\s+/g, '-'),
-      icon: Briefcase // Default for new
+      description: formData.get('description'),
+      icon: 'Package'
     };
 
-    if (editingCategory) {
-      setServiceCategories(prev => prev.map(c => c.id === editingCategory.id ? { ...c, ...catData } : c));
-      showToast('Category updated successfully', 'success');
-    } else {
-      const newCat = {
-        id: Date.now(),
-        ...catData,
-        count: 0,
-        filters: ["Standard Requirement"]
-      };
-      setServiceCategories(prev => [...prev, newCat]);
-      showToast('New category added successfully', 'success');
+    try {
+      if (editingCategory) {
+        const res = await categoryApi.update(editingCategory._id, catData);
+        setServiceCategories(prev => prev.map(c => c._id === editingCategory._id ? res.data : c));
+        showToast('Category updated successfully', 'success');
+      } else {
+        const res = await categoryApi.create(catData);
+        setServiceCategories(prev => [...prev, res.data]);
+        showToast('New category added successfully', 'success');
+      }
+      setIsCategoryModalOpen(false);
+    } catch (err) {
+      showToast(err.message || 'Action failed', 'error');
     }
-    setIsCategoryModalOpen(false);
   };
 
   const handleEditVehicle = (vehicle) => {
@@ -139,6 +145,11 @@ const Categories = () => {
     setIsVehicleModalOpen(false);
   };
 
+  // Icon mapping for dynamic icons
+  const iconMap = {
+    Briefcase, Package, Truck, CarFront, Layers, Zap
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <PageHeader 
@@ -169,67 +180,79 @@ const Categories = () => {
          </TabsList>
 
          <TabsContent value="service" className="animate-in fade-in slide-in-from-left-4 duration-300">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-               {serviceCategories.map((cat) => (
-                  <motion.div 
-                    key={cat.id} 
-                    whileHover={{ scale: 1.01 }}
-                    className="admin-card p-6 flex flex-col gap-6 group hover:border-primary/20 transition-all border-2 border-zinc-200 dark:border-zinc-900"
-                  >
-                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-5">
-                           <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                              <cat.icon className="w-6 h-6 text-primary" strokeWidth={2} />
-                           </div>
-                           <div className="space-y-1">
-                              <h3 className="text-lg font-black text-zinc-900 dark:text-white uppercase italic tracking-tighter">{cat.name}</h3>
-                              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Identifier: <span className="text-zinc-400">{cat.slug}</span></p>
-                           </div>
-                        </div>
-                        <div className="flex gap-2">
-                           <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleEditCategory(cat)}
-                            className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-primary hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
-                           >
-                              <Edit2 className="w-4 h-4" />
-                           </Button>
-                           <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDeleteCategory(cat.id)}
-                            className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-rose-500 hover:bg-rose-500/5 transition-all"
-                           >
-                              <Trash2 className="w-4 h-4" />
-                           </Button>
-                        </div>
-                     </div>
-
-                     <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                           <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Requirement Filters</span>
-                           <Button 
-                             variant="link" 
-                             onClick={() => handleOpenFilters(cat)}
-                             className="p-0 h-fit text-[9px] font-black uppercase text-primary tracking-widest"
-                           >
-                              Manage Filters
-                           </Button>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                           {cat.filters.map((filter, i) => (
-                              <Badge key={i} className="bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-[8px] font-black uppercase text-zinc-500 py-1">
-                                 {filter}
-                              </Badge>
-                           ))}
-                           <Badge className="bg-zinc-50 dark:bg-zinc-800/50 border-dashed border-zinc-200 dark:border-zinc-700 text-[8px] font-black uppercase text-zinc-600 py-1">
-                              + {Math.floor(Math.random() * 5) + 2} More
-                           </Badge>
-                        </div>
-                     </div>
-                  </motion.div>
-               ))}
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+               {loading ? (
+                  <div className="col-span-full flex flex-col items-center justify-center py-20 gap-4">
+                     <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                     <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Syncing Categories...</p>
+                  </div>
+               ) : (
+                <>
+                {serviceCategories.map((cat) => {
+                  const IconComponent = iconMap[cat.icon] || Package;
+                  return (
+                    <motion.div 
+                      key={cat._id} 
+                      whileHover={{ scale: 1.01 }}
+                      className="admin-card p-6 flex flex-col gap-6 group hover:border-primary/20 transition-all border-2 border-zinc-200 dark:border-zinc-900"
+                    >
+                       <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-5">
+                             <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                                <IconComponent className="w-6 h-6 text-primary" strokeWidth={2} />
+                             </div>
+                             <div className="space-y-1">
+                                <h3 className="text-lg font-black text-zinc-900 dark:text-white uppercase italic tracking-tighter">{cat.name}</h3>
+                                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Identifier: <span className="text-zinc-400">{cat.slug}</span></p>
+                             </div>
+                          </div>
+                          <div className="flex gap-2">
+                             <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleEditCategory(cat)}
+                              className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-primary hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
+                             >
+                                <Edit2 className="w-4 h-4" />
+                             </Button>
+                             <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleDeleteCategory(cat._id)}
+                              className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-rose-500 hover:bg-rose-500/5 transition-all"
+                             >
+                                <Trash2 className="w-4 h-4" />
+                             </Button>
+                          </div>
+                       </div>
+  
+                       <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                             <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Requirement Filters</span>
+                             <Button 
+                               variant="link" 
+                               onClick={() => handleOpenFilters(cat)}
+                               className="p-0 h-fit text-[9px] font-black uppercase text-primary tracking-widest"
+                             >
+                                Manage Filters
+                             </Button>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                             {(cat.filters || []).map((filter, i) => (
+                                <Badge key={i} className="bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-[8px] font-black uppercase text-zinc-500 py-1">
+                                   {typeof filter === 'string' ? filter : filter.name}
+                                </Badge>
+                             ))}
+                             <Badge className="bg-zinc-50 dark:bg-zinc-800/50 border-dashed border-zinc-200 dark:border-zinc-700 text-[8px] font-black uppercase text-zinc-600 py-1">
+                                + {Math.floor(Math.random() * 5) + 2} More
+                             </Badge>
+                          </div>
+                       </div>
+                    </motion.div>
+                  )
+                })}
+                </>
+               )}
 
                 {/* Add Placeholder */}
                 <div 
@@ -439,39 +462,48 @@ const Categories = () => {
         description="Configure service classification and public identifier"
         size="sm"
       >
-        <form onSubmit={handleSaveCategory} className="space-y-6 pt-2">
-           <div className="space-y-4">
-              <div className="space-y-1.5">
-                 <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Category Display Name</label>
-                 <input 
-                    name="name"
-                    required
-                    placeholder="e.g. Luxury Car Transport"
-                    defaultValue={editingCategory?.name}
-                    className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary transition-all"
-                 />
-              </div>
-              <div className="space-y-1.5">
-                 <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Service Identifier (Slug)</label>
-                 <input 
-                    name="slug"
-                    placeholder="e.g. luxury-transport"
-                    defaultValue={editingCategory?.slug}
-                    className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-500 italic focus:outline-none focus:border-primary transition-all"
-                 />
-                 <p className="px-1 text-[8px] font-bold text-zinc-400 uppercase italic">* Leave blank to auto-generate from name</p>
-              </div>
-           </div>
+         <form onSubmit={handleSaveCategory} className="space-y-6 pt-2">
+            <div className="space-y-4">
+               <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Category Display Name</label>
+                  <input 
+                     name="name"
+                     required
+                     placeholder="e.g. Luxury Car Transport"
+                     defaultValue={editingCategory?.name}
+                     className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary transition-all"
+                  />
+               </div>
+               <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Service Identifier (Slug)</label>
+                  <input 
+                     name="slug"
+                     placeholder="e.g. luxury-transport"
+                     defaultValue={editingCategory?.slug}
+                     className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-500 italic focus:outline-none focus:border-primary transition-all"
+                  />
+                  <p className="px-1 text-[8px] font-bold text-zinc-400 uppercase italic">* Leave blank to auto-generate from name</p>
+               </div>
+               <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Description / Tagline</label>
+                  <input 
+                     name="description"
+                     placeholder="e.g. For household furniture & appliances"
+                     defaultValue={editingCategory?.description}
+                     className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary transition-all"
+                  />
+               </div>
+            </div>
 
-           <div className="flex gap-2 pt-2">
-              <Button type="submit" className="flex-1 bg-primary text-black font-black uppercase text-[10px] tracking-widest h-12 rounded-xl shadow-lg shadow-primary/20">
-                 {editingCategory ? "Save Changes" : "Create Category"}
-              </Button>
-              <Button type="button" variant="ghost" onClick={() => setIsCategoryModalOpen(false)} className="px-6 text-zinc-500 font-black uppercase text-[10px] tracking-widest">
-                 Cancel
-              </Button>
-           </div>
-        </form>
+            <div className="flex gap-2 pt-2">
+               <Button type="submit" className="flex-1 bg-primary text-black font-black uppercase text-[10px] tracking-widest h-12 rounded-xl shadow-lg shadow-primary/20">
+                  {editingCategory ? "Save Changes" : "Create Category"}
+               </Button>
+               <Button type="button" variant="ghost" onClick={() => setIsCategoryModalOpen(false)} className="px-6 text-zinc-500 font-black uppercase text-[10px] tracking-widest">
+                  Cancel
+               </Button>
+            </div>
+         </form>
       </Modal>
 
       {/* Vehicle Management Modal */}

@@ -63,9 +63,9 @@ const AuthPage = () => {
       const otpString = otp.join("");
       const res = await authApi.verifyOtp(phoneNumber, otpString, 'user');
       
-      localStorage.setItem('safar_token', res.data.accessToken);
-      localStorage.setItem('safar_refresh_token', res.data.refreshToken);
-      localStorage.setItem('safar_user', JSON.stringify(res.data.user));
+      localStorage.setItem('gtgl_token', res.data.accessToken);
+      localStorage.setItem('gtgl_refresh_token', res.data.refreshToken);
+      localStorage.setItem('gtgl_user', JSON.stringify(res.data.user));
       
       toast.success("Login successful!");
       navigate("/user/dashboard");

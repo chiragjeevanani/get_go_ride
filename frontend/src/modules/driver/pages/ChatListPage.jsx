@@ -43,7 +43,7 @@ const ChatListPage = () => {
       lastMsg: "See you at 4 PM tomorrow.",
       time: "Yesterday",
       unread: 0,
-      service: "Passenger",
+      service: "Construction",
       status: "Finalized"
     }
   ];

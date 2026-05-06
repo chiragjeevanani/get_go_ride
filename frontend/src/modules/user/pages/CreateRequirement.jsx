@@ -10,13 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from "react-router-dom";
+import { requirementApi, categoryApi } from "@/lib/api";
+import { toast } from "sonner";
 import goodsImg from "@/assets/categories/Truck-removebg-preview.png";
 import houseImg from "@/assets/categories/shifting.jpg";
-import passengerImg from "@/assets/categories/passenger-removebg-preview.png";
 import emergencyImg from "@/assets/categories/Emergency-removebg-preview.png";
-import bikeImg from "@/assets/categories/Bike-removebg-preview.png";
-import autoImg from "@/assets/categories/auto-removebg-preview.png";
-import cabImg from "@/assets/categories/cab-removebg-preview.png";
 
 const CreateRequirement = () => {
   const navigate = useNavigate();
@@ -42,7 +40,36 @@ const CreateRequirement = () => {
   const [activeLocField, setActiveLocField] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [locLoading, setLocLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const timeoutRef = useRef(null);
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCats = async () => {
+       try {
+          const res = await categoryApi.getAll();
+          const cats = res?.data || [];
+          setCategories(cats.map(cat => {
+             let defaultImg = goodsImg;
+             if (cat.slug === 'house-shifting') defaultImg = houseImg;
+             if (cat.slug === 'emergency') defaultImg = emergencyImg;
+             
+             return {
+               id: cat.slug,
+               title: cat.name,
+               image: cat.image || defaultImg,
+               desc: cat.description || "Logistics Service"
+             };
+          }));
+       } catch (err) {
+          console.error("Failed to load categories", err);
+       } finally {
+          setCategoriesLoading(false);
+       }
+    };
+    fetchCats();
+  }, []);
 
   // Still support pre-filling from Dashboard's quick navigation
   useEffect(() => {
@@ -149,7 +176,7 @@ const CreateRequirement = () => {
       case 1:
         return (
           <div className="space-y-4">
-            <Card className="border-none shadow-premium rounded-[1.5rem] bg-white overflow-hidden relative z-[100]">
+            <Card className="border-none shadow-premium rounded-[1.5rem] bg-white relative z-[50] overflow-visible">
                <CardContent className="p-4 space-y-3">
                   <div className="flex items-center gap-2">
                      <h3 className="text-[10px] font-black uppercase tracking-widest text-black/40">Route Details</h3>
@@ -207,13 +234,13 @@ const CreateRequirement = () => {
                   </div>
 
                   {/* Suggestions Dropdown */}
-                  <AnimatePresence>
+                  <AnimatePresence mode="wait">
                      {activeLocField && suggestions.length > 0 && (
                         <motion.div 
-                           initial={{ opacity: 0, y: -10 }}
+                           initial={{ opacity: 0, y: 5 }}
                            animate={{ opacity: 1, y: 0 }}
-                           exit={{ opacity: 0, y: -10 }}
-                           className="absolute top-[85%] left-4 right-4 bg-white rounded-2xl shadow-xl border border-zinc-100 overflow-hidden z-[110]"
+                           exit={{ opacity: 0, y: 5 }}
+                           className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.2)] border border-zinc-100 overflow-hidden z-[9999] ring-1 ring-black/5"
                         >
                            {suggestions.map((item, idx) => (
                            <div 
@@ -252,40 +279,42 @@ const CreateRequirement = () => {
           </div>
         );
       case 2:
-        const services = [
-          { id: "goods", title: "Goods Transport", image: goodsImg, desc: "Commercial or bulk items" },
-          { id: "house", title: "House Shifting", image: houseImg, desc: "Furniture & household items" },
-          { id: "passenger", title: "Passenger", image: passengerImg, desc: "Taxis, Rickshaws, Buses" },
-          { id: "emergency", title: "Emergency", image: emergencyImg, desc: "Instant response services" },
-          { id: "construction", title: "Construction", image: goodsImg, desc: "Building & heavy material" },
-        ];
         return (
           <div className="grid grid-cols-1 gap-2.5">
-            {services.map((s) => (
-              <Card 
-                key={s.id} 
-                className={cn(
-                  "cursor-pointer border-2 transition-all rounded-xl",
-                  formData.serviceType === s.id ? "border-primary bg-primary/5 shadow-sm" : "border-zinc-50"
-                )}
-                onClick={() => { updateData("serviceType", s.id); updateData("vehicleType", ""); }}
-              >
-                <CardContent className="p-2.5 flex items-center gap-3">
-                  <div className={cn("w-10 h-10 rounded-lg overflow-hidden shrink-0", formData.serviceType === s.id ? "bg-primary/20" : "bg-zinc-50")}>
-                    <img 
-                      src={s.image} 
-                      alt={s.title} 
-                      className="w-full h-full object-contain p-1"
-                    />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-black text-black">{s.title}</span>
-                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">{s.desc}</span>
-                  </div>
-                  {formData.serviceType === s.id && <Check className="ml-auto w-4 h-4 text-primary" />}
-                </CardContent>
-              </Card>
-            ))}
+            {categoriesLoading ? (
+               <div className="flex flex-col items-center justify-center py-10 gap-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Loading Services...</p>
+               </div>
+            ) : (
+               <>
+               {categories.map((s) => (
+                 <Card 
+                   key={s.id} 
+                   className={cn(
+                     "cursor-pointer border-2 transition-all rounded-xl",
+                     formData.serviceType === s.id ? "border-primary bg-primary/5 shadow-sm" : "border-zinc-50"
+                   )}
+                   onClick={() => { updateData("serviceType", s.id); updateData("vehicleType", ""); }}
+                 >
+                   <CardContent className="p-2.5 flex items-center gap-3">
+                     <div className={cn("w-10 h-10 rounded-lg overflow-hidden shrink-0", formData.serviceType === s.id ? "bg-primary/20" : "bg-zinc-50")}>
+                       <img 
+                         src={s.image} 
+                         alt={s.title} 
+                         className="w-full h-full object-contain p-1"
+                       />
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="text-xs font-black text-black">{s.title}</span>
+                       <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">{s.desc}</span>
+                     </div>
+                     {formData.serviceType === s.id && <Check className="ml-auto w-4 h-4 text-primary" />}
+                   </CardContent>
+                 </Card>
+               ))}
+               </>
+            )}
           </div>
         );
       case 3:
@@ -300,12 +329,6 @@ const CreateRequirement = () => {
             { id: "ace", title: "Tata Ace - 7 ft", details: "4 Tyres • Small Furniture", image: goodsImg, mostBooked: true },
             { id: "pickup", title: "Bolero Pickup", details: "4 Tyres • Medium Load", image: goodsImg },
             { id: "14ft", title: "Eicher 14ft", details: "6 Tyres • Household Bulky", image: goodsImg },
-          ],
-          passenger: [
-            { id: "bike", title: "Bike / Scooter", details: "1 Seat • Single Parcel", image: bikeImg, mostBooked: true },
-            { id: "auto", title: "Rickshaw / Auto", details: "3 Seats • City Travel", image: autoImg },
-            { id: "mini", title: "Mini Sedan", details: "4 Seats • AC Comfort", image: cabImg },
-            { id: "bus", title: "Minibus / Tempo", details: "12-24 Seats • Group Tour", image: passengerImg },
           ],
           emergency: [
             { id: "basic", title: "Basic Ambulance", details: "First Aid • Oxygen Support", image: emergencyImg, mostBooked: true },
@@ -414,40 +437,7 @@ const CreateRequirement = () => {
           );
         }
 
-        if (formData.serviceType === "passenger") {
-           return (
-             <div className="space-y-5">
-               <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Passengers</label>
-                    <div className="relative">
-                      <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                      <Input 
-                        type="number" 
-                        placeholder="e.g. 3" 
-                        className="pl-10 bg-white h-11 text-xs font-bold"
-                        value={formData.loadValue}
-                        onChange={(e) => updateData("loadValue", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Luggage (KG)</label>
-                    <div className="relative">
-                      <Weight className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                      <Input 
-                        type="number" 
-                        placeholder="e.g. 10" 
-                        className="pl-10 bg-white h-11 text-xs font-bold"
-                        value={formData.luggageWeight || ""}
-                        onChange={(e) => updateData("luggageWeight", e.target.value)}
-                      />
-                    </div>
-                  </div>
-               </div>
-             </div>
-           );
-        }
+
         
         if (formData.serviceType === "emergency") {
            return (
@@ -682,26 +672,30 @@ const CreateRequirement = () => {
     }
   };
 
-  const handleFinalSubmit = () => {
-    // Generate a new request object from form data
-    const newRequest = {
-      id: `REQ-${Math.floor(Math.random() * 900) + 200}`,
-      service: `${formData.serviceType.charAt(0).toUpperCase() + formData.serviceType.slice(1)} - ${formData.vehicleType || 'Any'}`,
-      pickup: formData.pickup || "Current Location",
-      dropoff: formData.drops[0] || "Destination",
-      date: formData.date ? new Date(formData.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : "Today",
-      status: "Responding",
-      responses: 0,
-      isNew: true,
-      price: "₹1,733"
-    };
+  const handleFinalSubmit = async () => {
+    setSubmitting(true);
+    try {
+      // Prepare data for backend
+      const payload = {
+        serviceType: formData.serviceType,
+        vehicleType: formData.vehicleType,
+        pickup: { address: formData.pickup },
+        drops: formData.drops.map(addr => ({ address: addr })),
+        items: formData.serviceType === 'house' ? `House Shifting (${formData.houseSize || 'N/A'})` : (formData.serviceType === 'emergency' ? 'Emergency Assistance' : (formData.serviceType === 'construction' ? formData.materialType : 'General Goods')),
+        weight: formData.loadValue ? `${formData.loadValue}${formData.loadType === 'kg' ? 'kg' : ''}` : '',
+        date: formData.date,
+        time: formData.time,
+        notes: formData.notes
+      };
 
-    // Save to localStorage to simulate a database for the prototype
-    const existing = JSON.parse(localStorage.getItem("user_requests") || "[]");
-    localStorage.setItem("user_requests", JSON.stringify([newRequest, ...existing]));
-
-    // Navigate to requests tracking
-    navigate("/user/requests");
+      await requirementApi.create(payload);
+      toast.success("Requirement posted successfully!");
+      navigate("/user/requests");
+    } catch (err) {
+      toast.error(err.message || "Failed to post requirement");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -773,8 +767,14 @@ const CreateRequirement = () => {
           <Button 
             className="w-full rounded-xl h-11 shadow-lg shadow-primary/20 font-black text-sm uppercase tracking-widest"
             onClick={handleFinalSubmit}
+            disabled={submitting}
           >
-            Post Requirements
+            {submitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Posting...
+              </>
+            ) : "Post Requirements"}
           </Button>
         </div>
       )}

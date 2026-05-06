@@ -1,7 +1,7 @@
 {
-  "name": "safarsetto-backend",
+  "name": "getgoload-backend",
   "version": "1.0.0",
-  "description": "Safar Setto Backend API — Express + MongoDB + Mongoose",
+  "description": "GetGoLoad Backend API — Express + MongoDB + Mongoose",
   "type": "module",
   "main": "src/app.js",
   "scripts": {

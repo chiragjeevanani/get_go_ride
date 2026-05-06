@@ -34,6 +34,7 @@ const userSchema = new mongoose.Schema(
     },
     wallet: {
       balance: { type: Number, default: 0 },
+      coins: { type: Number, default: 0 },
       transactions: [
         {
           type: { type: String, enum: ['credit', 'debit'] },

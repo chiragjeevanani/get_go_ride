@@ -21,7 +21,7 @@ const navGroups = [
     label: "Management",
     items: [
       { path: "/admin/users", icon: Users, label: "Users" },
-      { path: "/admin/vendors", icon: Truck, label: "Vendors" },
+      { path: "/admin/vendors", icon: Truck, label: "Drivers" },
       { path: "/admin/leads", icon: Layers, label: "Leads" },
     ]
   },
@@ -36,8 +36,9 @@ const navGroups = [
     label: "Platform",
     items: [
       { path: "/admin/categories", icon: Layers, label: "Categories" },
-      { path: "/admin/moderation", icon: ShieldCheck, label: "Moderation" },
-      { path: "/admin/notifications", icon: Bell, label: "Notifications" },
+      { path: "/admin/faqs", icon: MessageSquare, label: "FAQ Support" },
+      { path: "/admin/moderation", icon: ShieldCheck, label: "Req Oversight" },
+      { path: "/admin/notifications", icon: Bell, label: "Broadcasts" },
       { path: "/admin/settings", icon: Settings, label: "Settings" },
     ]
   }
@@ -61,7 +62,7 @@ export const Sidebar = ({ isCollapsed, setCollapsed }) => {
           </div>
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-tight leading-none">Safar Setto</span>
+              <span className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-tight leading-none">GetGoLoad</span>
               <span className="text-[10px] font-bold admin-logo-text uppercase tracking-widest mt-1">Admin Panel</span>
             </div>
           )}
@@ -117,8 +118,12 @@ export const Sidebar = ({ isCollapsed, setCollapsed }) => {
                 <Shield className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
              </div>
              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] font-bold text-zinc-900 dark:text-white uppercase truncate">Super Admin</span>
-                <span className="text-[9px] font-medium text-zinc-400 dark:text-zinc-500 uppercase truncate tracking-tight">admin@safar.com</span>
+                <span className="text-[10px] font-bold text-zinc-900 dark:text-white uppercase truncate">
+                   {JSON.parse(localStorage.getItem('gtgl_user'))?.name || 'Super Admin'}
+                </span>
+                <span className="text-[9px] font-medium text-zinc-400 dark:text-zinc-500 uppercase truncate tracking-tight">
+                   {JSON.parse(localStorage.getItem('gtgl_user'))?.email || 'admin@safar.com'}
+                </span>
              </div>
           </div>
         </div>

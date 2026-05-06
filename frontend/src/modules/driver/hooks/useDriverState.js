@@ -27,21 +27,21 @@ const mockLeads = [
   },
   {
     id: "L-003",
-    service: "Passenger",
+    service: "Construction",
     pickup: "Indore Airport",
     drop: "Dewas Naka, Indore",
-    weight: "4 Persons",
-    items: "Luggage included",
+    weight: "5000kg",
+    items: "Cement Bags",
     date: "Today, 6:30 PM",
     distance: "15km",
     status: "expiring",
-    type: "passenger"
+    type: "construction"
   }
 ];
 
 export const useDriverState = () => {
   const [driver, setDriver] = useState(() => {
-    const saved = localStorage.getItem('safar_driver');
+    const saved = localStorage.getItem('gtgl_driver');
     return saved ? JSON.parse(saved) : {
       name: "Ramesh Kumar",
       phone: "+91 9876543210",
@@ -60,7 +60,7 @@ export const useDriverState = () => {
   const [leads, setLeads] = useState(mockLeads);
   const [activeLeads, setActiveLeads] = useState([]);
   const [stats, setStats] = useState(() => {
-    const savedStats = localStorage.getItem('safar_driver_stats');
+    const savedStats = localStorage.getItem('gtgl_driver_stats');
     return savedStats ? JSON.parse(savedStats) : {
       total: 142,
       accepted: 86,
@@ -69,11 +69,11 @@ export const useDriverState = () => {
   });
   
   useEffect(() => {
-    localStorage.setItem('safar_driver', JSON.stringify(driver));
+    localStorage.setItem('gtgl_driver', JSON.stringify(driver));
   }, [driver]);
 
   useEffect(() => {
-    localStorage.setItem('safar_driver_stats', JSON.stringify(stats));
+    localStorage.setItem('gtgl_driver_stats', JSON.stringify(stats));
   }, [stats]);
 
   const toggleOnline = () => {

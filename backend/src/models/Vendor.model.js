@@ -57,9 +57,18 @@ const vendorSchema = new mongoose.Schema(
     },
     activeSubscription: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Subscription',
+      ref: 'SubscriptionPlan',
       default: null,
     },
+    subscriptionStartedAt: { type: Date, default: null },
+    subscriptionExpiresAt: { type: Date, default: null },
+
+    // Lead quota tracking (reset per plan period)
+    leadQuotaUsed: { type: Number, default: 0 },
+    leadQuotaResetAt: { type: Date, default: null },
+
+    // Verified badge (granted by active plan feature)
+    hasVerifiedBadge: { type: Boolean, default: false },
 
     location: { type: String, default: '' },
 

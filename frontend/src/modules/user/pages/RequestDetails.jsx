@@ -13,71 +13,86 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
+import { requirementApi, bidApi } from "@/lib/api";
+import { toast } from "sonner";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 const RequestDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState("responses");
 
-  // Mock data for a single request
-  const request = {
-    id: id || "REQ-101",
-    service: "House Shifting",
-    status: "Responding",
-    progress: 40,
-    date: "09 April 2026",
-    pickup: "Borivali East, Mumbai",
-    dropoff: "Powai, Mumbai",
-    vehicle: "Mini Truck",
-    load: "500kg Approx",
-    notes: "Fragile electronics including 55-inch TV. Need 2 laborers.",
+  const [request, setRequest] = useState(null);
+  const [vendors, setVendors] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDetails();
+  }, [id]);
+
+  const fetchDetails = async () => {
+    try {
+      const [reqRes, bidsRes] = await Promise.all([
+        requirementApi.getDetails(id),
+        requirementApi.getBids(id)
+      ]);
+      
+      const reqData = reqRes.data;
+      setRequest({
+        id: reqData.requirementId,
+        _id: reqData._id,
+        service: `${reqData.serviceType.toUpperCase()} - ${reqData.vehicleType}`,
+        status: reqData.status.charAt(0).toUpperCase() + reqData.status.slice(1),
+        progress: reqData.status === 'open' ? 40 : (reqData.status === 'accepted' ? 80 : 100),
+        date: new Date(reqData.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+        pickup: reqData.pickup.address,
+        dropoff: reqData.drops[0]?.address || "N/A",
+        vehicle: reqData.vehicleType,
+        load: reqData.weight || "N/A",
+        notes: reqData.notes || "No special instructions",
+      });
+
+      setVendors(bidsRes.data.map(bid => ({
+        id: bid._id,
+        name: bid.vendorId?.businessName || bid.vendorId?.name || "Unknown Vendor",
+        rating: 4.5, // Mock for now
+        reviews: 12, // Mock for now
+        isVerified: bid.vendorId?.isVerified || false,
+        price: `₹${bid.amount}`,
+        time: "Recently",
+        avatar: bid.vendorId?.profileImage || `https://api.dicebear.com/7.x/initials/svg?seed=${bid.vendorId?.businessName}`,
+        bestValue: false
+      })));
+
+    } catch (err) {
+      toast.error("Failed to load details");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const vendors = [
-    {
-      id: "V-201",
-      name: "Shiv Logistics",
-      rating: 4.8,
-      reviews: 124,
-      isVerified: true,
-      price: "₹3,500",
-      time: "20m ago",
-      avatar: "https://api.dicebear.com/7.x/initials/svg?seed=SL",
-      bestValue: true,
-    },
-    {
-      id: "V-202",
-      name: "FastMove Packers",
-      rating: 4.5,
-      reviews: 89,
-      isVerified: true,
-      price: "₹4,200",
-      time: "45m ago",
-      avatar: "https://api.dicebear.com/7.x/initials/svg?seed=FP",
-      bestValue: false,
-    },
-    {
-      id: "V-203",
-      name: "Maan Movers",
-      rating: 4.2,
-      reviews: 56,
-      isVerified: false,
-      price: "₹3,200",
-      time: "1h ago",
-      avatar: "https://api.dicebear.com/7.x/initials/svg?seed=MM",
-      bestValue: false,
+  const handleSelectVendor = async (bidId) => {
+    try {
+      await bidApi.accept(bidId);
+      toast.success("Vendor selected! Bid accepted.");
+      fetchDetails(); // Refresh
+    } catch (err) {
+      toast.error(err.message || "Failed to select vendor");
     }
-  ];
+  };
 
   const timeline = [
-    { label: "Posted", time: "Today, 10:00 AM", done: true },
-    { label: "Verified", time: "Today, 10:05 AM", done: true },
-    { label: "Vendors Responding", time: "Active", done: false, current: true },
-    { label: "Negotiation", time: "Pending", done: false },
-    { label: "Finalized", time: "Pending", done: false },
+    { label: "Posted", time: "Confirmed", done: true },
+    { label: "Vendors Responding", time: "Active", done: ['Pending', 'Bidding', 'Open'].includes(request?.status), current: ['Pending', 'Bidding', 'Open'].includes(request?.status) },
+    { label: "Finalized", time: "Pending", done: request?.status === 'Accepted', current: request?.status === 'Accepted' },
   ];
 
-  return (
+    if (loading) return <div className="flex flex-col items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin text-primary" /><p className="text-[10px] font-black uppercase tracking-widest mt-4">Loading Details...</p></div>;
+    if (!request) return <div className="flex justify-center items-center h-screen">Request not found</div>;
+
+    return (
     <div className="space-y-6 pb-20 animate-in fade-in slide-in-from-right-4 duration-500">
       {/* Navigation Header */}
       <header className="flex items-center gap-4 sticky top-0 bg-zinc-50/80 backdrop-blur-md z-30 py-2 -mx-4 px-4 overflow-hidden">
@@ -151,7 +166,7 @@ const RequestDetails = () => {
         <TabsContent value="responses" className="space-y-4 m-0 overflow-hidden">
           {vendors.map((vendor, index) => (
              <motion.div
-               key={vendor.id}
+               key={vendor.id || index}
                initial={{ opacity: 0, x: 20 }}
                animate={{ opacity: 1, x: 0 }}
                transition={{ delay: index * 0.1 }}
@@ -212,9 +227,9 @@ const RequestDetails = () => {
                        </Button>
                        <Button 
                           className="flex-1 rounded-xl shadow-lg shadow-primary/20"
-                          onClick={() => navigate(`/user/finalize/${request.id}/${vendor.id}`)}
+                          onClick={() => handleSelectVendor(vendor.id)}
                        >
-                          Select Vendor
+                          {request.status === 'Accepted' ? 'Finalized' : 'Select Vendor'}
                        </Button>
                     </div>
                  </CardContent>

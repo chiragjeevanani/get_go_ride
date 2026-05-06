@@ -2,8 +2,7 @@
  * Admin Seed Script
  * Run once: node scripts/seed-admin.js
  *
- * Creates the first superadmin account in the database.
- * Never call this through an API endpoint.
+ * Creates or updates the first superadmin account in the database.
  */
 
 import 'dotenv/config';
@@ -12,8 +11,8 @@ import Admin from '../src/models/Admin.model.js';
 
 const ADMIN_DATA = {
   name: 'Super Admin',
-  email: 'admin@safarsetto.com',
-  password: 'Admin@1234',  // Change immediately after first login
+  email: 'admin@gmail.com',
+  password: '1234qwer',
   isSuperAdmin: true,
 };
 
@@ -22,17 +21,19 @@ const seed = async () => {
     await mongoose.connect(process.env.MONGO_URI);
     console.log('✅ Connected to MongoDB');
 
-    const existing = await Admin.findOne({ email: ADMIN_DATA.email });
-    if (existing) {
-      console.log(`⚠️  Admin already exists: ${ADMIN_DATA.email}`);
-      process.exit(0);
+    let admin = await Admin.findOne({ email: ADMIN_DATA.email });
+    if (admin) {
+      console.log(`ℹ️  Admin with email ${ADMIN_DATA.email} already exists. Updating password...`);
+      admin.password = ADMIN_DATA.password;
+      await admin.save();
+      console.log(`✅ Password updated successfully!`);
+    } else {
+      await Admin.create(ADMIN_DATA);
+      console.log(`✅ Admin created successfully!`);
     }
 
-    await Admin.create(ADMIN_DATA);
-    console.log(`✅ Admin created successfully!`);
     console.log(`   Email:    ${ADMIN_DATA.email}`);
     console.log(`   Password: ${ADMIN_DATA.password}`);
-    console.log(`\n⚠️  IMPORTANT: Change this password immediately after first login!\n`);
 
     process.exit(0);
   } catch (err) {

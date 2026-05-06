@@ -11,6 +11,13 @@ import { PageHeader } from '../components/common/PageHeader';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { adminApi } from '@/lib/api';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const ACTIVITY_TYPES = {
   USER: { icon: UserPlus, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20" },
@@ -21,36 +28,77 @@ const ACTIVITY_TYPES = {
   ALERT: { icon: AlertTriangle, color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/20" },
 };
 
-const MOCK_ACTIVITIES = [
-  { id: 1, type: "LEAD", user: "Rajesh Kumar", action: "created a new lead", target: "House Shifting (Indore Local)", time: "2 mins ago", detail: "Lead #8942 finalized with budget range ₹4,500 - ₹6,000" },
-  { id: 2, type: "VENDOR", user: "Super Fast Movers", action: "submitted a bid", target: "Lead #8940", time: "5 mins ago", detail: "Proposed bid: ₹5,200 with 3 helpers included." },
-  { id: 3, type: "USER", user: "Anjali Sharma", action: "registered a new account", target: "Standard User", time: "12 mins ago", detail: "Verification email successfully delivered to anjali.s@gmail.com" },
-  { id: 4, type: "PAYMENT", user: "Gajanan Logistics", action: "renewed subscription", target: "Premium Yearly Plan", time: "18 mins ago", detail: "Transaction ID: TXN_904321 finalized for ₹12,999." },
-  { id: 5, type: "ALERT", user: "System Monitor", action: "flagged a review", target: "Review #1233", time: "25 mins ago", detail: "Possible spam detected in review for vendor 'City Reliable Movers'." },
-  { id: 6, type: "SYSTEM", user: "Admin", action: "updated platform logic", target: "Matching Radius", time: "40 mins ago", detail: "Global scan radius increased from 30km to 50km." },
-  { id: 7, type: "LEAD", user: "Vikram Singh", action: "closed a deal", target: "Lead #8902", time: "1 hour ago", detail: "Completed shifting from Vijay Nagar to Bhawarkua." },
-];
-
 const ActivityFeed = () => {
-  const [activities, setActivities] = useState(MOCK_ACTIVITIES);
+  const [activities, setActivities] = useState([]);
   const [filter, setFilter] = useState("ALL");
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(null);
 
-  // Simulate real-time updates
+  const formatTime = (dateString) => {
+    const d = new Date(dateString);
+    const diff = Math.floor((new Date() - d) / 60000); // diff in minutes
+    if (diff < 1) return 'Just now';
+    if (diff < 60) return `${diff} mins ago`;
+    if (diff < 1440) return `${Math.floor(diff / 60)} hours ago`;
+    return d.toLocaleDateString();
+  };
+
+  const fetchActivities = async () => {
+    try {
+      setLoading(true);
+      const [users, vendors, leads, statsRes] = await Promise.all([
+        adminApi.getAllUsers({ limit: 10 }),
+        adminApi.getAllVendors({ limit: 10 }),
+        adminApi.getAllRequirements({ limit: 10 }),
+        adminApi.getStats()
+      ]);
+
+      setStats(statsRes.data);
+
+      const userActs = (users.data || []).map(u => ({
+        id: `u-${u._id}`,
+        type: 'USER',
+        user: u.name || 'New User',
+        action: 'registered an account',
+        target: u.role || 'User',
+        time: formatTime(u.createdAt),
+        createdAt: new Date(u.createdAt).getTime(),
+        detail: `Verified: ${u.isVerified}`
+      }));
+
+      const vendorActs = (vendors.data || []).map(v => ({
+        id: `v-${v._id}`,
+        type: 'VENDOR',
+        user: v.name || 'New Vendor',
+        action: 'joined platform',
+        target: 'Transport Partner',
+        time: formatTime(v.createdAt),
+        createdAt: new Date(v.createdAt).getTime(),
+        detail: `Vehicle: ${v.vehicleRegNumber || 'N/A'}`
+      }));
+
+      const leadActs = (leads.data || []).map(l => ({
+        id: `l-${l._id}`,
+        type: 'LEAD',
+        user: l.user?.name || 'Unknown',
+        action: 'created a new lead',
+        target: l.serviceType,
+        time: formatTime(l.createdAt),
+        createdAt: new Date(l.createdAt).getTime(),
+        detail: `From: ${l.pickup?.address} to ${l.drops?.[0]?.address || 'Local'}`
+      }));
+
+      const all = [...userActs, ...vendorActs, ...leadActs].sort((a, b) => b.createdAt - a.createdAt);
+      setActivities(all);
+    } catch (err) {
+      console.error('Failed to load activities', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newActivity = {
-        id: Date.now(),
-        type: ["LEAD", "VENDOR", "USER", "PAYMENT"][Math.floor(Math.random() * 4)],
-        user: "Live System",
-        action: "detected new interaction",
-        target: "Real-time Node",
-        time: "Just now",
-        detail: "Live telemetry data stream processing incoming request."
-      };
-      setActivities(prev => [newActivity, ...prev.slice(0, 14)]);
-    }, 15000); // Add a new item every 15s to feel alive
-
-    return () => clearInterval(interval);
+    fetchActivities();
   }, []);
 
   const filteredActivities = filter === "ALL" 
@@ -63,10 +111,35 @@ const ActivityFeed = () => {
         title="Live Signal" 
         subtitle="Real-time Command Center for all platform interactions" 
         actions={
-          <div className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl relative overflow-hidden group">
-             <Radio className="w-4 h-4 text-rose-500 animate-pulse relative z-10" />
-             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-900 dark:text-white relative z-10">Live Signal: Active</span>
-             <div className="absolute inset-0 bg-rose-500/5 group-hover:bg-rose-500/10 transition-colors" />
+          <div className="flex items-center gap-3">
+             <div className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl relative overflow-hidden group hidden sm:flex">
+                <Radio className="w-4 h-4 text-rose-500 animate-pulse relative z-10" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-900 dark:text-white relative z-10">Live Signal: Active</span>
+                <div className="absolute inset-0 bg-rose-500/5 group-hover:bg-rose-500/10 transition-colors" />
+             </div>
+             <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                 <Button variant="outline" size="sm" className="h-10 px-4 rounded-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 font-black text-[10px] uppercase tracking-widest gap-2">
+                   <Filter className="w-3.5 h-3.5 text-zinc-500" />
+                   Filter: {filter === "ALL" ? "Full Spectrum" : filter}
+                 </Button>
+               </DropdownMenuTrigger>
+               <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 rounded-xl p-2 shadow-2xl">
+                 {["ALL", "LEAD", "VENDOR", "USER", "PAYMENT", "ALERT"].map((f) => (
+                    <DropdownMenuItem 
+                      key={f} 
+                      onClick={() => setFilter(f)}
+                      className={cn(
+                        "text-[10px] font-black uppercase tracking-widest rounded-lg cursor-pointer flex items-center justify-between py-2.5",
+                        filter === f ? "bg-primary/10 text-primary focus:bg-primary/20 focus:text-primary" : "text-zinc-500 focus:bg-zinc-100 dark:focus:bg-zinc-900"
+                      )}
+                    >
+                      {f === "ALL" ? "Full Spectrum" : f}
+                      {filter === f && <Zap className="w-3 h-3" />}
+                    </DropdownMenuItem>
+                 ))}
+               </DropdownMenuContent>
+             </DropdownMenu>
           </div>
         }
       />
@@ -81,9 +154,9 @@ const ActivityFeed = () => {
                </h3>
                <div className="space-y-4">
                   {[
-                    { label: "Leads/Hr", val: "24", trend: "up" },
-                    { label: "Vendor Bids", val: "142", trend: "up" },
-                    { label: "Alerts Logged", val: "03", trend: "down" },
+                    { label: "Total Leads", val: stats?.totalRequirements || "0", trend: "up" },
+                    { label: "Total Vendors", val: stats?.totalVendors || "0", trend: "up" },
+                    { label: "Pending Approvals", val: stats?.pendingVendors || "0", trend: "down" },
                   ].map((stat, i) => (
                     <div key={i} className="flex items-center justify-between">
                        <span className="text-[10px] font-bold text-zinc-400 uppercase">{stat.label}</span>
@@ -96,27 +169,6 @@ const ActivityFeed = () => {
                </div>
             </div>
 
-            <div className="admin-card p-6 border-zinc-200 dark:border-zinc-900 space-y-4">
-               <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-primary" />
-                  Signal Filters
-               </h3>
-               <div className="space-y-2">
-                  {["ALL", "LEAD", "VENDOR", "USER", "PAYMENT", "ALERT"].map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setFilter(f)}
-                      className={cn(
-                        "w-full flex items-center justify-between p-3 rounded-xl transition-all group",
-                        filter === f ? "bg-primary text-black" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
-                      )}
-                    >
-                       <span className="text-[9px] font-black uppercase tracking-widest">{f === "ALL" ? "Full Spectrum" : f}</span>
-                       {filter === f && <Zap className="w-3 h-3 fill-black" />}
-                    </button>
-                  ))}
-               </div>
-            </div>
          </div>
 
          {/* Main Feed */}

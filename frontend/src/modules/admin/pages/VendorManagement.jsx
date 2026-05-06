@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Truck, Phone, MapPin, 
   Star, ShieldCheck, ShieldAlert,
@@ -6,7 +6,7 @@ import {
   Package, MapPinned, CreditCard,
   BarChart3, Settings2, FileText,
   Image as ImageIcon, ExternalLink,
-  ShieldQuestion, XCircle
+  ShieldQuestion, XCircle, Loader2
 } from "lucide-react";
 import { PageHeader } from '../components/common/PageHeader';
 import { DataTable } from '../components/common/DataTable';
@@ -19,57 +19,101 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { mockVendors } from '../data/mockData';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Toast } from '../components/common/Toast';
+import { adminApi } from '@/lib/api';
 
 const VendorManagement = () => {
-  const [vendors, setVendors] = useState(mockVendors);
-  const [selectedVendor, setSelectedVendor] = useState(null);
+  const [drivers, setDrivers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDriver, setSelectedDriver] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [previewDoc, setPreviewDoc] = useState(null);
+
+  const fetchDrivers = async () => {
+    try {
+      setLoading(true);
+      const res = await adminApi.getAllVendors({ limit: 100 });
+      setDrivers((res.data || []).map(v => ({
+        id: v._id,
+        name: v.name || 'Unnamed',
+        phone: v.phone,
+        location: v.location || v.nativeCity || 'N/A',
+        status: v.status,
+        isVerified: v.isVerified,
+        hasVerifiedBadge: v.hasVerifiedBadge,
+        regNumber: v.vehicleRegNumber || 'N/A',
+        vehicleTypes: v.serviceCategories || [],
+        documents: v.documents || [],
+        stats: {
+          rating: v.rating || 0,
+          completed: v.leadsWon || 0,
+          revenue: '₹0'
+        },
+        joinDate: new Date(v.createdAt).toLocaleDateString()
+      })));
+    } catch (err) {
+      showToast('Failed to load partners', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDrivers();
+  }, []);
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
-  const handleViewVendor = (vendor) => {
-    setSelectedVendor(vendor);
+  const handleViewDriver = (driver) => {
+    setSelectedDriver(driver);
     setIsDetailModalOpen(true);
     setActiveTab("overview");
   };
 
-  const handleApproveVendor = (vendorId) => {
-    setVendors(prev => prev.map(v => v.id === vendorId ? { ...v, status: 'Verified', isVerified: true } : v));
-    if (selectedVendor?.id === vendorId) {
-      setSelectedVendor(prev => ({ ...prev, status: 'Verified', isVerified: true }));
+  const handleApproveDriver = async (driverId) => {
+    try {
+      await adminApi.verifyVendor(driverId, 'Verified');
+      setDrivers(prev => prev.map(v => v.id === driverId ? { ...v, status: 'Verified', isVerified: true } : v));
+      if (selectedDriver?.id === driverId) {
+        setSelectedDriver(prev => ({ ...prev, status: 'Verified', isVerified: true }));
+      }
+      showToast(`Partner account approved successfully`, 'success');
+    } catch (err) {
+      showToast('Failed to approve driver', 'error');
     }
-    showToast(`Partner account approved successfully`, 'success');
   };
 
-  const handleRejectVendor = (vendorId) => {
-    setVendors(prev => prev.map(v => v.id === vendorId ? { ...v, status: 'Rejected', isVerified: false } : v));
-    if (selectedVendor?.id === vendorId) {
-      setSelectedVendor(prev => ({ ...prev, status: 'Rejected', isVerified: false }));
+  const handleRejectDriver = async (driverId) => {
+    try {
+      await adminApi.verifyVendor(driverId, 'Rejected');
+      setDrivers(prev => prev.map(v => v.id === driverId ? { ...v, status: 'Rejected', isVerified: false } : v));
+      if (selectedDriver?.id === driverId) {
+        setSelectedDriver(prev => ({ ...prev, status: 'Rejected', isVerified: false }));
+      }
+      showToast(`Partner account rejected`, 'error');
+    } catch (err) {
+      showToast('Failed to reject driver', 'error');
     }
-    showToast(`Partner account rejected`, 'error');
   };
 
   const handleDocAction = (docId, action) => {
     const newStatus = action === 'approve' ? 'Verified' : 'Rejected';
-    setVendors(prev => prev.map(v => {
-      if (v.id === selectedVendor.id) {
+    setDrivers(prev => prev.map(v => {
+      if (v.id === selectedDriver.id) {
         const newDocs = v.documents.map(d => d.id === docId ? { ...d, status: newStatus } : d);
         return { ...v, documents: newDocs };
       }
       return v;
     }));
     
-    setSelectedVendor(prev => {
+    setSelectedDriver(prev => {
       const newDocs = prev.documents.map(d => d.id === docId ? { ...d, status: newStatus } : d);
       return { ...prev, documents: newDocs };
     });
@@ -80,7 +124,7 @@ const VendorManagement = () => {
   const columns = [
     { 
       key: "name", 
-      label: "Vendor", 
+      label: "Driver", 
       sortable: true,
       render: (val, row) => (
         <div className="flex items-center gap-3">
@@ -88,7 +132,12 @@ const VendorManagement = () => {
              {val.split(' ').map(n => n[0]).join('')}
           </div>
           <div className="flex flex-col">
-            <span className="font-black text-zinc-900 dark:text-white text-xs uppercase tracking-tight">{val}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-black text-zinc-900 dark:text-white text-xs uppercase tracking-tight">{val}</span>
+              {row.hasVerifiedBadge && (
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" title="Verified Badge" />
+              )}
+            </div>
             <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{row.regNumber}</span>
           </div>
         </div>
@@ -155,11 +204,11 @@ const VendorManagement = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white rounded-xl p-1 w-44">
-              <DropdownMenuItem className="gap-2 p-3 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors" onClick={() => handleViewVendor(row)}>
+              <DropdownMenuItem className="gap-2 p-3 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors" onClick={() => handleViewDriver(row)}>
                 <Eye className="w-4 h-4 text-primary" />
                 <span className="text-[10px] font-black uppercase tracking-widest">Profile Details</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2 p-3 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors" onClick={() => { setSelectedVendor(row); setIsDetailModalOpen(true); setActiveTab("documents"); }}>
+              <DropdownMenuItem className="gap-2 p-3 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors" onClick={() => { setSelectedDriver(row); setIsDetailModalOpen(true); setActiveTab("documents"); }}>
                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
                  <span className="text-[10px] font-black uppercase tracking-widest">Verify Documents</span>
               </DropdownMenuItem>
@@ -177,7 +226,7 @@ const VendorManagement = () => {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <PageHeader 
-        title="Vendor Management" 
+        title="Driver Management" 
         subtitle="Approve and monitor service partners" 
         actions={
           <Button variant="outline" className="border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-400 text-[10px] font-black uppercase tracking-widest h-10 px-6 rounded-xl">
@@ -188,52 +237,52 @@ const VendorManagement = () => {
 
       <DataTable 
         columns={columns} 
-        data={vendors} 
+        data={drivers} 
         searchKey="name"
         searchPlaceholder="Filter partners by name..."
-        onRowClick={handleViewVendor}
+        onRowClick={handleViewDriver}
       />
 
-      {/* Vendor Detail Modal */}
+      {/* Driver Detail Modal */}
       <Modal
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         title="Partner Profile"
-        description="Comprehensive view of vendor history and fleet"
+        description="Comprehensive view of driver history and fleet"
         size="lg"
       >
-        {selectedVendor && (
+        {selectedDriver && (
           <div className="space-y-6 pb-6">
-            {/* Vendor Hero */}
+            {/* Driver Hero */}
             <div className="flex flex-col md:flex-row items-center gap-6 bg-zinc-50 p-6 rounded-2xl border border-zinc-100 relative overflow-hidden group">
                <div className="w-20 h-20 rounded-2xl bg-white border border-zinc-200 flex items-center justify-center text-2xl font-black text-primary shadow-lg relative z-10 shrink-0">
                   <div className="w-full h-full rounded-2xl bg-zinc-50 flex items-center justify-center">
-                    {selectedVendor.name.split(' ').map(n => n[0]).join('')}
+                    {selectedDriver.name.split(' ').map(n => n[0]).join('')}
                   </div>
                </div>
 
                <div className="flex-1 space-y-3 text-center md:text-left relative z-10 text-zinc-900">
                   <div className="space-y-1">
                      <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
-                        <h2 className="text-2xl font-black uppercase italic tracking-tighter">{selectedVendor.name}</h2>
-                        {selectedVendor.isVerified && (
+                        <h2 className="text-2xl font-black uppercase italic tracking-tighter">{selectedDriver.name}</h2>
+                        {selectedDriver.isVerified && (
                            <div className="p-1 px-3 rounded-full bg-primary/10 border border-primary/20 flex items-center gap-1.5">
                               <ShieldCheck className="w-3 h-3 text-primary" />
                               <span className="text-[8px] font-black text-primary uppercase tracking-widest">Verified Partner</span>
                            </div>
                         )}
                      </div>
-                     <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Joined: {selectedVendor.joinDate}</p>
+                     <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Joined: {selectedDriver.joinDate}</p>
                   </div>
                   
                   <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                      <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl border border-zinc-100">
                         <Phone className="w-3.5 h-3.5 text-primary" />
-                        <span className="text-[10px] font-black">{selectedVendor.phone}</span>
+                        <span className="text-[10px] font-black">{selectedDriver.phone}</span>
                      </div>
                      <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl border border-zinc-100">
-                        <CreditCard className={cn("w-3.5 h-3.5", selectedVendor.subscriptionStatus === 'Active' ? "text-emerald-500" : "text-rose-500")} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Plan: {selectedVendor.subscriptionStatus}</span>
+                        <CreditCard className={cn("w-3.5 h-3.5", selectedDriver.subscriptionStatus === 'Active' ? "text-emerald-500" : "text-rose-500")} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Plan: {selectedDriver.subscriptionStatus}</span>
                      </div>
                   </div>
                </div>
@@ -241,7 +290,7 @@ const VendorManagement = () => {
                <div className="flex flex-col gap-2 w-full md:w-auto shrink-0 relative z-10">
                   <Button 
                     className="bg-primary text-black font-black uppercase tracking-widest text-[9px] h-9 rounded-lg shadow-md shadow-primary/20"
-                    onClick={() => handleApproveVendor(selectedVendor.id)}
+                    onClick={() => handleApproveDriver(selectedDriver.id)}
                   >
                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                      Approve
@@ -249,7 +298,7 @@ const VendorManagement = () => {
                   <Button 
                     variant="outline" 
                     className="border-rose-100 bg-rose-50 text-rose-500 font-black uppercase tracking-widest text-[9px] h-9 rounded-lg hover:bg-rose-100"
-                    onClick={() => handleRejectVendor(selectedVendor.id)}
+                    onClick={() => handleRejectDriver(selectedDriver.id)}
                   >
                      <ShieldAlert className="w-3.5 h-3.5 mr-1" />
                      Reject
@@ -268,7 +317,7 @@ const VendorManagement = () => {
                </TabsList>
 
                <TabsContent value="overview" className="space-y-4">
-                  {/* Vendor Grid Sections */}
+                  {/* Driver Grid Sections */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                      {/* Fleet Info */}
                      <div className="admin-card p-4 bg-zinc-50">
@@ -279,16 +328,16 @@ const VendorManagement = () => {
                         <div className="space-y-4">
                            <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900 font-bold">
                               <span className="text-[10px] text-zinc-500 uppercase">Reg Number</span>
-                              <span className="text-xs text-zinc-900 dark:text-white uppercase tracking-widest">{selectedVendor.regNumber}</span>
+                              <span className="text-xs text-zinc-900 dark:text-white uppercase tracking-widest">{selectedDriver.regNumber}</span>
                            </div>
                            <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900 font-bold">
                               <span className="text-[10px] text-zinc-500 uppercase">Load Capacity</span>
-                              <span className="text-xs text-zinc-900 dark:text-white uppercase">{selectedVendor.capacity}</span>
+                              <span className="text-xs text-zinc-900 dark:text-white uppercase">{selectedDriver.capacity}</span>
                            </div>
                            <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900 font-bold">
                               <span className="text-[10px] text-zinc-500 uppercase">Vehicle Types</span>
                               <div className="flex gap-1">
-                                 {selectedVendor.vehicleTypes.map(v => (
+                                 {selectedDriver.vehicleTypes.map(v => (
                                     <Badge key={v} className="bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-[9px] font-black uppercase">{v}</Badge>
                                  ))}
                               </div>
@@ -307,7 +356,7 @@ const VendorManagement = () => {
                               <span className="text-[8px] font-black text-zinc-400 uppercase">Avg Rating</span>
                               <div className="flex items-center gap-1 text-primary">
                                  <Star className="w-3 h-3 fill-primary" />
-                                 <span className="text-lg font-black italic">{selectedVendor.rating}</span>
+                                 <span className="text-lg font-black italic">{selectedDriver.rating}</span>
                               </div>
                            </div>
                            <div className="p-3 rounded-xl bg-white border border-zinc-100 flex flex-col gap-0.5 items-center">
@@ -344,7 +393,7 @@ const VendorManagement = () => {
 
                 <TabsContent value="documents" className="space-y-6">
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {selectedVendor.documents?.map((doc) => (
+                      {selectedDriver.documents?.map((doc) => (
                          <div key={doc.id} className="admin-card p-6 border-zinc-200 hover:border-layers transition-all group">
                             <div className="flex items-start justify-between mb-4">
                                <div className="flex gap-4">

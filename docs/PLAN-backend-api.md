@@ -1,6 +1,6 @@
-# Safar Setto Backend Implementation Plan
+# GetGoLoad Backend Implementation Plan
 
-This plan outlines the systematic development of the Safar Setto backend, transitioning from mock data to a production-ready RESTful API. We will follow a strict **TDD (Test-Driven Development)** workflow, implementing one feature/API at a time.
+This plan outlines the systematic development of the GetGoLoad backend, transitioning from mock data to a production-ready RESTful API. We will follow a strict **TDD (Test-Driven Development)** workflow, implementing one feature/API at a time.
 
 ## Tech Stack (Locked)
 - **Runtime:** Node.js
