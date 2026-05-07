@@ -11,6 +11,32 @@ export const createRequirement = async (req, res, next) => {
   try {
     const { serviceType, vehicleType, pickup, drops, items, weight, date, time, notes } = req.body;
 
+    if (!date) {
+      return error(res, 'Booking date is required', 400, 'MISSING_DATE');
+    }
+
+    // Ensure date/time are not in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const reqDate = new Date(date);
+    reqDate.setHours(0, 0, 0, 0);
+
+    if (reqDate < today) {
+      return error(res, 'Booking date cannot be in the past', 400, 'INVALID_DATE');
+    }
+
+    if (reqDate.getTime() === today.getTime()) {
+      if (!time) {
+        return error(res, 'Booking time is required', 400, 'MISSING_TIME');
+      }
+      // If booking date is today, check if time has already passed
+      const [reqHours, reqMinutes] = time.split(':').map(Number);
+      const now = new Date();
+      if (reqHours < now.getHours() || (reqHours === now.getHours() && reqMinutes < now.getMinutes())) {
+        return error(res, 'Booking time cannot be in the past', 400, 'INVALID_TIME');
+      }
+    }
+
     const requirement = await Requirement.create({
       user: req.user.id,
       serviceType,

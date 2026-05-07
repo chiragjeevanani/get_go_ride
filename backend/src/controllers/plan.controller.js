@@ -5,7 +5,75 @@ import { success, error } from '../utils/response.js';
 // ─── GET /api/plans  (public) ─────────────────────────────────────────────────
 export const getAllPlans = async (req, res, next) => {
   try {
-    const plans = await SubscriptionPlan.find({ isActive: true }).sort({ price: 1 });
+    let plans = await SubscriptionPlan.find({ isActive: true }).sort({ price: 1 });
+    
+    const hasFreePlan = plans.some(p => p.price === 0);
+    if (plans.length === 0 || !hasFreePlan) {
+      const freeExists = await SubscriptionPlan.findOne({ price: 0 });
+      if (!freeExists) {
+        await SubscriptionPlan.create({
+          name: 'Free Trial',
+          price: 0,
+          durationDays: 30,
+          leadQuota: { type: 'limited', limit: 5, period: 'day' },
+          features: {
+            verifiedBadge: false,
+            prioritySupport: false,
+            freeMarketing: false,
+            custom: ['Access to basic leads', '5 Leads per day'],
+          },
+          isActive: true,
+        });
+      }
+
+      const overallCount = await SubscriptionPlan.countDocuments();
+      if (overallCount <= 1) {
+        await SubscriptionPlan.insertMany([
+          {
+            name: 'Basic Monthly',
+            price: 499,
+            durationDays: 30,
+            leadQuota: { type: 'limited', limit: 10, period: 'day' },
+            features: {
+              verifiedBadge: false,
+              prioritySupport: false,
+              freeMarketing: false,
+              custom: ['Basic Support'],
+            },
+            isActive: true,
+          },
+          {
+            name: 'Premium Monthly',
+            price: 999,
+            durationDays: 30,
+            leadQuota: { type: 'unlimited' },
+            features: {
+              verifiedBadge: true,
+              prioritySupport: true,
+              freeMarketing: false,
+              custom: [],
+            },
+            isActive: true,
+          },
+          {
+            name: 'Premium Yearly',
+            price: 8999,
+            durationDays: 365,
+            leadQuota: { type: 'unlimited' },
+            features: {
+              verifiedBadge: true,
+              prioritySupport: true,
+              freeMarketing: true,
+              custom: [],
+            },
+            isActive: true,
+          }
+        ]);
+      }
+
+      plans = await SubscriptionPlan.find({ isActive: true }).sort({ price: 1 });
+    }
+
     return success(res, plans, 'Plans retrieved successfully');
   } catch (err) {
     next(err);

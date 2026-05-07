@@ -62,4 +62,4 @@ const requirementSchema = new mongoose.Schema(
 // Index for geo-queries and driver filtering
 requirementSchema.index({ serviceType: 1, status: 1 });
 
-export default mongoose.model('Requirement', requirementSchema);
+export default mongoose.models.Requirement || mongoose.model('Requirement', requirementSchema);

@@ -23,6 +23,9 @@ export const TopHeader = ({ theme, toggleTheme }) => {
     localStorage.removeItem('gtgl_token');
     localStorage.removeItem('gtgl_refresh_token');
     localStorage.removeItem('gtgl_user');
+    localStorage.removeItem('gtgl_admin_token');
+    localStorage.removeItem('gtgl_admin_refresh_token');
+    localStorage.removeItem('gtgl_admin_user');
     navigate('/admin/login');
   };
 
@@ -80,7 +83,7 @@ export const TopHeader = ({ theme, toggleTheme }) => {
             <button className="flex items-center gap-3 pl-2 pr-1 h-11 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 group">
                <div className="flex flex-col items-end text-right hidden md:flex">
                   <span className="text-xs font-bold text-zinc-900 dark:text-white leading-none">
-                     {JSON.parse(localStorage.getItem('gtgl_user'))?.name || 'Super Admin'}
+                     {JSON.parse(localStorage.getItem('gtgl_admin_user') || localStorage.getItem('gtgl_user') || '{}')?.name || 'Super Admin'}
                   </span>
                   <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mt-1">Management Hub</span>
                </div>

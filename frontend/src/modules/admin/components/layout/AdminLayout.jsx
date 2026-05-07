@@ -9,10 +9,10 @@ const AdminLayout = () => {
   const [isCollapsed, setCollapsed] = useState(false);
   const { theme, toggleTheme } = useAdminTheme();
 
-  const token = localStorage.getItem('gtgl_token');
+  const token = localStorage.getItem('gtgl_admin_token') || localStorage.getItem('gtgl_token');
   let isAdmin = false;
   try {
-    const user = JSON.parse(localStorage.getItem('gtgl_user') || '{}');
+    const user = JSON.parse(localStorage.getItem('gtgl_admin_user') || localStorage.getItem('gtgl_user') || '{}');
     isAdmin = user && user.role === 'admin';
   } catch (e) {
     isAdmin = false;

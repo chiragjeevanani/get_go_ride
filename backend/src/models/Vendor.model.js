@@ -81,4 +81,4 @@ const vendorSchema = new mongoose.Schema(
 // Compound index for lead filtering
 vendorSchema.index({ serviceCategories: 1, status: 1 });
 
-export default mongoose.model('Vendor', vendorSchema);
+export default mongoose.models.Vendor || mongoose.model('Vendor', vendorSchema);

@@ -8,6 +8,19 @@ import SubscriptionPlan from '../models/SubscriptionPlan.model.js';
 
 const PLANS = [
   {
+    name: 'Free Trial',
+    price: 0,
+    durationDays: 30,
+    leadQuota: { type: 'limited', limit: 5, period: 'day' },
+    features: {
+      verifiedBadge: false,
+      prioritySupport: false,
+      freeMarketing: false,
+      custom: ['Access to basic leads', '5 Leads per day'],
+    },
+    isActive: true,
+  },
+  {
     name: 'Basic Monthly',
     price: 499,
     durationDays: 30,

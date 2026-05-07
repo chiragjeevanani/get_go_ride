@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from "react-router-dom";
-import { requirementApi, categoryApi } from "@/lib/api";
+import { requirementApi, categoryApi, vehicleApi } from "@/lib/api";
 import { toast } from "sonner";
 import goodsImg from "@/assets/categories/Truck-removebg-preview.png";
 import houseImg from "@/assets/categories/shifting.jpg";
@@ -39,11 +39,77 @@ const CreateRequirement = () => {
   const [formData, setFormData] = useState(initialState);
   const [activeLocField, setActiveLocField] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
+
+  const getTodayString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getCurrentTimeString = () => {
+    const d = new Date();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const handleDateChange = (val) => {
+    const today = getTodayString();
+    if (val && val < today) {
+       toast.error("Booking date cannot be in the past.");
+       updateData("date", "");
+       return;
+    }
+    updateData("date", val);
+    if (val === today && formData.time) {
+       const nowTime = getCurrentTimeString();
+       if (formData.time < nowTime) {
+          toast.error("Booking time cannot be in the past.");
+          updateData("time", "");
+       }
+    }
+  };
+
+  const handleTimeChange = (val) => {
+    const today = getTodayString();
+    if (formData.date === today && val) {
+       const nowTime = getCurrentTimeString();
+       if (val < nowTime) {
+          toast.error("Booking time cannot be in the past.");
+          updateData("time", "");
+          return;
+       }
+    }
+    updateData("time", val);
+  };
   const [locLoading, setLocLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const timeoutRef = useRef(null);
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [vehicles, setVehicles] = useState([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(false);
+
+  useEffect(() => {
+    if (!formData.serviceType) {
+      setVehicles([]);
+      return;
+    }
+    const fetchVehicles = async () => {
+      setVehiclesLoading(true);
+      try {
+        const res = await vehicleApi.getAll(formData.serviceType);
+        setVehicles(res.data || []);
+      } catch (err) {
+        console.error("Failed to fetch vehicles dynamically", err);
+      } finally {
+        setVehiclesLoading(false);
+      }
+    };
+    fetchVehicles();
+  }, [formData.serviceType]);
 
   useEffect(() => {
     const fetchCats = async () => {
@@ -159,8 +225,32 @@ const CreateRequirement = () => {
     });
   };
 
-  const nextStep = () => setStep((s) => Math.min(s + 1, totalSteps));
-  const prevStep = () => setStep((s) => Math.max(s - 1, 1));
+  const nextStep = () => {
+     if (step === 5) {
+        const today = getTodayString();
+        if (!formData.date) {
+           toast.error("Please select a date.");
+           return;
+        }
+        if (formData.date < today) {
+           toast.error("Booking date cannot be in the past.");
+           return;
+        }
+        if (formData.date === today) {
+           const nowTime = getCurrentTimeString();
+           if (!formData.time) {
+              toast.error("Please select a time.");
+              return;
+           }
+           if (formData.time < nowTime) {
+              toast.error("Booking time cannot be in the past.");
+              return;
+           }
+        }
+     }
+     setStep((s) => Math.min(s + 1, totalSteps));
+   };
+   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
   const steps = [
     { title: "Locations", description: "Where should we pick up and drop?" },
@@ -318,30 +408,28 @@ const CreateRequirement = () => {
           </div>
         );
       case 3:
-        const vehicleOptions = {
-          goods: [
-            { id: "mini", title: "2.5 Tonnes - 8 ft", details: "LCV • 4 Tyres • Open Body", image: goodsImg, mostBooked: true },
-            { id: "tempo", title: "3 Tonnes - 10 ft", details: "LCV • 4 Tyres • Open Body", image: goodsImg },
-            { id: "eicher", title: "5 Tonnes - 14 ft", details: "ICV • 6 Tyres • Closed Container", image: goodsImg },
-            { id: "trailer", title: "7 Tonnes - 17 ft", details: "HCV • 6 Tyres • High Deck", image: goodsImg },
-          ],
-          house: [
-            { id: "ace", title: "Tata Ace - 7 ft", details: "4 Tyres • Small Furniture", image: goodsImg, mostBooked: true },
-            { id: "pickup", title: "Bolero Pickup", details: "4 Tyres • Medium Load", image: goodsImg },
-            { id: "14ft", title: "Eicher 14ft", details: "6 Tyres • Household Bulky", image: goodsImg },
-          ],
-          emergency: [
-            { id: "basic", title: "Basic Ambulance", details: "First Aid • Oxygen Support", image: emergencyImg, mostBooked: true },
-            { id: "icu", title: "ICU Ventilator", details: "Critical Care • Life Support", image: emergencyImg },
-            { id: "tow", title: "Towing Truck", details: "24/7 Roadside Recovery", image: goodsImg },
-          ],
-          construction: [
-            { id: "tipper", title: "Tipper Truck", details: "6 Tyres • Sand/Brick", image: goodsImg, mostBooked: true },
-            { id: "jcb", title: "JCB / Loader", details: "Heavy Excavator", image: goodsImg },
-            { id: "crane", title: "Mobile Crane", details: "Lifting 10T+", image: goodsImg },
-          ]
-        };
-        const currentOptions = vehicleOptions[formData.serviceType] || vehicleOptions.goods;
+        if (vehiclesLoading) {
+          return (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+               <Loader2 className="w-8 h-8 text-primary animate-spin" />
+               <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Loading Fleet Options...</span>
+            </div>
+          );
+        }
+
+        if (vehicles.length === 0) {
+          return (
+            <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
+               <AlertTriangle className="w-8 h-8 text-amber-500" />
+               <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">No vehicles available for this category.</span>
+            </div>
+          );
+        }
+
+        let fallbackImg = goodsImg;
+        if (formData.serviceType === "house-shifting" || formData.serviceType === "house") fallbackImg = houseImg;
+        if (formData.serviceType === "emergency") fallbackImg = emergencyImg;
+
         return (
           <div className="space-y-3">
             <div className="flex items-center gap-2 px-1">
@@ -349,38 +437,52 @@ const CreateRequirement = () => {
                <div className="h-px flex-1 bg-zinc-50"></div>
             </div>
             <div className="grid grid-cols-1 gap-2.5">
-              {currentOptions.map((v) => (
-                <Card 
-                  key={v.id} 
-                  className={cn(
-                    "cursor-pointer border-2 transition-all relative overflow-hidden rounded-xl",
-                    formData.vehicleType === v.id ? "border-primary bg-primary/5 shadow-sm" : "border-zinc-50"
-                  )}
-                  onClick={() => updateData("vehicleType", v.id)}
-                >
-                  {v.mostBooked && (
-                     <div className="absolute top-0 left-0 bg-emerald-500 text-white text-[7px] font-black uppercase px-2 py-0.5 rounded-br-lg shadow-sm z-20 tracking-widest">
-                        Best Option
-                     </div>
-                  )}
-                  <CardContent className="p-3 flex items-center gap-4">
-                    <div className={cn(
-                        "w-12 h-12 rounded-lg overflow-hidden transition-all shrink-0",
-                        formData.vehicleType === v.id ? "bg-primary shadow-inner rotate-3 scale-110" : "bg-zinc-50"
-                    )}>
-                      <img 
-                        src={v.image} 
-                        alt={v.title} 
-                        className="w-full h-full object-contain p-1"
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-black text-black text-xs">{v.title}</span>
-                      <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-tighter">{v.details}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {vehicles.map((v) => {
+                const vehicleId = v._id || v.id;
+                return (
+                  <Card 
+                    key={vehicleId} 
+                    className={cn(
+                      "cursor-pointer border-2 transition-all relative overflow-hidden rounded-xl",
+                      formData.vehicleType === vehicleId ? "border-primary bg-primary/5 shadow-sm" : "border-zinc-50"
+                    )}
+                    onClick={() => updateData("vehicleType", vehicleId)}
+                  >
+                    {v.isMostBooked && (
+                       <div className="absolute top-0 left-0 bg-emerald-500 text-white text-[7px] font-black uppercase px-2 py-0.5 rounded-br-lg shadow-sm z-20 tracking-widest">
+                          Best Option
+                       </div>
+                    )}
+                    <CardContent className="p-3 flex items-center gap-4">
+                      <div className={cn(
+                          "w-12 h-12 rounded-lg overflow-hidden transition-all shrink-0",
+                          formData.vehicleType === vehicleId ? "bg-primary shadow-inner rotate-3 scale-110" : "bg-zinc-50"
+                      )}>
+                        <img 
+                          src={v.image || fallbackImg} 
+                          alt={v.name} 
+                          className="w-full h-full object-contain p-1"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-black text-black text-xs leading-none">{v.name}</span>
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                          {v.capacity && (
+                             <span className="text-[8px] bg-zinc-100 text-zinc-500 dark:text-zinc-400 px-2 py-0.5 rounded-md font-black uppercase tracking-wider">
+                                {v.capacity}
+                             </span>
+                          )}
+                          {v.details && (
+                             <span className="text-[8px] bg-primary/10 text-primary px-2 py-0.5 rounded-md font-black uppercase tracking-wider border border-primary/10">
+                                {v.details}
+                             </span>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         );
@@ -517,6 +619,7 @@ const CreateRequirement = () => {
                 <Weight className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <Input 
                   type="number" 
+                  min="0"
                   placeholder={formData.loadType === "kg" ? "e.g. 500" : "count"} 
                   className="pl-10 bg-white h-11 text-xs font-bold"
                   value={formData.loadValue}
@@ -537,7 +640,8 @@ const CreateRequirement = () => {
                   type="date" 
                   className="pl-10 bg-white h-11 text-xs font-bold"
                   value={formData.date}
-                  onChange={(e) => updateData("date", e.target.value)}
+                  min={getTodayString()}
+                  onChange={(e) => handleDateChange(e.target.value)}
                 />
               </div>
             </div>
@@ -549,7 +653,8 @@ const CreateRequirement = () => {
                   type="time" 
                   className="pl-10 bg-white h-11 text-xs font-bold"
                   value={formData.time}
-                  onChange={(e) => updateData("time", e.target.value)}
+                  min={formData.date === getTodayString() ? getCurrentTimeString() : undefined}
+                  onChange={(e) => handleTimeChange(e.target.value)}
                 />
               </div>
             </div>
@@ -655,9 +760,27 @@ const CreateRequirement = () => {
                </div>
                
                <div className="grid grid-cols-2 gap-2 pb-6">
-                  <div className="p-2.5 bg-zinc-50 rounded-xl border border-zinc-100/50">
-                     <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-0.5">Vehicle</p>
-                     <p className="text-[11px] font-bold text-black">{formData.vehicleType || "Selected"}</p>
+                  <div className="p-2.5 bg-zinc-50 rounded-xl border border-zinc-100/50 flex flex-col justify-between">
+                     <div>
+                        <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-0.5">Vehicle</p>
+                        <p className="text-[11px] font-bold text-black leading-tight">
+                            {(() => {
+                               const selectedVehicle = vehicles.find(v => (v._id || v.id) === formData.vehicleType);
+                               return selectedVehicle ? selectedVehicle.name : (formData.vehicleType || "Selected");
+                            })()}
+                        </p>
+                     </div>
+                     {(() => {
+                        const selectedVehicle = vehicles.find(v => (v._id || v.id) === formData.vehicleType);
+                        if (selectedVehicle) {
+                           return (
+                              <p className="text-[8px] text-zinc-400 font-black uppercase tracking-wider mt-1.5">
+                                 {selectedVehicle.capacity} • {selectedVehicle.details}
+                              </p>
+                           );
+                        }
+                        return null;
+                     })()}
                   </div>
                   <div className="p-2.5 bg-zinc-50 rounded-xl border border-zinc-100/50">
                      <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-0.5">Service</p>
@@ -675,10 +798,13 @@ const CreateRequirement = () => {
   const handleFinalSubmit = async () => {
     setSubmitting(true);
     try {
+      const selectedVehicle = vehicles.find(v => (v._id || v.id) === formData.vehicleType);
+      const vehicleName = selectedVehicle ? selectedVehicle.name : formData.vehicleType;
+
       // Prepare data for backend
       const payload = {
         serviceType: formData.serviceType,
-        vehicleType: formData.vehicleType,
+        vehicleType: vehicleName,
         pickup: { address: formData.pickup },
         drops: formData.drops.map(addr => ({ address: addr })),
         items: formData.serviceType === 'house' ? `House Shifting (${formData.houseSize || 'N/A'})` : (formData.serviceType === 'emergency' ? 'Emergency Assistance' : (formData.serviceType === 'construction' ? formData.materialType : 'General Goods')),
@@ -723,14 +849,14 @@ const CreateRequirement = () => {
         <Progress value={(step / totalSteps) * 100} className="h-1" />
       </div>
 
-      <div className="min-h-[400px]">
-        <AnimatePresence>
+      <div className="min-h-[400px] relative">
+        <AnimatePresence mode="wait">
           <motion.div
             key={step}
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 15 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
+            exit={{ opacity: 0, x: -15 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
           >
             {renderStep()}
           </motion.div>

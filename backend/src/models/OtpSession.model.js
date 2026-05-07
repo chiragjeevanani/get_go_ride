@@ -26,4 +26,4 @@ const otpSessionSchema = new mongoose.Schema({
   },
 });
 
-export default mongoose.model('OtpSession', otpSessionSchema);
+export default mongoose.models.OtpSession || mongoose.model('OtpSession', otpSessionSchema);

@@ -136,8 +136,11 @@ const AuthPage = () => {
                     className="pl-16 h-14 text-lg font-bold tracking-widest bg-white border-2 border-zinc-50 rounded-2xl focus:border-primary shadow-sm"
                     value={phoneNumber}
                     onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, "");
-                      if (val.length <= 10) setPhoneNumber(val);
+                      let val = e.target.value.replace(/\D/g, "");
+                      if (val.length > 10) {
+                        val = val.slice(-10);
+                      }
+                      setPhoneNumber(val);
                     }}
                   />
                </div>

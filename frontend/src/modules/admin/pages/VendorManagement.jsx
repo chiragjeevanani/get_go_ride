@@ -46,6 +46,8 @@ const VendorManagement = () => {
         isVerified: v.isVerified,
         hasVerifiedBadge: v.hasVerifiedBadge,
         regNumber: v.vehicleRegNumber || 'N/A',
+        vehicleType: v.vehicleType || 'N/A',
+        capacity: v.vehicleCapacity || 'N/A',
         vehicleTypes: v.serviceCategories || [],
         documents: v.documents || [],
         stats: {
@@ -326,6 +328,10 @@ const VendorManagement = () => {
                            Fleet & Vehicle Info
                         </h3>
                         <div className="space-y-4">
+                           <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900 font-bold">
+                              <span className="text-[10px] text-zinc-500 uppercase">Vehicle Model</span>
+                              <span className="text-xs text-zinc-900 dark:text-white uppercase tracking-widest">{selectedDriver.vehicleType}</span>
+                           </div>
                            <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900 font-bold">
                               <span className="text-[10px] text-zinc-500 uppercase">Reg Number</span>
                               <span className="text-xs text-zinc-900 dark:text-white uppercase tracking-widest">{selectedDriver.regNumber}</span>

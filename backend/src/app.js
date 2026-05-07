@@ -15,6 +15,8 @@ import settingsRoutes from './routes/settings.routes.js';
 import faqRoutes from './routes/faq.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import planRoutes from './routes/plan.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
+import vehicleRoutes from './routes/vehicle.routes.js';
 
 const app = express();
 
@@ -27,6 +29,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static('uploads'));
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -45,6 +48,8 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/faqs', faqRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/plans', planRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/vehicles', vehicleRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────────────
 app.use((req, res) => {

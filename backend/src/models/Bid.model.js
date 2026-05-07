@@ -32,4 +32,4 @@ const bidSchema = new mongoose.Schema(
 // Ensure a vendor can only place one bid per requirement
 bidSchema.index({ requirement: 1, vendor: 1 }, { unique: true });
 
-export default mongoose.model('Bid', bidSchema);
+export default mongoose.models.Bid || mongoose.model('Bid', bidSchema);

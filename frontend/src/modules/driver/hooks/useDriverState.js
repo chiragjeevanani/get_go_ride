@@ -98,8 +98,13 @@ export const useDriverState = () => {
     setStats(prev => ({ ...prev, rejected: prev.rejected + 1 }));
   };
 
+  const derivedDriver = {
+    ...driver,
+    isSubscribed: driver.subscriptionStatus === 'Active' || !!driver.isSubscribed
+  };
+
   return {
-    driver,
+    driver: derivedDriver,
     leads,
     activeLeads,
     stats,

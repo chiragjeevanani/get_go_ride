@@ -23,6 +23,12 @@ const AdminLogin = () => {
     try {
       const res = await authApi.adminLogin(email.trim(), password);
       
+      // Partitioned admin storage to avoid state collisions
+      localStorage.setItem("gtgl_admin_token", res.data.accessToken);
+      localStorage.setItem("gtgl_admin_refresh_token", res.data.refreshToken);
+      localStorage.setItem("gtgl_admin_user", JSON.stringify(res.data.admin || res.data.user || {}));
+
+      // Fallback shared storage for standard API readers
       localStorage.setItem("gtgl_token", res.data.accessToken);
       localStorage.setItem("gtgl_refresh_token", res.data.refreshToken);
       localStorage.setItem("gtgl_user", JSON.stringify(res.data.admin || res.data.user || {}));

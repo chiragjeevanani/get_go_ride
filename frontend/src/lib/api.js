@@ -12,7 +12,15 @@ const api = axios.create({
 // Add a request interceptor to include the JWT token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('gtgl_token');
+    const isAdmin = window.location.pathname.startsWith('/admin');
+    const isDriver = window.location.pathname.startsWith('/driver');
+    
+    const token = isAdmin 
+      ? (localStorage.getItem('gtgl_admin_token') || localStorage.getItem('gtgl_token'))
+      : isDriver
+        ? localStorage.getItem('gtgl_driver_token')
+        : localStorage.getItem('gtgl_token');
+      
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,26 +34,51 @@ api.interceptors.response.use(
   (response) => response.data,
   async (error) => {
     const originalRequest = error.config;
+    const isAdmin = window.location.pathname.startsWith('/admin');
+    const isDriver = window.location.pathname.startsWith('/driver');
     
     // If 401 and we haven't tried refreshing yet (exclude login and verification endpoints)
     if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/admin/login') && !originalRequest.url.includes('/auth/verify-otp')) {
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem('gtgl_refresh_token');
+      const refreshTokenKey = isAdmin 
+        ? 'gtgl_admin_refresh_token' 
+        : isDriver 
+          ? 'gtgl_driver_refresh_token' 
+          : 'gtgl_refresh_token';
+      const tokenKey = isAdmin 
+        ? 'gtgl_admin_token' 
+        : isDriver 
+          ? 'gtgl_driver_token' 
+          : 'gtgl_token';
+      
+      const refreshToken = localStorage.getItem(refreshTokenKey) || localStorage.getItem('gtgl_refresh_token');
       
       if (refreshToken) {
         try {
           const res = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
           const { accessToken } = res.data.data;
           
-          localStorage.setItem('gtgl_token', accessToken);
+          localStorage.setItem(tokenKey, accessToken);
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return api(originalRequest);
         } catch (refreshError) {
           // Refresh token expired - logout
-          localStorage.removeItem('gtgl_token');
-          localStorage.removeItem('gtgl_refresh_token');
-          localStorage.removeItem('gtgl_user');
-          window.location.href = '/user/login';
+          if (isAdmin) {
+            localStorage.removeItem('gtgl_admin_token');
+            localStorage.removeItem('gtgl_admin_refresh_token');
+            localStorage.removeItem('gtgl_admin_user');
+            window.location.href = '/admin/login';
+          } else if (isDriver) {
+            localStorage.removeItem('gtgl_driver_token');
+            localStorage.removeItem('gtgl_driver_refresh_token');
+            localStorage.removeItem('gtgl_driver');
+            window.location.href = '/driver/auth';
+          } else {
+            localStorage.removeItem('gtgl_token');
+            localStorage.removeItem('gtgl_refresh_token');
+            localStorage.removeItem('gtgl_user');
+            window.location.href = '/user/login';
+          }
         }
       }
     }
@@ -94,9 +127,28 @@ export const categoryApi = {
   delete: (id) => api.delete(`/categories/${id}`),
 };
 
+export const uploadApi = {
+  image: (file) => {
+    const fd = new FormData();
+    fd.append('image', file);
+    return api.post('/upload/image', fd, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+};
+
 export const settingsApi = {
   get: () => api.get('/settings'),
   update: (data) => api.put('/settings', data),
+};
+
+export const vehicleApi = {
+  getAll: (category) => api.get('/vehicles', { params: { category } }),
+  create: (data) => api.post('/vehicles', data),
+  update: (id, data) => api.patch(`/vehicles/${id}`, data),
+  delete: (id) => api.delete(`/vehicles/${id}`),
 };
 
 export const faqApi = {
@@ -104,6 +156,13 @@ export const faqApi = {
   create: (data) => api.post('/faqs', data),
   update: (id, data) => api.patch(`/faqs/${id}`, data),
   delete: (id) => api.delete(`/faqs/${id}`),
+};
+
+export const vendorApi = {
+  getProfile: () => api.get('/vendors/me'),
+  updateProfile: (data) => api.patch('/vendors/me', data),
+  submitOnboarding: (data) => api.post('/vendors/me/onboarding', data),
+  uploadDocument: (data) => api.post('/vendors/me/documents', data),
 };
 
 export const adminApi = {

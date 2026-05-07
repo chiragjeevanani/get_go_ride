@@ -1,42 +1,14 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Shield, Check, Zap, Star, ArrowRight } from "lucide-react";
+import { Shield, Check, Zap, Star, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useDriverState } from "../hooks/useDriverState";
 import { cn } from "@/lib/utils";
-
-const plans = [
-  {
-    id: "monthly",
-    name: "Monthly",
-    price: "₹499",
-    period: "/mo",
-    badge: "Most Flexible",
-    color: "border-zinc-100",
-    description: "Perfect for testing the platform."
-  },
-  {
-    id: "quarterly",
-    name: "Quarterly",
-    price: "₹1,299",
-    period: "/3mo",
-    badge: "Popular 🔥",
-    color: "border-primary/40",
-    featured: true,
-    description: "Better value for regular drivers."
-  },
-  {
-    id: "yearly",
-    name: "Yearly",
-    price: "₹3,999",
-    period: "/year",
-    badge: "Best Value ⭐",
-    color: "border-zinc-100",
-    description: "Maximize your earnings all year."
-  }
-];
+import { planApi } from "@/lib/api";
+import { toast } from "sonner";
 
 const benefits = [
   "Access to high-quality leads",
@@ -47,12 +19,81 @@ const benefits = [
 
 const SubscriptionGate = () => {
   const navigate = useNavigate();
-  const { activateSubscription } = useDriverState();
+  const { setDriver } = useDriverState();
+  const [dbPlans, setDbPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState(null);
 
-  const handleActivate = (planId) => {
-    activateSubscription(planId);
-    navigate("/driver/dashboard");
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const res = await planApi.getAll();
+        const activePlans = res.data || [];
+        setDbPlans(activePlans);
+        
+        // Auto-select the first paid plan as default active plan
+        const defaultPaid = activePlans.find(p => p.price > 0);
+        if (defaultPaid) {
+          setSelectedPlanId(defaultPaid._id);
+        }
+      } catch (err) {
+        console.error("Failed to load subscription plans:", err);
+        toast.error("Unable to load latest subscription plans");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
+
+  const handleActivate = async (planId) => {
+    if (submitting) return;
+    try {
+      setSubmitting(true);
+      const res = await planApi.subscribe(planId);
+      
+      // Update local storage driver details
+      localStorage.setItem('gtgl_driver', JSON.stringify(res.data.vendor));
+      
+      // Sync react state in hook
+      setDriver(res.data.vendor);
+      
+      toast.success(`Plan "${res.data.plan.name}" activated successfully!`);
+      navigate("/driver/dashboard");
+    } catch (err) {
+      toast.error(err.message || "Failed to subscribe to the plan");
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  const freePlan = dbPlans.find(p => p.price === 0);
+  const paidPlans = dbPlans.filter(p => p.price > 0);
+
+  const formatPeriod = (days) => {
+    if (days === 30) return "/mo";
+    if (days === 90) return "/3mo";
+    if (days === 365) return "/year";
+    return `/${days} days`;
+  };
+
+  const getPlanBadge = (plan) => {
+    if (plan.price >= 8000) return "Best Value ⭐";
+    if (plan.leadQuota?.type === 'unlimited') return "Popular 🔥";
+    return "Most Flexible";
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white max-w-md mx-auto flex flex-col items-center justify-center p-6 text-center">
+         <Loader2 className="w-8 h-8 text-primary animate-spin mb-3" />
+         <span className="text-xs font-black text-zinc-500 uppercase tracking-widest">Loading Premium Plans...</span>
+      </div>
+    );
+  }
+
+  const selectedPlan = dbPlans.find(p => p._id === selectedPlanId);
 
   return (
     <div className="min-h-screen bg-white max-w-md mx-auto relative overflow-hidden flex flex-col pt-8 pb-6 px-5">
@@ -62,7 +103,7 @@ const SubscriptionGate = () => {
       <div className="relative z-10 space-y-6 flex flex-col h-full">
         {/* Header */}
         <div className="space-y-2 text-center">
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl mx-auto flex items-center justify-center relative shadow-inner">
+          <div className="w-16 h-16 bg-primary/10 rounded-2xl mx-auto flex items-center justify-center relative shadow-inner animate-pulse">
              <Shield className="w-8 h-8 text-primary" strokeWidth={2.5} />
              <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center border-4 border-white">
                 <Check className="w-2.5 h-2.5 text-zinc-900 font-bold" strokeWidth={4} />
@@ -76,41 +117,58 @@ const SubscriptionGate = () => {
 
         {/* Plan Selection */}
         <div className="space-y-3">
-          {plans.map((plan, index) => (
-            <motion.div
-              key={plan.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              onClick={() => handleActivate(plan.id)}
-              className="cursor-pointer"
-            >
-              <Card className={cn(
-                "relative border-2 rounded-2xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
-                plan.featured ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-zinc-50 bg-white"
-              )}>
-                {plan.badge && (
-                  <div className="absolute -top-2.5 left-4">
-                    <Badge className="bg-primary text-zinc-900 font-bold text-[8px] tracking-tight px-2 py-0.5 border-2 border-white">
-                      {plan.badge}
-                    </Badge>
-                  </div>
-                )}
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-[9px] font-bold tracking-tight text-zinc-500 mb-0.5">{plan.name}</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-xl font-bold text-zinc-900">{plan.price}</span>
-                      <span className="text-[10px] font-bold text-zinc-400">{plan.period}</span>
+          {paidPlans.map((plan, index) => {
+            const isSelected = selectedPlanId === plan._id;
+            const badge = getPlanBadge(plan);
+            const isPopular = plan.leadQuota?.type === 'unlimited';
+
+            return (
+              <motion.div
+                key={plan._id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                onClick={() => setSelectedPlanId(plan._id)}
+                className="cursor-pointer"
+              >
+                <Card className={cn(
+                  "relative border-2 rounded-2xl transition-all duration-300 hover:shadow-xl",
+                  isSelected 
+                    ? "border-primary bg-primary/5 shadow-lg shadow-primary/10 scale-[1.01]" 
+                    : "border-zinc-100 bg-white"
+                )}>
+                  {badge && (
+                    <div className="absolute -top-2.5 left-4">
+                      <Badge className={cn(
+                        "font-bold text-[8px] tracking-tight px-2 py-0.5 border-2 border-white uppercase",
+                        isSelected ? "bg-primary text-zinc-900" : "bg-zinc-100 text-zinc-500"
+                      )}>
+                        {badge}
+                      </Badge>
                     </div>
-                  </div>
-                  <div className="w-10 h-10 rounded-xl bg-white border border-zinc-100 flex items-center justify-center shadow-sm">
-                    <ArrowRight className={cn("w-4 h-4", plan.featured ? "text-primary" : "text-zinc-200")} />
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                  )}
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] font-black tracking-wider uppercase text-zinc-400 mb-0.5">{plan.name}</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-black text-zinc-900">₹{plan.price}</span>
+                        <span className="text-[10px] font-bold text-zinc-400">{formatPeriod(plan.durationDays)}</span>
+                      </div>
+                      <p className="text-[9px] font-bold text-zinc-500 mt-1 leading-none">
+                        {isPopular ? "✓ Unlimited leads" : `✓ ${plan.leadQuota?.limit || 10} leads per day`}
+                      </p>
+                    </div>
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center border transition-all",
+                      isSelected ? "bg-primary border-primary text-zinc-900 shadow-sm" : "bg-white border-zinc-100 text-zinc-300"
+                    )}>
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* Benefits Checklist */}
@@ -128,20 +186,42 @@ const SubscriptionGate = () => {
           </div>
         </section>
 
-        {/* Sticky CTA Button (Fake interaction since plans are clickable) */}
-        <div className="mt-auto pt-4 text-center">
-           <p className="text-[9px] text-zinc-400 font-bold tracking-tight mb-3">Secure payment via Upi or Cards</p>
-           <motion.div
-             animate={{ scale: [1, 1.01, 1] }}
-             transition={{ duration: 2, repeat: Infinity }}
-           >
+        {/* Free Plan Skip Action */}
+        {freePlan && (
+          <div className="bg-amber-50/20 border border-dashed border-amber-500/20 rounded-2xl p-4 flex flex-col gap-2.5 items-center text-center">
+             <div className="space-y-0.5">
+               <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Safarsetto Basic</span>
+               <h4 className="text-xs font-black text-zinc-900 uppercase tracking-tight">Try 30-Day Free Trial</h4>
+               <p className="text-[9px] text-zinc-500 font-bold leading-relaxed">Skip payment and operate with {freePlan.leadQuota?.limit || 5} leads daily for 30 days.</p>
+             </div>
              <Button 
-               onClick={() => handleActivate("quarterly")}
-               className="w-full h-12 rounded-xl bg-primary text-zinc-900 text-base font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all"
+               variant="outline"
+               disabled={submitting}
+               onClick={() => handleActivate(freePlan._id)}
+               className="w-full h-9 rounded-xl border-2 border-zinc-200/80 text-zinc-800 bg-white hover:bg-zinc-50 text-[10px] font-black uppercase tracking-wider transition-all"
              >
-                Activate Premium Now
+               {submitting ? "Processing..." : "Skip & Try Free Plan"}
              </Button>
-           </motion.div>
+          </div>
+        )}
+
+        {/* Sticky CTA Button */}
+        <div className="mt-auto pt-4 text-center space-y-2">
+           <p className="text-[9px] text-zinc-400 font-bold tracking-tight">Secure payment via Upi or Cards</p>
+           <Button 
+             disabled={!selectedPlanId || submitting}
+             onClick={() => handleActivate(selectedPlanId)}
+             className="w-full h-12 rounded-xl bg-primary text-zinc-900 text-sm font-black uppercase tracking-wider shadow-lg shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+           >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processing Activation...
+                </>
+              ) : (
+                `Activate ${selectedPlan ? selectedPlan.name : "Premium"} Now`
+              )}
+           </Button>
         </div>
       </div>
     </div>

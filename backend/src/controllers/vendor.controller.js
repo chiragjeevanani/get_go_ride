@@ -49,21 +49,35 @@ export const updateMyProfile = async (req, res, next) => {
  */
 export const submitOnboarding = async (req, res, next) => {
   try {
-    const { vehicleType, vehicleRegNumber, vehicleCapacity, serviceCategories, operatingAreas, location } = req.body;
+    const { 
+      name, 
+      profileImage, 
+      nativeCity,
+      vehicleType, 
+      vehicleRegNumber, 
+      vehicleCapacity, 
+      serviceCategories, 
+      operatingAreas, 
+      location 
+    } = req.body;
     
+    const updateFields = {
+      vehicleType, 
+      vehicleRegNumber, 
+      vehicleCapacity, 
+      serviceCategories, 
+      operatingAreas, 
+      location,
+      onboardingComplete: true
+    };
+
+    if (name !== undefined) updateFields.name = name;
+    if (profileImage !== undefined) updateFields.profileImage = profileImage;
+    if (nativeCity !== undefined) updateFields.nativeCity = nativeCity;
+
     const vendor = await Vendor.findByIdAndUpdate(
       req.user.id,
-      { 
-        $set: { 
-          vehicleType, 
-          vehicleRegNumber, 
-          vehicleCapacity, 
-          serviceCategories, 
-          operatingAreas, 
-          location,
-          onboardingComplete: true
-        } 
-      },
+      { $set: updateFields },
       { new: true, runValidators: true }
     );
 

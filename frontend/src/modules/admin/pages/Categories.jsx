@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Plus, Edit2, Trash2, 
-  Layers, Truck, Info, 
+  Layers, Truck, Info, Home,
   ChevronRight, Save, X,
   Briefcase, Package, CarFront,
   Tags, Settings2, Activity,
-  Scale, Zap, Loader2
+  Scale, Zap, Loader2,
+  Upload, Image
 } from "lucide-react";
 import { PageHeader } from '../components/common/PageHeader';
 import { Modal } from '../components/common/Modal';
@@ -15,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Toast } from '../components/common/Toast';
-import { categoryApi } from '@/lib/api';
+import { categoryApi, uploadApi, vehicleApi } from '@/lib/api';
 
 const Categories = () => {
   const [activeTab, setActiveTab] = useState("service");
@@ -25,37 +26,50 @@ const Categories = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
+  const [selectedVehicleCategories, setSelectedVehicleCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [serviceCategories, setServiceCategories] = useState([]);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [categoryFile, setCategoryFile] = useState(null);
+  const [categoryImageUrl, setCategoryImageUrl] = useState("");
+  const [categoryImagePreview, setCategoryImagePreview] = useState("");
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
+  const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(false);
+
   useEffect(() => {
     fetchCategories();
+    fetchVehicles();
   }, []);
 
   const fetchCategories = async () => {
     setLoading(true);
     try {
       const res = await categoryApi.getAll();
-      setServiceCategories(res.data);
+      setServiceCategories(res.data || []);
     } catch (err) {
       showToast(err.message || 'Failed to load categories', 'error');
     } finally {
       setLoading(false);
     }
   };
-  
-  const [vehicleTypes, setVehicleTypes] = useState([
-    { id: 1, name: "Mini Truck (Tata Ace)", capacity: "800kg", icon: Truck },
-    { id: 2, name: "Pick-up (Bolero)", capacity: "1.2 - 1.5 Ton", icon: Truck },
-    { id: 3, name: "Heavy Truck (14ft - 19ft)", capacity: "5 - 9 Ton", icon: Truck },
-    { id: 4, name: "Auto Rickshaw (Cargo)", capacity: "300kg", icon: CarFront },
-  ]);
+
+  const fetchVehicles = async () => {
+    setVehiclesLoading(true);
+    try {
+      const res = await vehicleApi.getAll();
+      setVehicleTypes(res.data || []);
+    } catch (err) {
+      showToast(err.message || 'Failed to load vehicle types', 'error');
+    } finally {
+      setVehiclesLoading(false);
+    }
+  };
 
   const handleOpenFilters = (cat) => {
     setSelectedCategory(cat);
@@ -64,6 +78,9 @@ const Categories = () => {
 
   const handleEditCategory = (cat) => {
     setEditingCategory(cat);
+    setCategoryFile(null);
+    setCategoryImageUrl(cat.image || "");
+    setCategoryImagePreview(cat.image || "");
     setIsCategoryModalOpen(true);
   };
 
@@ -80,20 +97,33 @@ const Categories = () => {
 
   const handleAddCategory = () => {
     setEditingCategory(null);
+    setCategoryFile(null);
+    setCategoryImageUrl("");
+    setCategoryImagePreview("");
     setIsCategoryModalOpen(true);
   };
 
   const handleSaveCategory = async (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
-    const catData = {
-      name: formData.get('name'),
-      slug: formData.get('slug') || formData.get('name').toLowerCase().replace(/\s+/g, '-'),
-      description: formData.get('description'),
-      icon: 'Package'
-    };
+    const fData = new FormData(e.target);
 
     try {
+      // Step 1: Upload image file first if a local file was selected
+      let finalImageUrl = categoryImageUrl;
+      if (categoryFile) {
+        showToast('Uploading image...', 'success');
+        const uploadRes = await uploadApi.image(categoryFile);
+        finalImageUrl = uploadRes.url;
+      }
+
+      // Step 2: Save category with plain JSON including the resolved image URL
+      const catData = {
+        name: fData.get('name'),
+        slug: fData.get('slug') || fData.get('name').toLowerCase().replace(/\s+/g, '-'),
+        description: fData.get('description'),
+        image: finalImageUrl,
+      };
+
       if (editingCategory) {
         const res = await categoryApi.update(editingCategory._id, catData);
         setServiceCategories(prev => prev.map(c => c._id === editingCategory._id ? res.data : c));
@@ -111,38 +141,54 @@ const Categories = () => {
 
   const handleEditVehicle = (vehicle) => {
     setEditingVehicle(vehicle);
+    setSelectedVehicleCategories(vehicle.categorySlugs || (vehicle.categorySlug ? [vehicle.categorySlug] : []));
     setIsVehicleModalOpen(true);
   };
 
-  const handleDeleteVehicle = (id) => {
-    const v = vehicleTypes.find(item => item.id === id);
-    setVehicleTypes(prev => prev.filter(item => item.id !== id));
-    showToast(`${v?.name} removed from registry`, 'error');
+  const handleDeleteVehicle = async (id) => {
+    if (!window.confirm('Are you sure you want to remove this vehicle class?')) return;
+    try {
+      await vehicleApi.delete(id);
+      setVehicleTypes(prev => prev.filter(v => (v._id || v.id) !== id));
+      showToast('Vehicle class removed from registry', 'error');
+    } catch (err) {
+      showToast(err.message || 'Failed to remove vehicle class', 'error');
+    }
   };
 
   const handleAddVehicle = () => {
     setEditingVehicle(null);
+    setSelectedVehicleCategories([]);
     setIsVehicleModalOpen(true);
   };
 
-  const handleSaveVehicle = (e) => {
+  const handleSaveVehicle = async (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
-    const vData = {
-      name: formData.get('name'),
-      capacity: formData.get('capacity'),
-      icon: Truck
+    const fData = new FormData(e.target);
+    const payload = {
+      name: fData.get('name'),
+      capacity: fData.get('capacity'),
+      details: fData.get('details'),
+      categorySlug: selectedVehicleCategories[0] || '',
+      categorySlugs: selectedVehicleCategories,
+      isMostBooked: fData.get('isMostBooked') === 'on',
     };
 
-    if (editingVehicle) {
-      setVehicleTypes(prev => prev.map(v => v.id === editingVehicle.id ? { ...v, ...vData } : v));
-      showToast('Vehicle class updated', 'success');
-    } else {
-      const newV = { id: Date.now(), ...vData };
-      setVehicleTypes(prev => [...prev, newV]);
-      showToast('New vehicle class registered', 'success');
+    try {
+      if (editingVehicle) {
+        const id = editingVehicle._id || editingVehicle.id;
+        const res = await vehicleApi.update(id, payload);
+        setVehicleTypes(prev => prev.map(v => (v._id || v.id) === id ? res.data : v));
+        showToast('Vehicle class updated successfully', 'success');
+      } else {
+        const res = await vehicleApi.create(payload);
+        setVehicleTypes(prev => [...prev, res.data]);
+        showToast('New vehicle class registered successfully', 'success');
+      }
+      setIsVehicleModalOpen(false);
+    } catch (err) {
+      showToast(err.message || 'Failed to register vehicle class', 'error');
     }
-    setIsVehicleModalOpen(false);
   };
 
   // Icon mapping for dynamic icons
@@ -167,14 +213,11 @@ const Categories = () => {
       />
 
       <Tabs defaultValue="service" className="space-y-6" onValueChange={setActiveTab}>
-         <TabsList className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 p-1 rounded-2xl w-full max-w-md">
-            <TabsTrigger value="service" className="rounded-xl font-black text-[10px] uppercase tracking-widest py-3 data-[state=active]:bg-primary data-[state=active]:text-black transition-all">
+         <TabsList className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 p-1 rounded-2xl w-full max-w-xs flex gap-1">
+            <TabsTrigger value="service" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest py-3 data-[state=active]:bg-primary data-[state=active]:text-black transition-all">
                Service Categories
             </TabsTrigger>
-            <TabsTrigger value="matching" className="rounded-xl font-black text-[10px] uppercase tracking-widest py-3 data-[state=active]:bg-primary data-[state=active]:text-black transition-all">
-               Matching Logic
-            </TabsTrigger>
-            <TabsTrigger value="vehicle" className="rounded-xl font-black text-[10px] uppercase tracking-widest py-3 data-[state=active]:bg-primary data-[state=active]:text-black transition-all">
+            <TabsTrigger value="vehicle" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest py-3 data-[state=active]:bg-primary data-[state=active]:text-black transition-all">
                Vehicle Class
             </TabsTrigger>
          </TabsList>
@@ -198,8 +241,12 @@ const Categories = () => {
                     >
                        <div className="flex items-center justify-between">
                           <div className="flex items-center gap-5">
-                             <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                                <IconComponent className="w-6 h-6 text-primary" strokeWidth={2} />
+                             <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center group-hover:bg-primary/10 transition-colors overflow-hidden">
+                                {cat.image ? (
+                                   <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+                                ) : (
+                                   <IconComponent className="w-6 h-6 text-primary" strokeWidth={2} />
+                                )}
                              </div>
                              <div className="space-y-1">
                                 <h3 className="text-lg font-black text-zinc-900 dark:text-white uppercase italic tracking-tighter">{cat.name}</h3>
@@ -267,129 +314,96 @@ const Categories = () => {
             </div>
          </TabsContent>
 
-         <TabsContent value="matching" className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <div className="space-y-6">
-               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Matching Radius */}
-                  <div className="admin-card p-8 border-zinc-200 dark:border-zinc-900 space-y-8 relative overflow-hidden group">
-                     <div className="space-y-1 relative z-10">
-                        <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest">Proximity Engine</h3>
-                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic">Define geographic distribution rules</p>
-                     </div>
-                     <div className="space-y-4 relative z-10">
-                        <div className="space-y-2">
-                           <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Global Scan Radius (KM)</label>
-                           <input defaultValue="50" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 text-sm font-black text-primary italic focus:outline-none focus:border-primary" />
-                        </div>
-                        <div className="flex items-center justify-between p-4 bg-zinc-100 dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-900">
-                           <span className="text-[10px] font-black text-zinc-500 uppercase">Auto-Expansion</span>
-                           <Badge className="bg-emerald-500/10 text-emerald-500 border-none text-[8px] font-black uppercase px-2 py-1">Enabled</Badge>
-                        </div>
-                     </div>
-                     <Activity className="absolute -right-4 -bottom-4 w-32 h-32 text-primary opacity-[0.02] rotate-[-15deg] group-hover:opacity-[0.05] transition-opacity" />
-                  </div>
-
-                  {/* Load Balancing */}
-                  <div className="admin-card p-8 border-zinc-200 dark:border-zinc-900 space-y-8 relative overflow-hidden group">
-                     <div className="space-y-1 relative z-10">
-                        <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest">Load Balancing</h3>
-                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic">Manage vendor response limits</p>
-                     </div>
-                     <div className="space-y-4 relative z-10">
-                        <div className="space-y-2">
-                           <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Max Bids Per Lead</label>
-                           <input defaultValue="10" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary italic focus:outline-none focus:border-primary" />
-                        </div>
-                        <div className="space-y-2">
-                           <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Bid Window (Hours)</label>
-                           <input defaultValue="72" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary italic focus:outline-none focus:border-primary" />
-                        </div>
-                     </div>
-                     <Scale className="absolute -right-4 -bottom-4 w-32 h-32 text-primary opacity-[0.02] rotate-[15deg] group-hover:opacity-[0.05] transition-opacity" />
-                  </div>
-
-                  {/* Scoring Engine */}
-                  <div className="admin-card p-8 border-zinc-200 dark:border-zinc-900 space-y-8 relative overflow-hidden group">
-                     <div className="space-y-1 relative z-10">
-                        <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest">Scoring & Priority</h3>
-                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic">How vendors are sorted for users</p>
-                     </div>
-                     <div className="space-y-3 relative z-10">
-                        {[
-                          { label: "Proximity weight", val: "40%" },
-                          { label: "Rating weight", val: "30%" },
-                          { label: "Reliability score", val: "30%" }
-                        ].map((item, i) => (
-                           <div key={i} className="flex flex-col gap-1.5">
-                              <div className="flex justify-between items-center">
-                                 <span className="text-[9px] font-black text-zinc-500 uppercase">{item.label}</span>
-                                 <span className="text-[10px] font-black text-primary">{item.val}</span>
-                              </div>
-                              <div className="h-1 w-full bg-zinc-100 dark:bg-zinc-900 rounded-full overflow-hidden">
-                                 <div className="h-full bg-primary rounded-full" style={{ width: item.val }} />
-                              </div>
-                           </div>
-                        ))}
-                     </div>
-                     <Zap className="absolute -right-4 -bottom-4 w-32 h-32 text-primary opacity-[0.02] rotate-[-5deg] group-hover:opacity-[0.05] transition-opacity" />
-                  </div>
-               </div>
-
-               <div className="flex justify-end gap-3">
-                  <Button variant="ghost" className="text-[10px] font-black uppercase text-zinc-500">Reset Defaults</Button>
-                  <Button className="bg-primary text-black font-black uppercase text-[10px] tracking-widest h-12 px-10 rounded-xl">Save Matching Rules</Button>
-               </div>
-            </div>
-         </TabsContent>
-
          <TabsContent value="vehicle" className="animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-               {vehicleTypes.map((vehicle) => (
-                  <motion.div 
-                    key={vehicle.id} 
-                    whileHover={{ scale: 1.01 }}
-                    className="admin-card p-6 flex items-center justify-between group hover:border-primary/20 transition-all border-2 border-zinc-200 dark:border-zinc-900"
-                  >
-                     <div className="flex items-center gap-5">
-                        <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                           <vehicle.icon className="w-6 h-6 text-primary" strokeWidth={2} />
-                        </div>
-                        <div className="space-y-1">
-                           <h3 className="text-lg font-black text-zinc-900 dark:text-white uppercase italic tracking-tighter">{vehicle.name}</h3>
-                           <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest text-[#71717a]">Payload Capacity: <span className="text-primary italic">{vehicle.capacity}</span></p>
-                        </div>
-                     </div>
-                     <div className="flex gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleEditVehicle(vehicle)}
-                          className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-primary hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
-                        >
-                           <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleDeleteVehicle(vehicle.id)}
-                          className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-rose-500 hover:bg-rose-500/5 transition-all"
-                        >
-                           <Trash2 className="w-4 h-4" />
-                        </Button>
-                     </div>
-                  </motion.div>
-               ))}
+             {vehiclesLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-3 admin-card border-dashed">
+                   <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Loading registered classes...</span>
+                </div>
+             ) : vehicleTypes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-3 admin-card border-dashed">
+                   <Info className="w-8 h-8 text-amber-500" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">No vehicle classes registered in the database.</span>
+                   <Button onClick={handleAddVehicle} className="mt-2 bg-primary/10 hover:bg-primary/20 text-primary border-none text-[10px] font-black uppercase tracking-widest h-9 px-4 rounded-lg">Register First Class</Button>
+                </div>
+             ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                   {vehicleTypes.map((vehicle) => {
+                      const vehicleId = vehicle._id || vehicle.id;
+                      const isHouse = vehicle.categorySlug?.includes('house');
+                      const isEmergency = vehicle.categorySlug?.includes('emergency');
+                      const isConstruction = vehicle.categorySlug?.includes('construction');
+                      
+                      let VehicleIcon = Truck;
+                      if (isHouse) VehicleIcon = Home;
+                      else if (isEmergency) VehicleIcon = Activity;
+                      else if (isConstruction) VehicleIcon = Layers;
 
-               {/* Add Placeholder */}
-               <div 
-                onClick={handleAddVehicle}
-                className="admin-card p-8 border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-2 opacity-50 hover:opacity-100 transition-all cursor-pointer hover:border-primary/20 hover:bg-primary/5"
-               >
-                  <Plus className="w-6 h-6 text-zinc-400" />
-                  <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Define New Class</span>
-               </div>
-            </div>
-         </TabsContent>
+                      return (
+                         <motion.div 
+                           key={vehicleId} 
+                           whileHover={{ scale: 1.01 }}
+                           className="admin-card p-6 flex items-center justify-between group hover:border-primary/20 transition-all border-2 border-zinc-200 dark:border-zinc-900 relative"
+                         >
+                            <div className="flex items-center gap-5">
+                               <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                                  <VehicleIcon className="w-6 h-6 text-primary" strokeWidth={2} />
+                                </div>
+                               <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                     <h3 className="text-lg font-black text-zinc-900 dark:text-white uppercase italic tracking-tighter leading-none">{vehicle.name}</h3>
+                                     {vehicle.isMostBooked && (
+                                        <Badge className="bg-emerald-500/10 text-emerald-500 border-none text-[8px] font-black uppercase px-1.5 py-0.5 leading-none">Best Option</Badge>
+                                     )}
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest text-[#71717a]">
+                                     Payload Capacity: <span className="text-primary italic">{vehicle.capacity}</span>
+                                  </p>
+                                  <div className="flex items-center flex-wrap gap-1.5 pt-0.5">
+                                     {(vehicle.categorySlugs || (vehicle.categorySlug ? [vehicle.categorySlug] : [])).map(slug => (
+                                        <Badge key={slug} className="bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5">
+                                           {slug}
+                                        </Badge>
+                                     ))}
+                                     {vehicle.details && (
+                                        <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 italic uppercase">({vehicle.details})</span>
+                                     )}
+                                  </div>
+                               </div>
+                            </div>
+                            <div className="flex gap-2">
+                               <Button 
+                                 variant="ghost" 
+                                 size="icon" 
+                                 onClick={() => handleEditVehicle(vehicle)}
+                                 className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-primary hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
+                               >
+                                  <Edit2 className="w-4 h-4" />
+                               </Button>
+                               <Button 
+                                 variant="ghost" 
+                                 size="icon" 
+                                 onClick={() => handleDeleteVehicle(vehicleId)}
+                                 className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-rose-500 hover:bg-rose-500/5 transition-all"
+                               >
+                                  <Trash2 className="w-4 h-4" />
+                               </Button>
+                            </div>
+                         </motion.div>
+                      );
+                   })}
+
+                   {/* Add Placeholder */}
+                   <div 
+                     onClick={handleAddVehicle}
+                     className="admin-card p-8 border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-2 opacity-50 hover:opacity-100 transition-all cursor-pointer hover:border-primary/20 hover:bg-primary/5 min-h-[110px]"
+                   >
+                      <Plus className="w-6 h-6 text-zinc-400" />
+                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Define New Class</span>
+                   </div>
+                </div>
+             )}
+          </TabsContent>
       </Tabs>
 
       {/* Advanced Filter Modal */}
@@ -459,43 +473,118 @@ const Categories = () => {
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
         title={editingCategory ? "Update Category" : "Define New Category"}
-        description="Configure service classification and public identifier"
-        size="sm"
+        description="Configure service classification, public identifier, and presentation"
+        size="md"
       >
          <form onSubmit={handleSaveCategory} className="space-y-6 pt-2">
-            <div className="space-y-4">
-               <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Category Display Name</label>
-                  <input 
-                     name="name"
-                     required
-                     placeholder="e.g. Luxury Car Transport"
-                     defaultValue={editingCategory?.name}
-                     className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary transition-all"
-                  />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="space-y-4">
+                  <div className="space-y-1.5">
+                     <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Category Display Name</label>
+                     <input 
+                        name="name"
+                        required
+                        placeholder="e.g. Luxury Car Transport"
+                        defaultValue={editingCategory?.name}
+                        className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary transition-all"
+                     />
+                  </div>
+                  <div className="space-y-1.5">
+                     <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Service Identifier (Slug)</label>
+                     <input 
+                        name="slug"
+                        placeholder="e.g. luxury-transport"
+                        defaultValue={editingCategory?.slug}
+                        className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-500 italic focus:outline-none focus:border-primary transition-all"
+                     />
+                     <p className="px-1 text-[8px] font-bold text-zinc-400 uppercase italic">* Leave blank to auto-generate from name</p>
+                  </div>
+                  <div className="space-y-1.5">
+                     <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Description / Tagline</label>
+                     <input 
+                        name="description"
+                        placeholder="e.g. For household furniture & appliances"
+                        defaultValue={editingCategory?.description}
+                        className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary transition-all"
+                     />
+                  </div>
                </div>
-               <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Service Identifier (Slug)</label>
-                  <input 
-                     name="slug"
-                     placeholder="e.g. luxury-transport"
-                     defaultValue={editingCategory?.slug}
-                     className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-500 italic focus:outline-none focus:border-primary transition-all"
-                  />
-                  <p className="px-1 text-[8px] font-bold text-zinc-400 uppercase italic">* Leave blank to auto-generate from name</p>
-               </div>
-               <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Description / Tagline</label>
-                  <input 
-                     name="description"
-                     placeholder="e.g. For household furniture & appliances"
-                     defaultValue={editingCategory?.description}
-                     className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary transition-all"
-                  />
+
+               <div className="space-y-4">
+                  <div className="space-y-1.5">
+                     <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1 font-black">Category Image Presentation</label>
+                     
+                     {categoryImagePreview ? (
+                        <div className="relative w-full h-32 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 flex items-center justify-center">
+                           <img src={categoryImagePreview} alt="Preview" className="h-full w-auto object-contain" />
+                           <button
+                              type="button"
+                              onClick={() => {
+                                 setCategoryFile(null);
+                                 setCategoryImageUrl("");
+                                 setCategoryImagePreview("");
+                              }}
+                              className="absolute top-2 right-2 p-1.5 rounded-lg bg-rose-500 text-white hover:bg-rose-600 transition-colors shadow-md"
+                           >
+                              <X className="w-3.5 h-3.5" />
+                           </button>
+                        </div>
+                     ) : (
+                        <div className="w-full h-32 rounded-xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-1.5 bg-zinc-50/50 dark:bg-zinc-950/20 text-zinc-400">
+                           <Image className="w-6 h-6 text-zinc-300 dark:text-zinc-700" />
+                           <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-400">No Image Assigned</span>
+                        </div>
+                     )}
+
+                     <div className="grid grid-cols-1 gap-2 pt-1.5">
+                        <div className="flex items-center gap-2">
+                           <input
+                              type="file"
+                              id="category-file-input"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                 const file = e.target.files[0];
+                                 if (file) {
+                                    setCategoryFile(file);
+                                    setCategoryImageUrl("");
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                       setCategoryImagePreview(reader.result);
+                                    };
+                                    reader.readAsDataURL(file);
+                                 }
+                              }}
+                           />
+                           <label
+                              htmlFor="category-file-input"
+                              className="flex-1 h-10 px-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-primary/20 hover:bg-primary/5 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-black dark:hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
+                           >
+                              <Upload className="w-3.5 h-3.5" />
+                              Upload Local Image
+                           </label>
+                        </div>
+
+                        <div className="relative">
+                           <input
+                              type="text"
+                              placeholder="Or paste custom Image URL..."
+                              value={categoryImageUrl}
+                              onChange={(e) => {
+                                 const val = e.target.value;
+                                 setCategoryImageUrl(val);
+                                 setCategoryImagePreview(val);
+                                 setCategoryFile(null);
+                              }}
+                              className="w-full h-10 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary transition-all"
+                           />
+                        </div>
+                     </div>
+                  </div>
                </div>
             </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-900">
                <Button type="submit" className="flex-1 bg-primary text-black font-black uppercase text-[10px] tracking-widest h-12 rounded-xl shadow-lg shadow-primary/20">
                   {editingCategory ? "Save Changes" : "Create Category"}
                </Button>
@@ -519,12 +608,12 @@ const Categories = () => {
               <div className="space-y-1.5">
                  <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Vehicle Classification Name</label>
                  <input 
-                    name="name"
-                    required
-                    placeholder="e.g. 14ft Closed Container"
-                    defaultValue={editingVehicle?.name}
-                    className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary transition-all"
-                 />
+                     name="name"
+                     required
+                     placeholder="e.g. 14ft Closed Container"
+                     defaultValue={editingVehicle?.name}
+                     className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary transition-all"
+                  />
               </div>
               <div className="space-y-1.5">
                  <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Payload Capacity (Text)</label>
@@ -533,12 +622,78 @@ const Categories = () => {
                     required
                     placeholder="e.g. 5 - 7 Ton"
                     defaultValue={editingVehicle?.capacity}
-                    className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-500 italic focus:outline-none focus:border-primary transition-all"
+                    className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary transition-all"
+                 />
+              </div>
+              <div className="space-y-2">
+                 <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Category Associations</label>
+                 <div className="grid grid-cols-2 gap-2">
+                    {serviceCategories.map(cat => {
+                       const isSelected = selectedVehicleCategories.includes(cat.slug);
+                       return (
+                          <button
+                             type="button"
+                             key={cat.slug}
+                             onClick={() => {
+                                setSelectedVehicleCategories(prev => 
+                                   prev.includes(cat.slug)
+                                      ? prev.filter(slug => slug !== cat.slug)
+                                      : [...prev, cat.slug]
+                                );
+                             }}
+                             className={cn(
+                                "flex items-center justify-between p-3 rounded-xl border text-left transition-all",
+                                isSelected 
+                                   ? "bg-primary/5 border-primary/40 text-zinc-900 dark:text-white"
+                                   : "bg-zinc-50 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:border-zinc-300 dark:hover:border-zinc-700"
+                             )}
+                          >
+                             <span className="text-xs font-black uppercase tracking-wider">{cat.name}</span>
+                             <div className={cn(
+                                "w-4 h-4 rounded-full flex items-center justify-center border transition-all",
+                                isSelected 
+                                   ? "bg-primary border-primary text-black" 
+                                   : "border-zinc-300 dark:border-zinc-700"
+                             )}>
+                                {isSelected && (
+                                   <svg className="w-2.5 h-2.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                   </svg>
+                                )}
+                             </div>
+                          </button>
+                       );
+                    })}
+                 </div>
+                 {selectedVehicleCategories.length === 0 && (
+                    <p className="text-[9px] font-bold text-amber-500 italic uppercase px-1">* At least one category must be selected</p>
+                 )}
+              </div>
+              <div className="space-y-1.5">
+                 <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-1">Specifications Tagline (Details)</label>
+                 <input 
+                    name="details"
+                    placeholder="e.g. ICV • 6 Tyres • High Deck"
+                    defaultValue={editingVehicle?.details}
+                    className="w-full h-11 px-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-900 dark:text-white focus:outline-none focus:border-primary transition-all"
                  />
               </div>
            </div>
 
-           <div className="flex gap-2 pt-2">
+           <div className="flex items-center gap-3 p-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+              <input 
+                 type="checkbox"
+                 id="isMostBooked"
+                 name="isMostBooked"
+                 defaultChecked={editingVehicle?.isMostBooked}
+                 className="w-4 h-4 rounded border-zinc-300 text-primary focus:ring-primary accent-primary"
+              />
+              <label htmlFor="isMostBooked" className="text-[10px] font-black text-zinc-600 dark:text-zinc-400 uppercase tracking-widest cursor-pointer select-none">
+                 Highlight as Best Option (Most Booked Badge)
+              </label>
+           </div>
+
+           <div className="flex gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-900">
               <Button type="submit" className="flex-1 bg-primary text-black font-black uppercase text-[10px] tracking-widest h-12 rounded-xl shadow-lg shadow-primary/20">
                  {editingVehicle ? "Update Registry" : "Register Class"}
               </Button>
