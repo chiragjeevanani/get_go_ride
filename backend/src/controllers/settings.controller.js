@@ -54,3 +54,16 @@ export const updateSettings = async (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * @route   GET /api/settings/razorpay-key
+ * @desc    Get Razorpay public key ID
+ * @access  Public
+ */
+export const getRazorpayKey = async (req, res, next) => {
+  try {
+    success(res, { keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder' }, 'Razorpay key retrieved successfully');
+  } catch (err) {
+    next(err);
+  }
+};

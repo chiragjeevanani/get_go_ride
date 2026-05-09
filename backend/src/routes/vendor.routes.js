@@ -6,10 +6,13 @@ import {
   updateMyProfile,
   submitOnboarding,
   uploadDocument,
+  uploadVehicleImage,
+  deleteVehicleImage,
   getAllVendors,
   getVendorById,
   verifyVendor,
-  verifyDocument
+  verifyDocument,
+  getMyAnalytics
 } from '../controllers/vendor.controller.js';
 
 const router = express.Router();
@@ -17,12 +20,17 @@ const router = express.Router();
 // --- Vendor Routes (Require 'vendor' role) ---
 router.use('/me', authenticate, requireRole('vendor'));
 
+router.get('/me/analytics', getMyAnalytics);
+
 router.route('/me')
   .get(getMyProfile)
   .patch(updateMyProfile);
 
 router.post('/me/onboarding', submitOnboarding);
 router.post('/me/documents', upload.single('document'), uploadDocument);
+router.route('/me/vehicle-images')
+  .post(upload.single('image'), uploadVehicleImage)
+  .delete(deleteVehicleImage);
 
 // --- Admin Routes (Require 'admin' role) ---
 router.use('/', authenticate, requireRole('admin'));

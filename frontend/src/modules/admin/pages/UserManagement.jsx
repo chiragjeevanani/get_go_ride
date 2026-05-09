@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { 
   User, Mail, Phone, MapPin, 
   Calendar, ShieldCheck, ShieldAlert,
-  MoreVertical, Eye, Ban, UserCheck, Loader2
+  MoreVertical, Eye, Ban, UserCheck, Loader2, CheckCircle2
 } from "lucide-react";
 import { PageHeader } from '../components/common/PageHeader';
 import { DataTable } from '../components/common/DataTable';
@@ -80,9 +80,38 @@ const UserManagement = () => {
     setTimeout(() => setIsMessageSent(false), 3000);
   };
 
-  const handleViewUser = (user) => {
-    setSelectedUser(user);
+  const handleViewUser = async (user) => {
+    // Open immediately with local data to provide instantaneous user feedback
+    setSelectedUser({
+      ...user,
+      recentActivity: [],
+      successfulHires: 0,
+      revenue: 0,
+      loadingDetails: true
+    });
     setIsDetailModalOpen(true);
+
+    try {
+      const res = await adminApi.getUserById(user.id);
+      if (res.success && res.data) {
+        setSelectedUser({
+          id: res.data._id,
+          name: res.data.name || 'Unknown',
+          phone: res.data.phone,
+          location: res.data.location || 'N/A',
+          status: res.data.status,
+          joinDate: new Date(res.data.createdAt).toLocaleDateString(),
+          totalRequests: res.data.totalRequests || 0,
+          successfulHires: res.data.successfulHires || 0,
+          revenue: res.data.revenue || 0,
+          recentActivity: res.data.recentActivity || [],
+          loadingDetails: false
+        });
+      }
+    } catch (err) {
+      showToast('Failed to load customer profile details', 'error');
+      setSelectedUser(prev => prev ? { ...prev, loadingDetails: false } : null);
+    }
   };
 
   const columns = [
@@ -263,42 +292,62 @@ const UserManagement = () => {
             {/* Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
-                { label: "Lifetime Bookings", value: selectedUser.totalRequests, color: "text-primary" },
-                { label: "Successful Hires", value: Math.floor(selectedUser.totalRequests * 0.8), color: "text-emerald-500" },
-                { label: "Revenue", value: "₹12.4K", color: "text-zinc-900" }
+                { label: "Lifetime Bookings", value: selectedUser.totalRequests || 0, color: "text-primary" },
+                { label: "Successful Hires", value: selectedUser.successfulHires || 0, color: "text-emerald-500" },
+                { label: "Revenue / Spent", value: `₹${(selectedUser.revenue || 0).toLocaleString('en-IN')}`, color: "text-zinc-900 dark:text-white" }
               ].map((stat, i) => (
-                <div key={i} className="bg-white border border-zinc-100 p-4 rounded-xl flex flex-col gap-0.5 items-center md:items-start group hover:border-zinc-200 transition-all shadow-sm">
+                <div key={i} className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-4 rounded-xl flex flex-col gap-0.5 items-center md:items-start group hover:border-zinc-200 dark:hover:border-zinc-700 transition-all shadow-sm">
                   <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">{stat.label}</span>
-                  <span className={cn("text-xl font-black italic tracking-tighter", stat.color)}>{stat.value}</span>
+                  {selectedUser.loadingDetails ? (
+                    <div className="w-12 h-5 bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded mt-1" />
+                  ) : (
+                    <span className={cn("text-xl font-black italic tracking-tighter", stat.color)}>{stat.value}</span>
+                  )}
                 </div>
               ))}
             </div>
 
-            {/* Tabs placeholder for Detail View */}
+            {/* Recent Activity */}
             <div className="space-y-3">
-               <h3 className="text-[10px] font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2">
+               <h3 className="text-[10px] font-black text-zinc-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
                   <Calendar className="w-3.5 h-3.5 text-primary" />
                   Recent Activity
                </h3>
                
-               <div className="space-y-2">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="flex flex-col md:flex-row md:items-center justify-between p-2.5 px-4 bg-white border border-zinc-100 rounded-lg hover:border-primary/20 transition-all group/item shadow-sm">
-                       <div className="space-y-0">
-                          <h4 className="text-[11px] font-black text-zinc-900 uppercase tracking-tight">House Shifting (Indore Local)</h4>
-                          <p className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest italic">March 24, 2024 • ₹2,500 Lead Fee</p>
-                       </div>
-                       <Button 
-                         variant="ghost" 
-                         size="sm" 
-                         className="text-primary font-black uppercase text-[8px] tracking-widest mt-2 md:mt-0 h-6 px-3 hover:bg-primary/5 rounded-md"
-                         onClick={() => alert('Opening requirement snapshot for: House Shifting (Indore Local)')}
-                       >
-                          View Details
-                       </Button>
-                    </div>
-                  ))}
-               </div>
+               {selectedUser.loadingDetails ? (
+                 <div className="space-y-2">
+                   {[1, 2].map((i) => (
+                     <div key={i} className="h-14 w-full bg-zinc-100 dark:bg-zinc-900/50 animate-pulse rounded-xl border border-zinc-200/50 dark:border-zinc-800/50" />
+                   ))}
+                 </div>
+               ) : selectedUser.recentActivity && selectedUser.recentActivity.length > 0 ? (
+                 <div className="space-y-2">
+                    {selectedUser.recentActivity.map((item, i) => (
+                      <div key={item.id || i} className="flex flex-col md:flex-row md:items-center justify-between p-2.5 px-4 bg-white dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800/50 rounded-lg hover:border-primary/20 transition-all group/item shadow-sm">
+                         <div className="space-y-0.5">
+                            <h4 className="text-[11px] font-black text-zinc-900 dark:text-white uppercase tracking-tight">
+                              {item.serviceType === 'goods' ? 'Goods Transport' : item.serviceType === 'house' ? 'House Shifting' : item.serviceType === 'emergency' ? 'Emergency Towing' : 'Construction Hauling'} ({item.pickup.split(',')[0]})
+                            </h4>
+                            <p className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest italic">
+                              {new Date(item.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} • {item.amount > 0 ? `₹${item.amount.toLocaleString('en-IN')} Lead Price` : 'No accepted bid'} • <span className={cn("font-black uppercase", item.status === 'completed' ? "text-emerald-500" : item.status === 'accepted' ? "text-primary" : "text-zinc-500")}>{item.status}</span>
+                            </p>
+                         </div>
+                         <Button 
+                           variant="ghost" 
+                           size="sm" 
+                           className="text-primary font-black uppercase text-[8px] tracking-widest mt-2 md:mt-0 h-6 px-3 hover:bg-primary/5 rounded-md"
+                           onClick={() => alert(`Pickup: ${item.pickup}\nDropoff: ${item.drops}\nDate: ${new Date(item.date).toLocaleDateString()}\nStatus: ${item.status}`)}
+                         >
+                            View Details
+                         </Button>
+                      </div>
+                    ))}
+                 </div>
+               ) : (
+                 <div className="flex flex-col items-center justify-center p-6 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl text-center">
+                   <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">No recent requirements or bookings found</p>
+                 </div>
+               )}
             </div>
           </div>
         )}

@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, ChevronRight, MessageSquare, Clock, Filter } from "lucide-react";
+import { Search, ChevronRight, MessageSquare, Clock, Filter, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { requirementApi, chatApi } from "@/lib/api";
 import driver1 from "@/assets/Driver/driver1.jpg";
 import driver2 from "@/assets/Driver/driver2.jpg";
 import driver3 from "@/assets/Driver/driver3.jpg";
@@ -13,48 +14,65 @@ import driver3 from "@/assets/Driver/driver3.jpg";
 const ChatList = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("all");
-
-  const chats = [
-    {
-      id: "1",
-      vendorName: "Vijay Logistics",
-      avatar: driver1,
-      lastMessage: "I can provide a 14ft container at ₹5500.",
-      time: "10:30 AM",
-      unread: 2,
-      requirement: "House Shifting - REQ-101",
-      status: "ongoing",
-      requestId: "REQ-101",
-      vendorId: "v1"
-    },
-    {
-      id: "2",
-      vendorName: "Rahul Transports",
-      avatar: driver2,
-      lastMessage: "Which date are you planning to shift?",
-      time: "Yesterday",
-      unread: 0,
-      requirement: "House Shifting - REQ-101",
-      status: "ongoing",
-      requestId: "REQ-101",
-      vendorId: "v2"
-    },
-    {
-      id: "3",
-      vendorName: "Super Fast Cabs",
-      avatar: driver3,
-      lastMessage: "Booking confirmed for tomorrow.",
-      time: "2 days ago",
-      unread: 0,
-      requirement: "Airport Drop - REQ-089",
-      status: "completed",
-      requestId: "REQ-089",
-      vendorId: "v3"
-    }
-  ];
-
+  const [chats, setChats] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    loadRealChats();
+  }, []);
+
+  const loadRealChats = async () => {
+    try {
+      setLoading(true);
+      const res = await chatApi.getUserActiveChats();
+      const activeChats = res.data || res || [];
+      
+      const formattedChats = activeChats.map((c) => {
+        const vendorInfo = c.vendor || {};
+        const reqInfo = c.requirement || {};
+        
+        const serviceName = reqInfo.serviceType 
+          ? `${reqInfo.serviceType.toUpperCase()} - ${reqInfo.requirementId || reqInfo._id.substring(0, 6).toUpperCase()}` 
+          : "Logistics Ride";
+          
+        let timeStr = "Just now";
+        try {
+          const d = new Date(c.lastMessage?.createdAt || reqInfo.createdAt);
+          timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } catch (e) {}
+
+        return {
+          id: c.id,
+          vendorName: vendorInfo.businessName || vendorInfo.name || "Vijay Logistics",
+          avatar: vendorInfo.profileImage || `https://api.dicebear.com/7.x/initials/svg?seed=${vendorInfo.businessName || "VL"}`,
+          lastMessage: c.lastMessage?.text || `Proposal received: ₹${c.amount}`,
+          time: timeStr,
+          unread: 0,
+          requirement: serviceName,
+          status: reqInfo.status || "ongoing",
+          requestId: reqInfo._id,
+          vendorId: vendorInfo._id || "v1"
+        };
+      });
+
+      setChats(formattedChats);
+    } catch (error) {
+      console.error("Error fetching chats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-40">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-[10px] font-black uppercase tracking-widest mt-4 text-zinc-500">Loading Conversations...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20">

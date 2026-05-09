@@ -136,7 +136,14 @@ const DriverProfile = () => {
   const menuItems = [
     { icon: <Car className="w-4 h-4" />, label: "Vehicle Details", desc: `${driver.vehicleType || "Not configured"} • ${driver.vehicleRegNumber || "No Reg"}`, path: "#", onClick: openEditModal },
     { icon: <IndianRupee className="w-4 h-4" />, label: "Pricing & Service Areas", desc: driver.operatingAreas || "Set operating cities", path: "#", onClick: openEditModal },
-    { icon: <ShieldCheck className="w-4 h-4" />, label: "Subscription", desc: `Status: ${driver.subscriptionStatus || "None"}`, path: "/driver/subscribe" },
+    { 
+      icon: <ShieldCheck className="w-4 h-4" />, 
+      label: "Subscription", 
+      desc: driver.subscriptionStatus === "Active" && driver.activeSubscription
+        ? `${driver.activeSubscription.name || "Active Plan"}`
+        : `Status: ${driver.subscriptionStatus || "None"}`, 
+      path: "/driver/subscribe" 
+    },
     { icon: <BarChart2 className="w-4 h-4" />, label: "Performance", desc: `Won: ${driver.leadsWon || 0} • Rating: ${driver.rating || 0}★`, path: "/driver/dashboard" },
     { icon: <Bell className="w-4 h-4" />, label: "Alerts", desc: "Control notification settings", path: "#", onClick: () => toast.info("Alert configurations synced with browser") },
     { icon: <Shield className="w-4 h-4" />, label: "Account Security", desc: "Verification and passwords", path: "#", onClick: () => toast.info("Your connection is securely encrypted") },
@@ -215,6 +222,43 @@ const DriverProfile = () => {
            <Progress value={driver.onboardingComplete ? 100 : 50} className="h-1.5 bg-primary/5" />
         </Card>
       </div>
+
+      {/* Active Subscription Plan Summary */}
+      {driver.subscriptionStatus === "Active" && driver.activeSubscription && (
+        <div className="px-1">
+          <Card className="border-2 border-primary bg-primary/5 shadow-sm rounded-xl overflow-hidden p-3.5 space-y-2 relative">
+             <div className="absolute top-3.5 right-3.5">
+               <Badge className="bg-primary text-zinc-950 hover:bg-primary font-black text-[8px] uppercase tracking-wider rounded-md border-none px-2 py-0.5">
+                 Active
+               </Badge>
+             </div>
+             <div className="space-y-0.5">
+                <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest leading-none">Your Subscribed Plan</span>
+                <h4 className="text-sm font-black text-zinc-950 leading-tight flex items-center gap-1.5 pt-0.5">
+                  <ShieldCheck className="w-4 h-4 text-zinc-900" />
+                  {driver.activeSubscription.name}
+                </h4>
+             </div>
+             
+             <div className="flex justify-between items-center pt-1.5 text-[9px] text-zinc-600 font-bold uppercase tracking-tight">
+                <div className="flex items-center gap-1">
+                   <span className="text-zinc-400">Expires:</span>
+                   <span className="text-zinc-900">
+                     {driver.subscriptionExpiresAt 
+                       ? new Date(driver.subscriptionExpiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                       : 'N/A'}
+                   </span>
+                </div>
+                <div>
+                   <span className="text-zinc-400">Quota:</span>
+                   <span className="text-zinc-900 ml-1">
+                     {driver.activeSubscription.leadQuota?.type === 'unlimited' ? 'Unlimited' : `${driver.activeSubscription.leadQuota?.limit || 0} / Day`}
+                   </span>
+                </div>
+             </div>
+          </Card>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3">

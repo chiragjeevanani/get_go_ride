@@ -32,6 +32,7 @@ const CreateRequirement = () => {
     date: "",
     time: "",
     notes: "",
+    price: 1733,
   };
   const initialStep = location.state?.step || 1;
 
@@ -684,7 +685,8 @@ const CreateRequirement = () => {
                         <span className="text-xl font-black text-black">₹</span>
                         <input 
                            type="number" 
-                           defaultValue="1733"
+                           value={formData.price}
+                           onChange={(e) => updateData("price", Number(e.target.value))}
                            className="text-3xl font-black w-32 border-none bg-transparent focus:outline-none focus:ring-0 text-center text-black selection:bg-primary/20"
                            style={{ fontVariantNumeric: "tabular-nums" }}
                         />
@@ -710,8 +712,8 @@ const CreateRequirement = () => {
                         <span className="text-[8px] font-black">₹</span>
                      </div>
                      <span className="text-[10px] font-bold text-black tracking-tight relative z-10">
-                        Coin Discount: <span className="line-through text-zinc-400">₹1,733</span>
-                        <span className="ml-1 text-black font-black">₹1,664</span>
+                        Coin Discount: <span className="line-through text-zinc-400">₹{formData.price || 1733}</span>
+                        <span className="ml-1 text-black font-black">₹{Math.round((formData.price || 1733) * 0.96)}</span>
                      </span>
                   </motion.div>
 
@@ -742,7 +744,7 @@ const CreateRequirement = () => {
                   <div className="w-full border border-zinc-100 rounded-xl p-3 flex flex-col gap-2 bg-white/50">
                      <div className="flex justify-between items-center px-1">
                         <span className="text-[10px] font-black text-black">50% Advance</span>
-                        <span className="text-sm font-black text-black tabular-nums">₹866</span>
+                        <span className="text-sm font-black text-black tabular-nums">₹{Math.round((formData.price || 1733) * 0.5)}</span>
                      </div>
                      <div className="h-px bg-zinc-50"></div>
                      <div className="flex justify-between items-center text-[9px] font-bold text-zinc-400 uppercase tracking-widest px-1">
@@ -807,11 +809,12 @@ const CreateRequirement = () => {
         vehicleType: vehicleName,
         pickup: { address: formData.pickup },
         drops: formData.drops.map(addr => ({ address: addr })),
-        items: formData.serviceType === 'house' ? `House Shifting (${formData.houseSize || 'N/A'})` : (formData.serviceType === 'emergency' ? 'Emergency Assistance' : (formData.serviceType === 'construction' ? formData.materialType : 'General Goods')),
+        items: (formData.serviceType === 'house' || formData.serviceType === 'house-shifting') ? `House Shifting (${formData.houseSize || 'N/A'})` : (formData.serviceType === 'emergency' ? 'Emergency Assistance' : (formData.serviceType === 'construction' ? formData.materialType : 'General Goods')),
         weight: formData.loadValue ? `${formData.loadValue}${formData.loadType === 'kg' ? 'kg' : ''}` : '',
         date: formData.date,
         time: formData.time,
-        notes: formData.notes
+        notes: formData.notes,
+        price: formData.price || 1733
       };
 
       await requirementApi.create(payload);

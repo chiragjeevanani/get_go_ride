@@ -17,6 +17,7 @@ import adminRoutes from './routes/admin.routes.js';
 import planRoutes from './routes/plan.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import vehicleRoutes from './routes/vehicle.routes.js';
+import chatRoutes from './routes/chat.routes.js';
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/chats', chatRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────────────
 app.use((req, res) => {

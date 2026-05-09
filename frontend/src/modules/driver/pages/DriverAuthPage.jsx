@@ -41,6 +41,7 @@ const DriverAuthPage = () => {
   const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
+    if (step < 4) return;
     const fetchOnboardingData = async () => {
       try {
         const catRes = await categoryApi.getAll();
@@ -56,7 +57,7 @@ const DriverAuthPage = () => {
       }
     };
     fetchOnboardingData();
-  }, []);
+  }, [step]);
 
   const onboardingSlides = [
     { 

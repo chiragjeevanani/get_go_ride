@@ -1,6 +1,10 @@
 import User from '../models/User.model.js';
 import SystemSetting from '../models/SystemSetting.model.js';
+import Requirement from '../models/Requirement.model.js';
+import Bid from '../models/Bid.model.js';
 import { success, error } from '../utils/response.js';
+import razorpay from '../config/razorpay.js';
+import crypto from 'crypto';
 
 // --- User Facing ---
 
@@ -90,6 +94,72 @@ export const addMoneyToWallet = async (req, res, next) => {
     await user.save();
 
     success(res, user.wallet, 'Wallet loaded successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * @route   POST /api/users/me/wallet/create-order
+ * @desc    Create Razorpay Order for Wallet Top Up
+ * @access  Private (User)
+ */
+export const createWalletOrder = async (req, res, next) => {
+  try {
+    const { amount } = req.body;
+    if (!amount || amount <= 0) {
+      return error(res, 'Invalid amount', 400, 'VALIDATION_ERROR');
+    }
+
+    const options = {
+      amount: Math.round(Number(amount) * 100), // amount in paise
+      currency: 'INR',
+      receipt: `wt_${req.user.id.toString().slice(-12)}_${Date.now()}`,
+    };
+
+    const order = await razorpay.orders.create(options);
+    success(res, order, 'Razorpay wallet order created successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * @route   POST /api/users/me/wallet/verify-payment
+ * @desc    Verify Razorpay payment signature and credit wallet
+ * @access  Private (User)
+ */
+export const verifyWalletPayment = async (req, res, next) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, amount } = req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !amount) {
+      return error(res, 'All payment details are required', 400, 'VALIDATION_ERROR');
+    }
+
+    // Verify signature
+    const hmac = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '');
+    hmac.update(razorpay_order_id + '|' + razorpay_payment_id);
+    const generated_signature = hmac.digest('hex');
+
+    if (generated_signature !== razorpay_signature) {
+      return error(res, 'Invalid payment signature verification failed', 400, 'PAYMENT_VERIFICATION_FAILED');
+    }
+
+    // Load user and update balance
+    const user = await User.findById(req.user.id);
+    if (!user) return error(res, 'User not found', 404, 'NOT_FOUND');
+
+    user.wallet.balance = (user.wallet.balance || 0) + Number(amount);
+    user.wallet.transactions.push({
+      type: 'credit',
+      amount: Number(amount),
+      description: `Wallet top-up (Ref: ${razorpay_payment_id})`,
+      date: new Date()
+    });
+
+    await user.save();
+    success(res, user.wallet, 'Wallet loaded successfully via Razorpay');
   } catch (err) {
     next(err);
   }
@@ -216,7 +286,39 @@ export const getUserById = async (req, res, next) => {
     const user = await User.findById(req.params.id);
     if (!user) return error(res, 'User not found', 404, 'NOT_FOUND');
     
-    success(res, user, 'User retrieved successfully');
+    // Fetch all requirements for the user and populate acceptedBid to compute stats
+    const requirements = await Requirement.find({ user: req.params.id })
+      .sort({ createdAt: -1 })
+      .populate('acceptedBid');
+    
+    const totalRequests = requirements.length;
+    const successfulHires = requirements.filter(r => ['accepted', 'completed'].includes(r.status)).length;
+    
+    const revenue = requirements.reduce((sum, r) => {
+      if (['accepted', 'completed'].includes(r.status) && r.acceptedBid) {
+        return sum + (r.acceptedBid.amount || 0);
+      }
+      return sum;
+    }, 0);
+    
+    const recentActivity = requirements.slice(0, 5).map(r => ({
+      id: r._id,
+      serviceType: r.serviceType,
+      pickup: r.pickup.address,
+      drops: r.drops.map(d => d.address).join(', '),
+      date: r.date,
+      amount: r.acceptedBid ? r.acceptedBid.amount : 0,
+      status: r.status,
+      createdAt: r.createdAt
+    }));
+    
+    const userObj = user.toObject();
+    userObj.totalRequests = totalRequests;
+    userObj.successfulHires = successfulHires;
+    userObj.revenue = revenue;
+    userObj.recentActivity = recentActivity;
+    
+    success(res, userObj, 'User retrieved successfully');
   } catch (err) {
     next(err);
   }

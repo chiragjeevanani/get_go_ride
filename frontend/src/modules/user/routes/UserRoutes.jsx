@@ -22,6 +22,7 @@ const UserRoutes = () => {
     <Routes>
       {/* Public Pages like Auth */}
       <Route path="auth" element={<AuthPage />} />
+      <Route path="login" element={<AuthPage />} />
 
       {/* Main App with Shared Shell Layout */}
       <Route element={<UserMainLayout />}>

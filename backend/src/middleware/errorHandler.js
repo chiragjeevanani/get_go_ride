@@ -5,7 +5,19 @@ import { error } from '../utils/response.js';
  * Must be registered LAST in app.js (after all routes).
  */
 const errorHandler = (err, req, res, next) => {
-  console.error(`[ERROR] ${req.method} ${req.path}:`, err.message);
+  // Extract error message dynamically, especially for non-standard third-party error objects (like Razorpay SDK)
+  let errMsg = err.message;
+  if (!errMsg && err.error && typeof err.error === 'object') {
+    errMsg = err.error.description || err.error.message;
+  }
+  if (!errMsg && err.description) {
+    errMsg = err.description;
+  }
+  if (!errMsg) {
+    errMsg = 'Internal server error';
+  }
+
+  console.error(`[ERROR] ${req.method} ${req.path}:`, errMsg);
 
   // Mongoose validation error
   if (err.name === 'ValidationError') {
@@ -34,7 +46,13 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Default
-  return error(res, err.message || 'Internal server error', err.statusCode || 500, 'SERVER_ERROR');
+  let statusCode = err.statusCode || 500;
+  // Protect client session: Never propagate third-party 401/403 errors (like Razorpay) as server auth failures
+  if (statusCode === 401 || statusCode === 403) {
+    statusCode = 400;
+  }
+
+  return error(res, errMsg, statusCode, 'SERVER_ERROR');
 };
 
 export default errorHandler;

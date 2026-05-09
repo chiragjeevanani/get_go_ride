@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { 
   BarChart2, TrendingUp, Users, Target, 
   ArrowUpRight, ArrowDownRight, Zap, ChevronLeft, Calendar, 
-  ChevronDown, Activity
+  ChevronDown, Activity, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,31 +12,78 @@ import { motion, AnimatePresence } from "framer-motion";
 import { StatCard } from "../components/StatCard";
 import { cn } from "@/lib/utils";
 import { useDriverState } from "../hooks/useDriverState";
+import { vendorApi } from "@/lib/api";
 
 const AnalyticsPage = () => {
   const navigate = useNavigate();
-  const { stats } = useDriverState();
-  const [isPeriodOpen, setIsPeriodOpen] = React.useState(false);
-  const [selectedPeriod, setSelectedPeriod] = React.useState('This Month');
+  const [isPeriodOpen, setIsPeriodOpen] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState('This Month');
+  const [loading, setLoading] = useState(true);
+  const [analytics, setAnalytics] = useState(null);
 
-  const conversionRate = Math.round((stats.accepted / (stats.total || 1)) * 100);
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        const res = await vendorApi.getAnalytics();
+        setAnalytics(res.data || res);
+      } catch (err) {
+        console.error("Failed to fetch live analytics data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Compiling live intelligence...</p>
+      </div>
+    );
+  }
+
+  // Active state data with robust backend fallbacks
+  const stats = analytics?.stats || { total: 0, accepted: 0, rejected: 0, totalBids: 0, earnings: 0 };
+  const weeklyData = analytics?.weeklyData || [
+    { day: "M", value: 0, leads: 0 },
+    { day: "T", value: 0, leads: 0 },
+    { day: "W", value: 0, leads: 0 },
+    { day: "T", value: 0, leads: 0 },
+    { day: "F", value: 0, leads: 0 },
+    { day: "S", value: 0, leads: 0 },
+    { day: "S", value: 0, leads: 0 },
+  ];
+  const funnel = analytics?.funnel || { received: 0, viewed: 0, offers: 0, finalized: 0 };
+
+  const conversionRate = stats.totalBids > 0 ? Math.round((stats.accepted / stats.totalBids) * 100) : 0;
+
+  const formatEarnings = (val) => {
+    if (val >= 1000) {
+      return `₹${(val / 1000).toFixed(1)}k`;
+    }
+    return `₹${val}`;
+  };
 
   const primaryStats = [
     { label: "Total Leads", value: stats.total.toString(), icon: Zap, trend: "+12%", color: "bg-blue-50 text-blue-500" },
     { label: "Accepted", value: stats.accepted.toString(), icon: Target, trend: "+8%", color: "bg-emerald-50 text-emerald-500" },
     { label: "Conversion", value: `${conversionRate}%`, icon: TrendingUp, trend: "+5%", color: "bg-orange-50 text-orange-500" },
-    { label: "Earnings", value: `₹${(stats.accepted * 450 / 1000).toFixed(1)}k`, icon: BarChart2, trend: "+15%", color: "bg-primary/10 text-primary" },
+    { label: "Earnings", value: formatEarnings(stats.earnings), icon: BarChart2, trend: "+15%", color: "bg-primary/10 text-primary" },
   ];
 
-  const weeklyData = [
-    { day: "M", value: 65, leads: 8 },
-    { day: "T", value: 45, leads: 5 },
-    { day: "W", value: 85, leads: 12 },
-    { day: "T", value: 35, leads: 4 },
-    { day: "F", value: 95, leads: 15 },
-    { day: "S", value: 75, leads: 10 },
-    { day: "S", value: 55, leads: 7 },
+  const funnelSteps = [
+    { label: "Leads Received", value: funnel.received.toString(), width: "100%", color: "bg-zinc-100 text-zinc-900" },
+    { label: "Leads Viewed", value: funnel.viewed.toString(), width: "85%", color: "bg-zinc-200 text-zinc-900" },
+    { label: "Offers Made", value: funnel.offers.toString(), width: "70%", color: "bg-zinc-800 text-white" },
+    { label: "Finalized", value: funnel.finalized.toString(), width: "65%", color: "bg-zinc-950 text-white" }
   ];
+
+  const todayDayIndex = new Date().getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const indexToDayMap = { 1: 'M', 2: 'T', 3: 'W', 4: 'T', 5: 'F', 6: 'S', 0: 'S' };
+  const todayLetter = indexToDayMap[todayDayIndex] || 'F';
 
   return (
     <motion.div 
@@ -88,7 +135,7 @@ const AnalyticsPage = () => {
                              onClick={() => {
                                 setSelectedPeriod(period);
                                 setIsPeriodOpen(false);
-                             }}
+                              }}
                              className="h-9 w-full text-left px-3 text-[9px] font-bold uppercase tracking-tighter hover:bg-zinc-100 transition-colors text-zinc-500 hover:text-zinc-900"
                           >
                              {period}
@@ -158,7 +205,7 @@ const AnalyticsPage = () => {
                      </div>
                      <span className={cn(
                         "text-[9px] font-black tracking-tight uppercase leading-none",
-                        data.day === 'F' ? "text-primary text-[10px]" : "text-zinc-400"
+                        data.day === todayLetter ? "text-primary text-[10px]" : "text-zinc-400"
                      )}>{data.day}</span>
                   </div>
                ))}
@@ -174,12 +221,7 @@ const AnalyticsPage = () => {
          </div>
          
          <div className="space-y-1">
-            {[
-               { label: "Leads Received", value: "142", width: "100%", color: "bg-zinc-100 text-zinc-900" },
-               { label: "Leads Viewed", value: "118", width: "85%", color: "bg-zinc-200 text-zinc-900" },
-               { label: "Offers Made", value: "94", width: "70%", color: "bg-zinc-800 text-white" },
-               { label: "Finalized", value: "86", width: "65%", color: "bg-zinc-950 text-white" }
-            ].map((item, i) => (
+            {funnelSteps.map((item, i) => (
                <div key={i} className="flex items-center gap-3">
                   <div className={cn(
                      "h-10 rounded-none flex items-center justify-between px-3.5 transition-all duration-1000 border-l-[4px] border-primary",

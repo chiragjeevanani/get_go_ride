@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAdminStats, getAdminRevenueStats } from '../controllers/admin.controller.js';
+import { getAdminStats, getAdminRevenueStats, getAdminLeadsTrend } from '../controllers/admin.controller.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -10,5 +10,6 @@ router.use(requireRole('admin'));
 
 router.get('/stats', getAdminStats);
 router.get('/revenue', getAdminRevenueStats);
+router.get('/leads-trend', getAdminLeadsTrend);
 
 export default router;

@@ -8,6 +8,8 @@ import {
   updatePlan,
   deletePlan,
   subscribeToPlan,
+  createSubscriptionOrder,
+  verifySubscriptionPayment,
   checkLeadQuota,
   incrementLeadQuota,
 } from '../controllers/plan.controller.js';
@@ -26,6 +28,8 @@ router.delete('/:id', authenticate, requireRole('admin'), deletePlan);
 
 // ─── Vendor routes ────────────────────────────────────────────────────────────
 router.post('/:id/subscribe', authenticate, requireRole('vendor'), subscribeToPlan);
+router.post('/:id/subscribe-order', authenticate, requireRole('vendor'), createSubscriptionOrder);
+router.post('/:id/subscribe-verify', authenticate, requireRole('vendor'), verifySubscriptionPayment);
 router.get('/me/quota', authenticate, requireRole('vendor'), checkLeadQuota);
 router.post('/me/quota/increment', authenticate, requireRole('vendor'), incrementLeadQuota);
 

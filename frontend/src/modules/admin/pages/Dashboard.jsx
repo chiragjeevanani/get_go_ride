@@ -22,6 +22,57 @@ const Dashboard = () => {
   const [recentLeads, setRecentLeads] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Lead Generation Trend States
+  const [range, setRange] = useState('7days');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [leadsTrend, setLeadsTrend] = useState([]);
+  const [trendLoading, setTrendLoading] = useState(true);
+
+  // Initialize custom dates with last 7 days defaults
+  useEffect(() => {
+    if (!startDate || !endDate) {
+      const today = new Date();
+      const past = new Date();
+      past.setDate(today.getDate() - 6);
+      
+      const format = (d) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      
+      setStartDate(format(past));
+      setEndDate(format(today));
+    }
+  }, [range]);
+
+  // Fetch trend statistics
+  useEffect(() => {
+    const fetchTrendData = async () => {
+      if (range === 'custom' && (!startDate || !endDate)) {
+        return;
+      }
+      try {
+        setTrendLoading(true);
+        const params = { range };
+        if (range === 'custom') {
+          params.startDate = startDate;
+          params.endDate = endDate;
+        }
+        const res = await adminApi.getLeadsTrend(params);
+        setLeadsTrend(res.data || []);
+      } catch (err) {
+        console.error("Failed to fetch leads trend data:", err);
+      } finally {
+        setTrendLoading(false);
+      }
+    };
+
+    fetchTrendData();
+  }, [range, startDate, endDate]);
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -90,10 +141,72 @@ const Dashboard = () => {
         <div className="lg:col-span-2">
           <ChartCard 
             title="Lead Generation Trends" 
-            subtitle="Daily platform activity (Last 7 Days)"
-            action={<Button variant="ghost" onClick={() => navigate('/admin/leads')} className="text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold text-[10px] uppercase tracking-widest transition-colors">View Details</Button>}
+            subtitle={`Daily platform activity (${range === '7days' ? 'Last 7 Days' : range === '30days' ? 'Last 30 Days' : 'Custom Range'})`}
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900/50 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                  {['7days', '30days', 'custom'].map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setRange(r)}
+                      className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wider rounded-lg transition-all ${
+                        range === r
+                          ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
+                          : 'text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {r === '7days' ? '7 Days' : r === '30days' ? '30 Days' : 'Custom'}
+                    </button>
+                  ))}
+                </div>
+                <Button variant="ghost" onClick={() => navigate('/admin/leads')} className="text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold text-[10px] uppercase tracking-widest transition-colors h-9 px-3 rounded-lg">
+                  View Details
+                </Button>
+              </div>
+            }
           >
-            <LineChart data={mockLeadsTrend} dataKey="leads" />
+            <div className="space-y-6">
+              {range === 'custom' && (
+                <div className="flex items-center gap-3 py-2 px-1 border-b border-dashed border-zinc-200 dark:border-zinc-800/50 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest">Start Date</span>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-[10px] font-semibold text-zinc-900 dark:text-white outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all uppercase"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest">End Date</span>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-[10px] font-semibold text-zinc-900 dark:text-white outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all uppercase"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="h-[280px] w-full">
+                {trendLoading ? (
+                  <div className="h-full w-full flex items-center justify-center bg-zinc-50/10 dark:bg-zinc-950/5 rounded-xl">
+                    <Loader2 className="w-6 h-6 animate-spin text-zinc-900 dark:text-white" />
+                  </div>
+                ) : leadsTrend.length > 0 ? (
+                  <LineChart data={leadsTrend} dataKey="leads" />
+                ) : (
+                  <div className="h-full w-full flex flex-col items-center justify-center text-center gap-2 bg-zinc-50/10 dark:bg-zinc-950/5 rounded-xl">
+                    <Layers className="w-8 h-8 text-zinc-300 dark:text-zinc-700 animate-pulse" />
+                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">No booking requests found</p>
+                    {range === 'custom' && (!startDate || !endDate) && (
+                      <p className="text-[9px] font-medium text-zinc-500 uppercase tracking-tight">Please select start and end dates</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </ChartCard>
         </div>
         

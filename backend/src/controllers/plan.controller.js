@@ -1,6 +1,8 @@
 import SubscriptionPlan from '../models/SubscriptionPlan.model.js';
 import Vendor from '../models/Vendor.model.js';
 import { success, error } from '../utils/response.js';
+import razorpay from '../config/razorpay.js';
+import crypto from 'crypto';
 
 // ─── GET /api/plans  (public) ─────────────────────────────────────────────────
 export const getAllPlans = async (req, res, next) => {
@@ -185,6 +187,88 @@ export const subscribeToPlan = async (req, res, next) => {
       },
       { new: true }
     );
+
+    if (!vendor) return error(res, 'Vendor not found', 404, 'NOT_FOUND');
+    return success(res, { vendor, plan }, 'Subscribed successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * @route   POST /api/plans/:id/subscribe-order
+ * @desc    Create Razorpay Order for Subscription Plan
+ * @access  Private (Vendor)
+ */
+export const createSubscriptionOrder = async (req, res, next) => {
+  try {
+    const plan = await SubscriptionPlan.findById(req.params.id);
+    if (!plan || !plan.isActive) return error(res, 'Plan not found or inactive', 404, 'NOT_FOUND');
+
+    // Free trial can be skipped from Razorpay order creation
+    if (plan.price === 0) {
+      return success(res, { isFree: true }, 'Plan is free, no order creation needed');
+    }
+
+    const options = {
+      amount: Math.round(plan.price * 100), // amount in paise
+      currency: 'INR',
+      receipt: `sub_${plan._id.toString().slice(-6)}_${req.user.id.toString().slice(-6)}_${Date.now()}`,
+    };
+
+    const order = await razorpay.orders.create(options);
+    success(res, order, 'Razorpay subscription order created successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * @route   POST /api/plans/:id/subscribe-verify
+ * @desc    Verify Razorpay payment and activate Subscription
+ * @access  Private (Vendor)
+ */
+export const verifySubscriptionPayment = async (req, res, next) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    const plan = await SubscriptionPlan.findById(req.params.id);
+    if (!plan || !plan.isActive) return error(res, 'Plan not found or inactive', 404, 'NOT_FOUND');
+
+    // If plan is not free, verify signature
+    if (plan.price > 0) {
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        return error(res, 'All payment details are required', 400, 'VALIDATION_ERROR');
+      }
+
+      // Verify signature
+      const hmac = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '');
+      hmac.update(razorpay_order_id + '|' + razorpay_payment_id);
+      const generated_signature = hmac.digest('hex');
+
+      if (generated_signature !== razorpay_signature) {
+        return error(res, 'Invalid payment signature verification failed', 400, 'PAYMENT_VERIFICATION_FAILED');
+      }
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + plan.durationDays);
+
+    const vendor = await Vendor.findByIdAndUpdate(
+      req.user.id,
+      {
+        $set: {
+          activeSubscription: plan._id,
+          subscriptionStatus: 'Active',
+          subscriptionExpiresAt: expiresAt,
+          subscriptionStartedAt: new Date(),
+          hasVerifiedBadge: plan.features?.verifiedBadge || false,
+          leadQuotaUsed: 0,
+          leadQuotaResetAt: new Date(),
+        }
+      },
+      { new: true }
+    ).populate('activeSubscription');
 
     if (!vendor) return error(res, 'Vendor not found', 404, 'NOT_FOUND');
     return success(res, { vendor, plan }, 'Subscribed successfully');

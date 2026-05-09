@@ -161,3 +161,92 @@ export const getAdminRevenueStats = async (req, res, next) => {
     next(err);
   }
 };
+
+// ─── GET /api/admin/leads-trend ──────────────────────────────────────────────
+
+export const getAdminLeadsTrend = async (req, res, next) => {
+  try {
+    const { range = '7days', startDate, endDate } = req.query;
+    
+    let start, end;
+    
+    if (range === 'custom' && startDate && endDate) {
+      start = new Date(startDate);
+      start.setUTCHours(0, 0, 0, 0);
+      
+      end = new Date(endDate);
+      end.setUTCHours(23, 59, 59, 999);
+    } else if (range === '30days') {
+      end = new Date();
+      start = new Date();
+      start.setUTCDate(end.getUTCDate() - 29);
+      start.setUTCHours(0, 0, 0, 0);
+      end.setUTCHours(23, 59, 59, 999);
+    } else {
+      // Default to 7 days
+      end = new Date();
+      start = new Date();
+      start.setUTCDate(end.getUTCDate() - 6);
+      start.setUTCHours(0, 0, 0, 0);
+      end.setUTCHours(23, 59, 59, 999);
+    }
+    
+    // Aggregate daily counts
+    const stats = await Requirement.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: start, $lte: end }
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          leads: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]);
+    
+    // Map aggregation results for fast lookup
+    const statsMap = {};
+    stats.forEach(item => {
+      statsMap[item._id] = item.leads;
+    });
+    
+    // Generate all dates in the range to fill zeros
+    const result = [];
+    let current = new Date(start);
+    
+    // Safeguard to prevent infinite loops in case dates are misconfigured
+    const maxDays = 366; 
+    let daysCount = 0;
+    
+    while (current <= end && daysCount < maxDays) {
+      const year = current.getUTCFullYear();
+      const month = String(current.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(current.getUTCDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
+      const labelDate = new Date(dateStr + 'T00:00:00Z');
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const dayNum = String(labelDate.getUTCDate()).padStart(2, '0');
+      const monthName = months[labelDate.getUTCMonth()];
+      const name = `${dayNum} ${monthName}`;
+      
+      result.push({
+        name,
+        leads: statsMap[dateStr] || 0
+      });
+      
+      current.setUTCDate(current.getUTCDate() + 1);
+      daysCount++;
+    }
+    
+    return success(res, result, 'Leads trend stats fetched successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+

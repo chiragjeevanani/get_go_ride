@@ -9,7 +9,7 @@ const requirementSchema = new mongoose.Schema(
     },
     serviceType: {
       type: String,
-      enum: ['goods', 'house', 'emergency', 'construction'],
+      enum: ['goods', 'house', 'emergency', 'construction', 'goods-transport', 'house-shifting'],
       required: true,
     },
     vehicleType: {
@@ -43,6 +43,10 @@ const requirementSchema = new mongoose.Schema(
     time: {
       type: String,
       required: true,
+    },
+    price: {
+      type: Number,
+      default: 1733,
     },
     notes: String,
     status: {

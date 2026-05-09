@@ -14,9 +14,24 @@ import { toast } from "sonner";
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
-  const { driver, leads, toggleOnline, acceptLead, rejectLead } = useDriverState();
+  const { driver, leads, toggleOnline, acceptLead, rejectLead, loading } = useDriverState({ loadLeads: true });
 
+  const getSubExpiryStr = () => {
+    if (!driver.subscriptionExpiresAt) return "None";
+    try {
+      const d = new Date(driver.subscriptionExpiresAt);
+      return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch (e) {
+      return "None";
+    }
+  };
 
+  const leadsTodayCount = leads.filter(l => {
+    if (!l.raw?.createdAt) return false;
+    const created = new Date(l.raw.createdAt);
+    const today = new Date();
+    return created.toDateString() === today.toDateString();
+  }).length;
 
   return (
     <motion.div 
@@ -31,11 +46,11 @@ const DriverDashboard = () => {
              onClick={() => navigate("/driver/profile")}
              className="w-9 h-9 rounded-xl bg-zinc-50 overflow-hidden border-2 border-primary/20 shadow-sm cursor-pointer active:scale-90 transition-transform"
           >
-            <img src={profileImg} alt="avatar" className="w-full h-full object-cover" />
+            <img src={driver.profileImage || profileImg} alt="avatar" className="w-full h-full object-cover" />
           </div>
           <div className="flex flex-col">
-            <h2 className="text-base font-bold text-zinc-900 leading-none tracking-tight">Hi, {driver.name.split(' ')[0]}</h2>
-            <p className="text-[10px] font-semibold text-zinc-500 tracking-tight">{driver.vehicle}</p>
+            <h2 className="text-base font-bold text-zinc-900 leading-none tracking-tight">Hi, {driver.name ? driver.name.split(' ')[0] : "Driver"}</h2>
+            <p className="text-[10px] font-semibold text-zinc-500 tracking-tight">{driver.vehicleType || "No Vehicle Assigned"}</p>
           </div>
         </div>
 
@@ -61,8 +76,8 @@ const DriverDashboard = () => {
         <StatCard 
           icon={Bolt} 
           label="Leads Today" 
-          value="5" 
-          trend="+2" 
+          value={leadsTodayCount > 0 ? leadsTodayCount.toString() : "0"} 
+          trend="Today" 
           trendColor="bg-blue-50 text-blue-500" 
         />
         <StatCard 
@@ -75,14 +90,14 @@ const DriverDashboard = () => {
         <StatCard 
           icon={CheckCircle} 
           label="Accepted" 
-          value="8" 
+          value={driver.leadsWon || 0} 
         />
         <StatCard 
           icon={Shield} 
           label="Sub. Ends" 
-          value="May 15" 
-          trend="Active" 
-          trendColor="bg-emerald-50 text-emerald-500 shadow-sm"
+          value={getSubExpiryStr()} 
+          trend={driver.subscriptionStatus === 'Active' ? 'Active' : 'Expired'} 
+          trendColor={driver.subscriptionStatus === 'Active' ? 'bg-emerald-50 text-emerald-500 shadow-sm' : 'bg-red-50 text-red-500 shadow-sm'}
         />
       </section>
 

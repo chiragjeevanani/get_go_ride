@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useDriverState } from "../hooks/useDriverState";
 import { cn } from "@/lib/utils";
-import { planApi } from "@/lib/api";
+import { planApi, settingsApi } from "@/lib/api";
+import { loadRazorpay } from "@/lib/loadRazorpay";
 import { toast } from "sonner";
 
 const benefits = [
@@ -49,21 +50,95 @@ const SubscriptionGate = () => {
 
   const handleActivate = async (planId) => {
     if (submitting) return;
+
+    const plan = dbPlans.find(p => p._id === planId);
+    if (!plan) return;
+
+    setSubmitting(true);
     try {
-      setSubmitting(true);
-      const res = await planApi.subscribe(planId);
-      
-      // Update local storage driver details
-      localStorage.setItem('gtgl_driver', JSON.stringify(res.data.vendor));
-      
-      // Sync react state in hook
-      setDriver(res.data.vendor);
-      
-      toast.success(`Plan "${res.data.plan.name}" activated successfully!`);
-      navigate("/driver/dashboard");
+      // 1. If it's a free trial, directly subscribe
+      if (plan.price === 0) {
+        const res = await planApi.subscribe(planId);
+        localStorage.setItem('gtgl_driver', JSON.stringify(res.data.vendor));
+        setDriver(res.data.vendor);
+        toast.success(`Plan "${res.data.plan.name}" activated successfully!`);
+        navigate("/driver/dashboard");
+        return;
+      }
+
+      // 2. Load Razorpay script
+      const isLoaded = await loadRazorpay();
+      if (!isLoaded) {
+        toast.error("Razorpay SDK failed to load. Please check your connection.");
+        setSubmitting(false);
+        return;
+      }
+
+      // 3. Fetch Razorpay key
+      const keyRes = await settingsApi.getRazorpayKey();
+      const razorpayKey = keyRes.data.keyId;
+
+      // 4. Create subscription order
+      const orderRes = await planApi.createSubscriptionOrder(planId);
+      if (!orderRes.success) {
+        toast.error("Failed to initialize subscription order");
+        setSubmitting(false);
+        return;
+      }
+
+      const orderData = orderRes.data;
+
+      // 5. Setup Razorpay options
+      const options = {
+        key: razorpayKey,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "GoRide Premium",
+        description: `Subscription: ${plan.name}`,
+        order_id: orderData.id,
+        handler: async (response) => {
+          setSubmitting(true);
+          try {
+            // Verify payment on server
+            const verifyRes = await planApi.verifySubscriptionPayment(planId, {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            if (verifyRes.success) {
+              localStorage.setItem('gtgl_driver', JSON.stringify(verifyRes.data.vendor));
+              setDriver(verifyRes.data.vendor);
+              toast.success(`Plan "${verifyRes.data.plan.name}" activated successfully!`);
+              navigate("/driver/dashboard");
+            } else {
+              toast.error("Signature verification failed.");
+            }
+          } catch (verifyErr) {
+            toast.error(verifyErr.message || "Failed to verify transaction");
+          } finally {
+            setSubmitting(false);
+          }
+        },
+        prefill: {
+          name: localStorage.getItem("gtgl_driver") ? JSON.parse(localStorage.getItem("gtgl_driver")).name : "",
+          phone: localStorage.getItem("gtgl_driver") ? JSON.parse(localStorage.getItem("gtgl_driver")).phone : "",
+        },
+        theme: {
+          color: "#facc15",
+        },
+        modal: {
+          ondismiss: () => {
+            setSubmitting(false);
+            toast.info("Payment cancelled");
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
     } catch (err) {
-      toast.error(err.message || "Failed to subscribe to the plan");
-    } finally {
+      toast.error(err.message || "Failed to configure Razorpay checkouts");
       setSubmitting(false);
     }
   };

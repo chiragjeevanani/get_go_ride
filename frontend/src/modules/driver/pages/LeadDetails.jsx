@@ -1,25 +1,87 @@
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   ChevronLeft, MapPin, Package, Clock, ShieldCheck, 
-  MessageSquare, Check, Phone, Info, Truck, ArrowRight, Lock
+  MessageSquare, Check, Phone, Info, Truck, ArrowRight, Lock, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { motion } from "framer-motion";
-import { useDriverState } from "../hooks/useDriverState";
+import { motion, AnimatePresence } from "framer-motion";
+import { useDriverState, normalizeLead } from "../hooks/useDriverState";
+import { requirementApi } from "@/lib/api";
+
+import { toast } from "sonner";
 
 const LeadDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { leads, acceptLead, driver } = useDriverState();
+  const { acceptLead, driver } = useDriverState();
   
-  const lead = leads.find(l => l.id === id) || leads[0]; // fallback to first item for demo
+  const [localLead, setLocalLead] = useState(null);
+  const [localLoading, setLocalLoading] = useState(true);
+  const [accepting, setAccepting] = useState(false);
 
-  const handleAccept = () => {
-    acceptLead(lead.id);
-    navigate(`/driver/chat/${lead.id}`);
+  useEffect(() => {
+    const fetchDetails = async () => {
+      try {
+        setLocalLoading(true);
+        const res = await requirementApi.getDetails(id);
+        const data = res.data || res;
+        if (data) {
+          setLocalLead(normalizeLead(data));
+        }
+      } catch (err) {
+        console.error("Failed to fetch lead details:", err);
+      } finally {
+        setLocalLoading(false);
+      }
+    };
+    fetchDetails();
+  }, [id]);
+
+  const lead = localLead;
+
+  const [showBidModal, setShowBidModal] = useState(false);
+  const [bidPrice, setBidPrice] = useState("");
+
+  const handleAccept = async (customPrice) => {
+    if (lead) {
+      try {
+        setAccepting(true);
+        const finalPrice = customPrice ? Number(customPrice) : Number(lead.price || 1733);
+        await acceptLead(lead.id, finalPrice);
+        toast.success("Lead accepted and bid placed successfully!");
+        setShowBidModal(false);
+        navigate(`/driver/chat/${lead.id}`);
+      } catch (err) {
+        toast.error(err.response?.data?.message || err.message || "Failed to accept lead");
+      } finally {
+        setAccepting(false);
+      }
+    }
   };
+
+  if (localLoading) {
+    return (
+      <div className="min-h-screen bg-white max-w-md mx-auto flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-xs font-bold text-zinc-500 tracking-tight">Loading Lead Details...</p>
+      </div>
+    );
+  }
+
+  if (!lead) {
+    return (
+      <div className="min-h-screen bg-white max-w-md mx-auto flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <h3 className="font-bold text-zinc-900 tracking-tight">Lead Not Found</h3>
+        <p className="text-[10px] text-zinc-500 font-bold tracking-tight">This lead might have been taken by another driver or cancelled.</p>
+        <Button onClick={() => navigate("/driver/leads")} className="bg-primary text-zinc-900 font-bold text-xs h-10 px-5 rounded-xl">
+          Back to Lead Center
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white max-w-md mx-auto relative flex flex-col pb-24">
@@ -102,6 +164,22 @@ const LeadDetails = () => {
                    </div>
                </div>
 
+               {/* Dedicated Fare Details Card */}
+               <div className="p-4 mb-4 bg-emerald-50/40 border-2 border-emerald-500/10 rounded-2xl flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                     <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+                        <span className="text-lg font-black text-emerald-600">₹</span>
+                     </div>
+                     <div className="space-y-0.5">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600">Estimated Fare</span>
+                        <p className="text-lg font-black text-zinc-900 leading-tight">₹{lead?.price || 1733}</p>
+                      </div>
+                   </div>
+                   <div className="text-right">
+                      <span className="text-[9px] font-bold text-emerald-600 bg-emerald-100/60 px-2 py-0.5 rounded-full uppercase tracking-tight">Guaranteed</span>
+                   </div>
+                </div>
+
                {/* Specs Grid */}
                <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-100 space-y-0.5">
@@ -120,7 +198,7 @@ const LeadDetails = () => {
                 <div className="space-y-1.5">
                    <h4 className="text-[10px] font-bold text-zinc-500 tracking-tight px-1">Customer Notes</h4>
                    <div className="p-3 bg-white border-2 border-zinc-50 rounded-xl italic text-xs font-semibold text-zinc-500 leading-relaxed shadow-sm">
-                      "Need careful handling for glass items. Preferred timing between 4-5 PM please."
+                      {lead?.notes || "No special instructions provided by customer."}
                    </div>
                 </div>
             </div>
@@ -155,14 +233,88 @@ const LeadDetails = () => {
                 Cancel Lead
              </Button>
              <Button 
-                onClick={handleAccept}
+                onClick={() => {
+                  setBidPrice(lead?.price || "");
+                  setShowBidModal(true);
+                }}
+                disabled={accepting}
                 className="flex-[1.5] h-12 rounded-xl bg-primary text-zinc-900 font-bold text-xs shadow-xl shadow-primary/20 group transition-all"
              >
-                Accept Lead <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
+                {accepting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                    Accepting...
+                  </>
+                ) : (
+                  <>
+                    Accept Lead <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
              </Button>
            </>
          )}
       </div>
+
+      {/* Proposal Modal */}
+      <AnimatePresence>
+         {showBidModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+               <motion.div 
+                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                 onClick={() => setShowBidModal(false)}
+                 className="absolute inset-0 bg-zinc-900/85 backdrop-blur-sm"
+               />
+               <motion.div 
+                 initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+                 className="relative w-full max-w-sm bg-white border-2 border-zinc-100 p-6 shadow-2xl rounded-3xl"
+               >
+                  <div className="space-y-6">
+                     <div className="text-center space-y-1.5">
+                        <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-2 text-primary">
+                           <Truck className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-sm font-black text-black uppercase tracking-[0.1em]">Set Your Proposal Price</h3>
+                        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
+                           Customer's Quoted Price: ₹{lead?.price}
+                        </p>
+                     </div>
+
+                     <div className="relative">
+                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-2xl font-black text-zinc-300">₹</div>
+                        <input 
+                           type="number"
+                           placeholder="Enter Amount"
+                           value={bidPrice}
+                           onChange={(e) => setBidPrice(e.target.value)}
+                           className="w-full h-16 bg-zinc-50 border-2 border-zinc-100 text-center text-3xl font-black focus:border-primary outline-none rounded-2xl tabular-nums uppercase"
+                        />
+                     </div>
+
+                     <div className="flex flex-col gap-2 pt-2">
+                        <Button 
+                           onClick={() => handleAccept(bidPrice)}
+                           disabled={!bidPrice || accepting}
+                           className="w-full h-12 bg-zinc-900 text-primary font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all rounded-xl shadow-lg shadow-zinc-900/20"
+                        >
+                           {accepting ? (
+                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                           ) : (
+                             "Submit Proposal & Accept"
+                           )}
+                        </Button>
+                        <Button 
+                           variant="ghost"
+                           onClick={() => setShowBidModal(false)}
+                           className="w-full h-10 font-black text-zinc-400 text-[9px] uppercase tracking-widest hover:text-black rounded-xl"
+                        >
+                           Dismiss
+                        </Button>
+                     </div>
+                  </div>
+               </motion.div>
+            </div>
+         )}
+      </AnimatePresence>
     </div>
   );
 };

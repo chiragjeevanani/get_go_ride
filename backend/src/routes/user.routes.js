@@ -5,6 +5,8 @@ import {
   updateMyProfile,
   getMyWallet,
   addMoneyToWallet,
+  createWalletOrder,
+  verifyWalletPayment,
   getMyAddresses,
   saveAddress,
   deleteAddress,
@@ -24,6 +26,8 @@ router.route('/me')
 
 router.get('/me/wallet', getMyWallet);
 router.post('/me/wallet/add-money', addMoneyToWallet);
+router.post('/me/wallet/create-order', createWalletOrder);
+router.post('/me/wallet/verify-payment', verifyWalletPayment);
 
 router.route('/me/addresses')
   .get(getMyAddresses)

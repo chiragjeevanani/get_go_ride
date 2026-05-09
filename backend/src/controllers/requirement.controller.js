@@ -9,7 +9,7 @@ import { success, error } from '../utils/response.js';
  */
 export const createRequirement = async (req, res, next) => {
   try {
-    const { serviceType, vehicleType, pickup, drops, items, weight, date, time, notes } = req.body;
+    const { serviceType, vehicleType, pickup, drops, items, weight, date, time, notes, price } = req.body;
 
     if (!date) {
       return error(res, 'Booking date is required', 400, 'MISSING_DATE');
@@ -48,6 +48,7 @@ export const createRequirement = async (req, res, next) => {
       date,
       time,
       notes,
+      price: price ? Number(price) : 1733,
     });
 
     success(res, requirement, 'Requirement posted successfully', 201);

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Search, Filter, MapPin, Zap, ChevronLeft, Calendar, History, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Filter, MapPin, Zap, ChevronLeft, Calendar, History, ArrowRight, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,24 +10,47 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LeadCard } from "../components/LeadCard";
 import { useDriverState } from "../hooks/useDriverState";
 import { cn } from "@/lib/utils";
+import { categoryApi } from "@/lib/api";
 
 const LeadsScreen = () => {
   const navigate = useNavigate();
-  const { leads, rejectLead, driver } = useDriverState();
+  const { leads, rejectLead, driver, loading } = useDriverState({ loadLeads: true });
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-
-  const categories = [
+  const [categories, setCategories] = useState([
     { id: "all", label: "All Leads" },
-    { id: "goods", label: "Goods" },
-    { id: "house", label: "House Shifting" },
-    { id: "emergency", label: "Emergency" }
-  ];
+    { id: "goods-transport", label: "Goods Transport" },
+    { id: "house-shifting", label: "House Shifting" },
+    { id: "emergency", label: "Emergency" },
+    { id: "construction", label: "Construction" }
+  ]);
+
+  useEffect(() => {
+    const fetchCats = async () => {
+      try {
+        const res = await categoryApi.getAll();
+        const cats = res.data || [];
+        if (cats.length > 0) {
+          setCategories([
+            { id: "all", label: "All Leads" },
+            ...cats.map(c => ({ id: c.slug, label: c.name }))
+          ]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch dynamic categories for filtering:", err);
+      }
+    };
+    fetchCats();
+  }, []);
 
   const filteredLeads = leads.filter(lead => {
-    const matchesTab = activeTab === "all" || lead.type === activeTab;
+    const matchesTab = activeTab === "all" || 
+                       lead.type === activeTab || 
+                       lead.type?.startsWith(activeTab) ||
+                       (activeTab === "goods-transport" && (lead.type === "goods" || lead.type?.startsWith("goods"))) ||
+                       (activeTab === "house-shifting" && (lead.type === "house" || lead.type?.startsWith("house")));
     const matchesSearch = lead.pickup.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         lead.drop.toLowerCase().includes(searchTerm.toLowerCase());
+                          lead.drop.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
@@ -89,9 +112,15 @@ const LeadsScreen = () => {
 
       {/* Leads List */}
       <section className="space-y-4">
-        <AnimatePresence mode="popLayout">
-          {filteredLeads.length > 0 ? (
-            <div className="flex flex-col gap-4">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-xs font-bold text-zinc-500 tracking-tight">Syncing Live Leads...</p>
+          </div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {filteredLeads.length > 0 ? (
+              <div className="flex flex-col gap-4">
               {filteredLeads.map((lead, index) => (
                 <div key={lead.id} className="relative group">
                   <div className={cn(
@@ -136,6 +165,7 @@ const LeadsScreen = () => {
             </motion.div>
           )}
         </AnimatePresence>
+        )}
       </section>
 
       {/* Suggested Routes / Areas */}

@@ -16,6 +16,7 @@ const vendorSchema = new mongoose.Schema(
     vehicleType: { type: String, default: '' },
     vehicleRegNumber: { type: String, default: '' },
     vehicleCapacity: { type: String, default: '' },
+    vehicleImages: [{ type: String }],
 
     // Service offering
     serviceCategories: [{ type: String }],

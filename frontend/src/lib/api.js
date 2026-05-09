@@ -16,7 +16,7 @@ api.interceptors.request.use(
     const isDriver = window.location.pathname.startsWith('/driver');
     
     const token = isAdmin 
-      ? (localStorage.getItem('gtgl_admin_token') || localStorage.getItem('gtgl_token'))
+      ? localStorage.getItem('gtgl_admin_token')
       : isDriver
         ? localStorage.getItem('gtgl_driver_token')
         : localStorage.getItem('gtgl_token');
@@ -27,9 +27,9 @@ api.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
-);
+);Object.defineProperty(api, "isForbiddenRedirectActive", { value: true, writable: true });
 
-// Add a response interceptor to handle token expiry
+// Add a response interceptor to handle token expiry and role mismatches
 api.interceptors.response.use(
   (response) => response.data,
   async (error) => {
@@ -37,8 +37,12 @@ api.interceptors.response.use(
     const isAdmin = window.location.pathname.startsWith('/admin');
     const isDriver = window.location.pathname.startsWith('/driver');
     
-    // If 401 and we haven't tried refreshing yet (exclude login and verification endpoints)
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/admin/login') && !originalRequest.url.includes('/auth/verify-otp')) {
+    const isAuthPage = window.location.pathname === '/driver/auth' || 
+                       window.location.pathname === '/user/auth' || 
+                       window.location.pathname === '/admin/login';
+
+    // If 401 and we haven't tried refreshing yet (exclude login/auth pages and verification endpoints)
+    if (error.response?.status === 401 && !isAuthPage && originalRequest && !originalRequest._retry && !originalRequest.url.includes('/auth/admin/login') && !originalRequest.url.includes('/auth/verify-otp')) {
       originalRequest._retry = true;
       const refreshTokenKey = isAdmin 
         ? 'gtgl_admin_refresh_token' 
@@ -51,7 +55,7 @@ api.interceptors.response.use(
           ? 'gtgl_driver_token' 
           : 'gtgl_token';
       
-      const refreshToken = localStorage.getItem(refreshTokenKey) || localStorage.getItem('gtgl_refresh_token');
+      const refreshToken = localStorage.getItem(refreshTokenKey);
       
       if (refreshToken) {
         try {
@@ -67,18 +71,51 @@ api.interceptors.response.use(
             localStorage.removeItem('gtgl_admin_token');
             localStorage.removeItem('gtgl_admin_refresh_token');
             localStorage.removeItem('gtgl_admin_user');
-            window.location.href = '/admin/login';
+            if (window.location.pathname !== '/admin/login') {
+              window.location.href = '/admin/login';
+            }
           } else if (isDriver) {
             localStorage.removeItem('gtgl_driver_token');
             localStorage.removeItem('gtgl_driver_refresh_token');
             localStorage.removeItem('gtgl_driver');
-            window.location.href = '/driver/auth';
+            if (window.location.pathname !== '/driver/auth') {
+              window.location.href = '/driver/auth';
+            }
           } else {
             localStorage.removeItem('gtgl_token');
             localStorage.removeItem('gtgl_refresh_token');
             localStorage.removeItem('gtgl_user');
-            window.location.href = '/user/login';
+            if (window.location.pathname !== '/user/auth') {
+              window.location.href = '/user/auth';
+            }
           }
+          return Promise.reject(refreshError);
+        }
+      }
+    }
+    
+    // If 401 Unauthorized or 403 Forbidden, redirect to the corresponding login page to clear invalid credentials
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      if (isDriver) {
+        localStorage.removeItem('gtgl_driver_token');
+        localStorage.removeItem('gtgl_driver_refresh_token');
+        localStorage.removeItem('gtgl_driver');
+        if (window.location.pathname !== '/driver/auth') {
+          window.location.href = '/driver/auth';
+        }
+      } else if (isAdmin) {
+        localStorage.removeItem('gtgl_admin_token');
+        localStorage.removeItem('gtgl_admin_refresh_token');
+        localStorage.removeItem('gtgl_admin_user');
+        if (window.location.pathname !== '/admin/login') {
+          window.location.href = '/admin/login';
+        }
+      } else {
+        localStorage.removeItem('gtgl_token');
+        localStorage.removeItem('gtgl_refresh_token');
+        localStorage.removeItem('gtgl_user');
+        if (window.location.pathname !== '/user/auth') {
+          window.location.href = '/user/auth';
         }
       }
     }
@@ -99,6 +136,8 @@ export const userApi = {
   updateProfile: (data) => api.patch('/users/me', data),
   getWallet: () => api.get('/users/me/wallet'),
   addMoney: (amount) => api.post('/users/me/wallet/add-money', { amount }),
+  createWalletOrder: (amount) => api.post('/users/me/wallet/create-order', { amount }),
+  verifyWalletPayment: (data) => api.post('/users/me/wallet/verify-payment', data),
   getAddresses: () => api.get('/users/me/addresses'),
   addAddress: (data) => api.post('/users/me/addresses', data),
   deleteAddress: (id) => api.delete(`/users/me/addresses/${id}`),
@@ -141,6 +180,7 @@ export const uploadApi = {
 
 export const settingsApi = {
   get: () => api.get('/settings'),
+  getRazorpayKey: () => api.get('/settings/razorpay-key'),
   update: (data) => api.put('/settings', data),
 };
 
@@ -163,17 +203,52 @@ export const vendorApi = {
   updateProfile: (data) => api.patch('/vendors/me', data),
   submitOnboarding: (data) => api.post('/vendors/me/onboarding', data),
   uploadDocument: (data) => api.post('/vendors/me/documents', data),
+  getAnalytics: () => api.get('/vendors/me/analytics'),
+  uploadVehicleImage: (formData) => api.post('/vendors/me/vehicle-images', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
+  deleteVehicleImage: (imageUrl) => api.delete('/vendors/me/vehicle-images', {
+    data: { imageUrl }
+  }),
+};
+
+export const chatApi = {
+  getUserActiveChats: () => api.get('/chats/user/active'),
+  getDriverActiveChats: () => api.get('/chats/driver/active'),
+  
+  // By Bid ID (Driver UI uses these)
+  getMessages: (bidId) => api.get(`/chats/${bidId}/messages`),
+  sendMessage: (bidId, data) => api.post(`/chats/${bidId}/messages`, data),
+  sendOffer: (bidId, amount) => api.post(`/chats/${bidId}/offer`, { amount }),
+  acceptDeal: (bidId) => api.post(`/chats/${bidId}/accept`),
+  acceptDealWithWallet: (bidId) => api.post(`/chats/${bidId}/accept-wallet`),
+  createAcceptDealOrder: (bidId) => api.post(`/chats/${bidId}/accept-order`),
+  verifyAcceptDealPayment: (bidId, data) => api.post(`/chats/${bidId}/accept-verify`, data),
+
+  // By Composite IDs (User UI uses these)
+  getCompositeMessages: (requestId, vendorId) => api.get(`/chats/messages/${requestId}/${vendorId}`),
+  sendCompositeMessage: (requestId, vendorId, data) => api.post(`/chats/messages/${requestId}/${vendorId}`, data),
+  sendCompositeOffer: (requestId, vendorId, amount) => api.post(`/chats/offer/${requestId}/${vendorId}`, { amount }),
+  acceptCompositeDeal: (requestId, vendorId) => api.post(`/chats/accept/${requestId}/${vendorId}`),
+  acceptCompositeDealWithWallet: (requestId, vendorId) => api.post(`/chats/accept-wallet/${requestId}/${vendorId}`),
+  createCompositeAcceptDealOrder: (requestId, vendorId) => api.post(`/chats/accept-order/${requestId}/${vendorId}`),
+  verifyCompositeAcceptDealPayment: (requestId, vendorId, data) => api.post(`/chats/accept-verify/${requestId}/${vendorId}`, data),
+  reopenCompositeDeal: (requestId, vendorId) => api.post(`/chats/reopen/${requestId}/${vendorId}`),
 };
 
 export const adminApi = {
   getStats: () => api.get('/admin/stats'),
   getAllUsers: (params) => api.get('/users', { params }),
+  getUserById: (id) => api.get(`/users/${id}`),
   updateUserStatus: (id, status) => api.patch(`/users/${id}/status`, { status }),
   getAllVendors: (params) => api.get('/vendors', { params }),
   verifyVendor: (id, status) => api.patch(`/vendors/${id}/verify`, { status }),
   getAllRequirements: (params) => api.get('/requirements', { params }),
   updateRequirementStatus: (id, status) => api.patch(`/requirements/${id}/status`, { status }),
   getRevenueStats: () => api.get('/admin/revenue'),
+  getLeadsTrend: (params) => api.get('/admin/leads-trend', { params }),
 };
 
 export const planApi = {
@@ -184,6 +259,8 @@ export const planApi = {
   update: (id, data) => api.patch(`/plans/${id}`, data),
   delete: (id) => api.delete(`/plans/${id}`),
   subscribe: (planId) => api.post(`/plans/${planId}/subscribe`),
+  createSubscriptionOrder: (planId) => api.post(`/plans/${planId}/subscribe-order`),
+  verifySubscriptionPayment: (planId, data) => api.post(`/plans/${planId}/subscribe-verify`, data),
   checkQuota: () => api.get('/plans/me/quota'),
   incrementQuota: () => api.post('/plans/me/quota/increment'),
 };

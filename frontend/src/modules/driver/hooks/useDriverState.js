@@ -1,75 +1,118 @@
 import { useState, useEffect } from 'react';
+import { leadApi, vendorApi } from '@/lib/api';
 
-const mockLeads = [
-  {
-    id: "L-001",
-    service: "Goods Transport",
-    pickup: "Rajwada, Indore",
-    drop: "Vijay Nagar, Indore",
-    weight: "500kg",
-    items: "Boxes",
-    date: "Today, 4:00 PM",
-    distance: "8km",
-    status: "new",
-    type: "goods"
-  },
-  {
-    id: "L-002",
-    service: "House Shifting",
-    pickup: "Old Palasia, Indore",
-    drop: "Bhawarkua, Indore",
-    weight: "2000kg",
-    items: "Household items",
-    date: "Tomorrow, 10:00 AM",
-    distance: "12km",
-    status: "new",
-    type: "house"
-  },
-  {
-    id: "L-003",
-    service: "Construction",
-    pickup: "Indore Airport",
-    drop: "Dewas Naka, Indore",
-    weight: "5000kg",
-    items: "Cement Bags",
-    date: "Today, 6:30 PM",
-    distance: "15km",
-    status: "expiring",
-    type: "construction"
+// Normalization helper to map MongoDB Requirement model to UI structure
+export const normalizeLead = (req) => {
+  if (!req) return null;
+  
+  let dateStr = "Today";
+  try {
+    const d = new Date(req.date);
+    dateStr = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  } catch (e) {}
+  if (req.time) {
+    dateStr += `, ${req.time}`;
   }
-];
 
-export const useDriverState = () => {
+  const serviceMap = {
+    goods: "Goods Transport",
+    house: "House Shifting",
+    emergency: "Emergency Response",
+    construction: "Construction Hauling"
+  };
+
+  return {
+    id: req._id,
+    service: serviceMap[req.serviceType] || req.serviceType || "Logistics Ride",
+    pickup: req.pickup?.address || "Pickup Address",
+    drop: req.drops?.[0]?.address || req.drops?.[req.drops.length - 1]?.address || "Drop Address",
+    weight: req.weight || "N/A",
+    items: req.items || "General Cargo",
+    date: dateStr,
+    distance: "Local",
+    status: req.status === 'pending' ? 'new' : req.status,
+    type: req.serviceType,
+    price: req.price || 1733,
+    raw: req
+  };
+};
+
+export const useDriverState = (options = {}) => {
+  const { loadProfile = true, loadLeads = false } = options;
+
   const [driver, setDriver] = useState(() => {
-    const saved = localStorage.getItem('gtgl_driver');
+    const saved = localStorage.getItem('safarsetto_driver');
     return saved ? JSON.parse(saved) : {
-      name: "Ramesh Kumar",
-      phone: "+91 9876543210",
-      vehicle: "Tata Ace (Chota Hathi)",
-      vehicleNumber: "MP 09 AB 1234",
-      regNumber: "REG-991823",
-      rating: 4.8,
-      completedLeads: 124,
+      name: "",
+      phone: "",
+      vehicleType: "",
+      vehicleRegNumber: "",
+      vehicleCapacity: "",
+      rating: 0,
+      completedLeads: 0,
       isSubscribed: false,
+      isVerified: false,
       isOnline: true,
-      profileProgress: 75,
-      subscriptionExpiry: "2026-05-15"
+      profileProgress: 0,
+      documents: [],
+      vehicleImages: []
     };
   });
 
-  const [leads, setLeads] = useState(mockLeads);
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [activeLeads, setActiveLeads] = useState([]);
   const [stats, setStats] = useState(() => {
-    const savedStats = localStorage.getItem('gtgl_driver_stats');
+    const savedStats = localStorage.getItem('safarsetto_driver_stats');
     return savedStats ? JSON.parse(savedStats) : {
-      total: 142,
-      accepted: 86,
-      rejected: 56
+      total: 0,
+      accepted: 0,
+      rejected: 0
     };
   });
+
+  const fetchProfile = async () => {
+    try {
+      const res = await vendorApi.getProfile();
+      const profileData = res.data || res;
+      if (profileData) {
+        setDriver(prev => ({ ...prev, ...profileData }));
+      }
+    } catch (err) {
+      console.error("Failed to load driver profile details:", err);
+    }
+  };
+
+  const fetchLeads = async () => {
+    try {
+      setLoading(true);
+      const res = await leadApi.getAvailable();
+      const data = res.data || res;
+      if (Array.isArray(data)) {
+        const normalized = data.map(normalizeLead).filter(Boolean);
+        setLeads(normalized);
+      }
+    } catch (err) {
+      console.error("Failed to fetch available leads:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (loadProfile) {
+      fetchProfile();
+    }
+  }, [loadProfile]);
+
+  useEffect(() => {
+    if (loadLeads) {
+      fetchLeads();
+    }
+  }, [loadLeads]);
   
   useEffect(() => {
-    localStorage.setItem('gtgl_driver', JSON.stringify(driver));
+    localStorage.setItem('safarsetto_driver', JSON.stringify(driver));
   }, [driver]);
 
   useEffect(() => {
@@ -84,13 +127,38 @@ export const useDriverState = () => {
     setDriver(prev => ({ ...prev, isSubscribed: true }));
   };
 
-  const acceptLead = (leadId) => {
+  const acceptLead = async (leadId, customAmount) => {
     const lead = leads.find(l => l.id === leadId);
     if (lead) {
+      try {
+        await leadApi.bid(leadId, {
+          amount: customAmount || lead.price || 1733,
+          notes: 'Interested in this job'
+        });
+      } catch (err) {
+        const errData = err.response?.data;
+        const isAlreadyBid = 
+          errData?.error === 'ALREADY_BID' ||
+          (err.response?.status === 400 && (
+            errData?.message?.toLowerCase().includes('already') ||
+            errData?.message?.toLowerCase().includes('bid')
+          )) ||
+          err.message?.includes('ALREADY_BID');
+
+        if (isAlreadyBid) {
+          console.log("Vendor already placed a bid on this lead. Transitioning to chat smoothly.");
+        } else {
+          console.error("Failed to place backend bid:", err);
+          throw err;
+        }
+      }
+      
       setActiveLeads(prev => [...prev, { ...lead, status: 'accepted' }]);
       setLeads(prev => prev.filter(l => l.id !== leadId));
       setStats(prev => ({ ...prev, accepted: prev.accepted + 1 }));
+      return true;
     }
+    return false;
   };
 
   const rejectLead = (leadId) => {
@@ -108,6 +176,9 @@ export const useDriverState = () => {
     leads,
     activeLeads,
     stats,
+    loading,
+    refreshLeads: fetchLeads,
+    refreshProfile: fetchProfile,
     toggleOnline,
     activateSubscription,
     acceptLead,
@@ -115,3 +186,4 @@ export const useDriverState = () => {
     setDriver
   };
 };
+
