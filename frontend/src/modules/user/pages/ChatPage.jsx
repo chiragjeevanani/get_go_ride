@@ -32,7 +32,8 @@ const ChatPage = () => {
 
   // Initialize Socket.io Connection
   useEffect(() => {
-    const socket = io("http://localhost:5001");
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
+    const socket = io(backendUrl);
     socketRef.current = socket;
 
     return () => {

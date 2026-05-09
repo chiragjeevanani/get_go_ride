@@ -28,7 +28,8 @@ const CheckoutPage = () => {
 
   useEffect(() => {
     if (id) {
-      const socket = io("http://localhost:5001");
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
+      const socket = io(backendUrl);
       socket.emit("join_chat", { bidId: id });
 
       socket.on("deal_reopened", ({ bidId }) => {

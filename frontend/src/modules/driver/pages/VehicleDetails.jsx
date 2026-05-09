@@ -146,7 +146,8 @@ const VehicleDetails = () => {
       return url;
     }
     const cleanPath = url.replace(/^\//, "");
-    return `http://localhost:5001/${cleanPath}`;
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
+    return `${backendUrl}/${cleanPath}`;
   };
 
   // Required Verification Documents Mapping
