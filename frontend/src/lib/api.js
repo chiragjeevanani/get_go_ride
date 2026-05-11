@@ -63,6 +63,9 @@ api.interceptors.response.use(
           const { accessToken } = res.data.data;
           
           localStorage.setItem(tokenKey, accessToken);
+          if (isAdmin) {
+            localStorage.setItem('gtgl_token', accessToken);
+          }
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return api(originalRequest);
         } catch (refreshError) {
@@ -71,6 +74,9 @@ api.interceptors.response.use(
             localStorage.removeItem('gtgl_admin_token');
             localStorage.removeItem('gtgl_admin_refresh_token');
             localStorage.removeItem('gtgl_admin_user');
+            localStorage.removeItem('gtgl_token');
+            localStorage.removeItem('gtgl_refresh_token');
+            localStorage.removeItem('gtgl_user');
             if (window.location.pathname !== '/admin/login') {
               window.location.href = '/admin/login';
             }
@@ -94,8 +100,8 @@ api.interceptors.response.use(
       }
     }
     
-    // If 401 Unauthorized or 403 Forbidden, redirect to the corresponding login page to clear invalid credentials
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    // Only 401 Unauthorized triggers logout redirection to avoid disrupting sessions on 403 Forbidden checks
+    if (error.response?.status === 401) {
       if (isDriver) {
         localStorage.removeItem('gtgl_driver_token');
         localStorage.removeItem('gtgl_driver_refresh_token');
@@ -107,6 +113,9 @@ api.interceptors.response.use(
         localStorage.removeItem('gtgl_admin_token');
         localStorage.removeItem('gtgl_admin_refresh_token');
         localStorage.removeItem('gtgl_admin_user');
+        localStorage.removeItem('gtgl_token');
+        localStorage.removeItem('gtgl_refresh_token');
+        localStorage.removeItem('gtgl_user');
         if (window.location.pathname !== '/admin/login') {
           window.location.href = '/admin/login';
         }

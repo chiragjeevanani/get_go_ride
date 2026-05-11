@@ -5,7 +5,8 @@ import {
   getMyRequirements,
   getRequirementDetails,
   getAllRequirements,
-  updateRequirementStatus
+  updateRequirementStatus,
+  deleteRequirement
 } from '../controllers/requirement.controller.js';
 import { getBidsForRequirement } from '../controllers/bid.controller.js';
 
@@ -16,6 +17,7 @@ router.use(authenticate);
 // User posting routes
 router.post('/', requireRole('user'), createRequirement);
 router.get('/my', requireRole('user'), getMyRequirements);
+router.delete('/:id', requireRole('user'), deleteRequirement);
 
 // Common details
 router.get('/:id', getRequirementDetails);

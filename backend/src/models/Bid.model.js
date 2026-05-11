@@ -16,6 +16,10 @@ const bidSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    vehicleType: {
+      type: String,
+      default: '',
+    },
     notes: {
       type: String,
       default: '',
@@ -24,6 +28,15 @@ const bidSchema = new mongoose.Schema(
       type: String,
       enum: ['pending', 'accepted', 'rejected'],
       default: 'pending',
+    },
+    // Commission tracking for flexible revenue model
+    platformCommission: {
+      type: Number,
+      default: 0,
+    },
+    vendorEarning: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }

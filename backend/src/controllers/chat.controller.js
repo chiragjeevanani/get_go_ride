@@ -2,6 +2,8 @@ import Bid from '../models/Bid.model.js';
 import Requirement from '../models/Requirement.model.js';
 import Message from '../models/Message.model.js';
 import User from '../models/User.model.js';
+import Vendor from '../models/Vendor.model.js';
+import SystemSetting from '../models/SystemSetting.model.js';
 import { success, error } from '../utils/response.js';
 import { getIO } from '../config/socket.js';
 import razorpay from '../config/razorpay.js';
@@ -51,6 +53,99 @@ const resolveBid = async (params, user) => {
   }
 
   return bid;
+};
+
+/**
+ * Helper function to get revenue model configuration
+ */
+const getRevenueModelConfig = async () => {
+  const revenueModel = await SystemSetting.findOne({ key: 'revenueModel' });
+  const commissionRate = await SystemSetting.findOne({ key: 'commissionRate' });
+
+  return {
+    model: revenueModel?.value || 'subscription',
+    rate: commissionRate?.value || 10
+  };
+};
+
+/**
+ * Helper function to calculate platform commission based on revenue model
+ */
+const calculateCommission = async (amount) => {
+  const config = await getRevenueModelConfig();
+
+  // No commission in subscription-only mode
+  if (config.model === 'subscription') {
+    return { platformCommission: 0, vendorEarning: amount, rate: 0 };
+  }
+
+  // Calculate commission for commission-based modes
+  const rate = config.model === 'commission' ? config.rate : config.rate;
+  const platformCommission = Math.round(amount * (rate / 100));
+  const vendorEarning = amount - platformCommission;
+
+  return { platformCommission, vendorEarning, rate };
+};
+
+/**
+ * Helper to execute actual bid acceptance and lock requirement
+ * Includes commission calculation based on revenue model
+ */
+const executeBidAcceptance = async (bid, requirement, userId, refId = '', paymentMethod = 'Wallet') => {
+  // Calculate commission based on current revenue model
+  const { platformCommission, vendorEarning, rate } = await calculateCommission(bid.amount);
+
+  // Accept this bid
+  bid.status = 'accepted';
+  bid.platformCommission = platformCommission;
+  bid.vendorEarning = vendorEarning;
+  await bid.save();
+
+  // Update requirement to locked status
+  requirement.status = 'accepted';
+  requirement.acceptedBid = bid._id;
+  requirement.platformCommission = platformCommission;
+  await requirement.save();
+
+  // Update vendor earnings if commission is being deducted
+  if (platformCommission > 0 && bid.vendor) {
+    await Vendor.findByIdAndUpdate(bid.vendor._id, {
+      $inc: {
+        totalEarnings: vendorEarning,
+        platformDues: platformCommission
+      }
+    });
+  }
+
+  // Reject all other bids on this requirement
+  await Bid.updateMany(
+    { requirement: requirement._id, _id: { $ne: bid._id } },
+    { $set: { status: 'rejected' } }
+  );
+
+  // Create contract acceptance message with payment details
+  const refText = refId ? ` (Payment Ref: ${refId})` : '';
+  const commissionNote = platformCommission > 0 ? ` (Platform: ₹${platformCommission})` : '';
+  const msg = await Message.create({
+    requirement: requirement._id,
+    bid: bid._id,
+    sender: userId,
+    senderModel: 'User',
+    senderRole: 'user',
+    text: `🤝 DEAL ACCEPTED & PAID! FINALIZED PRICE AT ₹${bid.amount}${refText}${commissionNote}.`,
+    type: 'text',
+  });
+
+  // Realtime broadcast via Socket.io
+  try {
+    const io = getIO();
+    io.to(bid._id.toString()).emit('receive_message', msg);
+    io.to(bid._id.toString()).emit('deal_accepted', { bidId: bid._id });
+  } catch (wsErr) {
+    console.error('Socket broadcast failed:', wsErr.message);
+  }
+
+  return msg;
 };
 
 /**
@@ -217,6 +312,80 @@ export const sendMessage = async (req, res, next) => {
 };
 
 /**
+ * @route   POST /api/chats/:bidId/typing
+ * @desc    Emit typing indicator to the other party
+ * @access  Private (User/Vendor)
+ */
+export const sendTypingIndicator = async (req, res, next) => {
+  try {
+    const bid = await resolveBid(req.params, req.user);
+    if (!bid) return error(res, 'Negotiation/Bid not found', 404, 'NOT_FOUND');
+
+    const isUser = req.user.role === 'user';
+    const typingData = {
+      bidId: bid._id.toString(),
+      sender: req.user.id,
+      senderRole: isUser ? 'user' : 'vendor',
+      isTyping: true,
+    };
+
+    // Broadcast typing indicator via Socket.io
+    try {
+      const io = getIO();
+      io.to(bid._id.toString()).emit('user_typing', typingData);
+    } catch (wsErr) {
+      console.error('Socket typing broadcast failed:', wsErr.message);
+    }
+
+    success(res, typingData, 'Typing indicator sent');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * @route   PATCH /api/chats/:bidId/read
+ * @desc    Mark messages as read
+ * @access  Private (User/Vendor)
+ */
+export const markMessagesAsRead = async (req, res, next) => {
+  try {
+    const bid = await resolveBid(req.params, req.user);
+    if (!bid) return error(res, 'Negotiation/Bid not found', 404, 'NOT_FOUND');
+
+    // Update all unread messages for this bid (that are not from current user)
+    await Message.updateMany(
+      {
+        bid: bid._id,
+        sender: { $ne: req.user.id },
+        status: 'sent'
+      },
+      {
+        $set: {
+          status: 'read',
+          readAt: new Date()
+        }
+      }
+    );
+
+    // Broadcast read receipt via Socket.io
+    try {
+      const io = getIO();
+      io.to(bid._id.toString()).emit('messages_read', {
+        bidId: bid._id.toString(),
+        readBy: req.user.id
+      });
+    } catch (wsErr) {
+      console.error('Socket read receipt broadcast failed:', wsErr.message);
+    }
+
+    success(res, null, 'Messages marked as read');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * @route   POST /api/chats/:bidId/offer or /api/chats/offer/:requestId/:vendorId
  * @desc    Submit a formal price proposal/counter-offer (updates active Bid state)
  * @access  Private (User/Vendor)
@@ -345,49 +514,6 @@ export const acceptDeal = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};
-
-/**
- * Helper to execute actual bid acceptance and lock requirement
- */
-const executeBidAcceptance = async (bid, requirement, userId, refId = '') => {
-  // Accept this bid
-  bid.status = 'accepted';
-  await bid.save();
-
-  // Update requirement to locked status
-  requirement.status = 'accepted';
-  requirement.acceptedBid = bid._id;
-  await requirement.save();
-
-  // Reject all other bids on this requirement
-  await Bid.updateMany(
-    { requirement: requirement._id, _id: { $ne: bid._id } },
-    { $set: { status: 'rejected' } }
-  );
-
-  // Create contract acceptance message
-  const refText = refId ? ` (Payment Ref: ${refId})` : '';
-  const msg = await Message.create({
-    requirement: requirement._id,
-    bid: bid._id,
-    sender: userId,
-    senderModel: 'User',
-    senderRole: 'user',
-    text: `🤝 DEAL ACCEPTED & PAID! FINALIZED PRICE AT ₹${bid.amount}${refText}.`,
-    type: 'text',
-  });
-
-  // Realtime broadcast via Socket.io
-  try {
-    const io = getIO();
-    io.to(bid._id.toString()).emit('receive_message', msg);
-    io.to(bid._id.toString()).emit('deal_accepted', { bidId: bid._id });
-  } catch (wsErr) {
-    console.error('Socket broadcast failed:', wsErr.message);
-  }
-
-  return msg;
 };
 
 /**

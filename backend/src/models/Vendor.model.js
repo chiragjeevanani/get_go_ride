@@ -20,7 +20,7 @@ const vendorSchema = new mongoose.Schema(
 
     // Service offering
     serviceCategories: [{ type: String }],
-    operatingAreas: { type: String, default: '' },
+    operatingAreas: { type: mongoose.Schema.Types.Mixed, default: '' },
 
     // KYC documents
     documents: [
@@ -71,7 +71,23 @@ const vendorSchema = new mongoose.Schema(
     // Verified badge (granted by active plan feature)
     hasVerifiedBadge: { type: Boolean, default: false },
 
-    location: { type: String, default: '' },
+    wallet: {
+      balance: { type: Number, default: 0 },
+      transactions: [
+        {
+          type: { type: String, enum: ['credit', 'debit'] },
+          amount: Number,
+          description: String,
+          date: { type: Date, default: Date.now },
+        },
+      ],
+    },
+    // Earnings tracking (for commission-based revenue model)
+    totalEarnings: { type: Number, default: 0 },
+    platformDues: { type: Number, default: 0 },
+    pendingPayout: { type: Number, default: 0 },
+
+    location: { type: mongoose.Schema.Types.Mixed, default: '' },
 
     // Onboarding tracking
     onboardingComplete: { type: Boolean, default: false },

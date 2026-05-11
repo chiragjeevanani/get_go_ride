@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { 
   ChevronLeft, ChevronRight, Check, Truck, Home, Users, AlertTriangle, 
   MapPin, Calendar, Clock, Weight, Package, FileText, Plus, Loader2, X 
@@ -189,12 +189,25 @@ const CreateRequirement = () => {
   };
 
   const handleSelectSuggestion = (suggestion) => {
-     if (activeLocField?.name === "pickup") {
+     if (activeLocField === "pickup" || activeLocField?.name === "pickup") {
          updateData("pickup", suggestion.display_name);
+         setFormData(prev => ({
+            ...prev,
+            pickupCoords: { lat: suggestion.lat, lon: suggestion.lon }
+         }));
      } else {
+         const index = activeLocField?.index !== undefined ? activeLocField.index : 0;
          const newDrops = [...formData.drops];
-         newDrops[activeLocField.index] = suggestion.display_name;
-         updateData("drops", newDrops);
+         newDrops[index] = suggestion.display_name;
+         setFormData(prev => {
+            const newCoords = prev.dropsCoords ? [...prev.dropsCoords] : [];
+            newCoords[index] = { lat: suggestion.lat, lon: suggestion.lon };
+            return {
+               ...prev,
+               drops: newDrops,
+               dropsCoords: newCoords
+            };
+         });
      }
      setSuggestions([]);
      setActiveLocField(null);
@@ -215,16 +228,6 @@ const CreateRequirement = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const openPicker = (type, index = null) => {
-    navigate("/user/search-location", { 
-        state: { 
-            type, 
-            index, 
-            formData, 
-            step 
-        } 
-    });
-  };
 
   const nextStep = () => {
      if (step === 5) {
@@ -408,7 +411,7 @@ const CreateRequirement = () => {
             )}
           </div>
         );
-      case 3:
+      case 3: {
         if (vehiclesLoading) {
           return (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
@@ -487,7 +490,8 @@ const CreateRequirement = () => {
             </div>
           </div>
         );
-      case 4:
+      }
+      case 4: {
         if (formData.serviceType === "house") {
           const houseSizes = [
             { id: "1bhk", title: "1 BHK", desc: "Small house / Flat", icon: Home },
@@ -572,30 +576,57 @@ const CreateRequirement = () => {
             <div className="space-y-4">
               <div className="space-y-3">
                  <div className="space-y-1.5">
-                   <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Material</label>
-                   <Input 
-                     placeholder="e.g. Cement, Sand" 
-                     className="bg-white h-11 font-bold text-xs"
-                     value={formData.materialType || ""}
-                     onChange={(e) => updateData("materialType", e.target.value)}
-                   />
+                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Item Details</label>
+                    <div className="relative">
+                      <Package className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                      <Input 
+                        placeholder="What are you moving?" 
+                        className="pl-10 bg-white h-11 text-xs font-bold"
+                        value={formData.items || ""}
+                        onChange={(e) => updateData("items", e.target.value)}
+                      />
+                    </div>
                  </div>
-                 <div className="space-y-1.5">
-                   <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Quantity</label>
-                   <div className="relative">
-                     <Weight className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                     <Input 
-                       placeholder="e.g. 5 Tonnes" 
-                       className="pl-10 bg-white h-11 text-xs font-bold"
-                       value={formData.loadValue}
-                       onChange={(e) => updateData("loadValue", e.target.value)}
-                     />
-                   </div>
+
+                 <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Weight</label>
+                      <div className="flex bg-zinc-50 rounded-xl overflow-hidden border border-zinc-100">
+                        <input 
+                          type="number"
+                          placeholder="0"
+                          className="w-full bg-transparent px-3 py-2 text-xs font-black text-black outline-none"
+                          value={formData.loadValue}
+                          onChange={(e) => updateData("loadValue", e.target.value)}
+                        />
+                        <select 
+                          className="bg-zinc-100 px-2 text-[8px] font-black uppercase text-zinc-500 outline-none border-l border-zinc-200"
+                          value={formData.loadType}
+                          onChange={(e) => updateData("loadType", e.target.value)}
+                        >
+                          <option value="kg">kg</option>
+                          <option value="ton">ton</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Estimate Price</label>
+                      <div className="flex items-center bg-zinc-50 rounded-xl px-3 py-2 border border-zinc-100">
+                        <span className="text-[10px] font-black text-primary mr-1">₹</span>
+                        <input 
+                          type="number"
+                          className="w-full bg-transparent text-xs font-black text-black outline-none"
+                          value={formData.price}
+                          onChange={(e) => updateData("price", e.target.value)}
+                        />
+                      </div>
+                    </div>
                  </div>
               </div>
             </div>
           );
-       }
+        }
 
         return (
           <div className="space-y-5">
@@ -630,6 +661,7 @@ const CreateRequirement = () => {
             </div>
           </div>
         );
+      }
       case 5:
         return (
           <div className="space-y-4">
@@ -807,8 +839,16 @@ const CreateRequirement = () => {
       const payload = {
         serviceType: formData.serviceType,
         vehicleType: vehicleName,
-        pickup: { address: formData.pickup },
-        drops: formData.drops.map(addr => ({ address: addr })),
+        pickup: { 
+          address: formData.pickup,
+          lat: formData.pickupCoords?.lat || null,
+          lon: formData.pickupCoords?.lon || null
+        },
+        drops: formData.drops.map((addr, idx) => ({ 
+          address: addr,
+          lat: formData.dropsCoords?.[idx]?.lat || null,
+          lon: formData.dropsCoords?.[idx]?.lon || null
+        })),
         items: (formData.serviceType === 'house' || formData.serviceType === 'house-shifting') ? `House Shifting (${formData.houseSize || 'N/A'})` : (formData.serviceType === 'emergency' ? 'Emergency Assistance' : (formData.serviceType === 'construction' ? formData.materialType : 'General Goods')),
         weight: formData.loadValue ? `${formData.loadValue}${formData.loadType === 'kg' ? 'kg' : ''}` : '',
         date: formData.date,

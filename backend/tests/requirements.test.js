@@ -27,7 +27,8 @@ beforeEach(async () => {
     serviceCategories: ['goods', 'construction'],
     onboardingComplete: true,
     isVerified: true,
-    status: 'Verified'
+    status: 'Verified',
+    subscriptionStatus: 'Active',
   });
   vendorId = vendor._id;
   vendorToken = jwt.sign({ id: vendor._id, role: 'vendor' }, process.env.JWT_ACCESS_SECRET || 'test_access_secret', { expiresIn: '1h' });
@@ -46,7 +47,7 @@ describe('Requirement & Lead System', () => {
           drops: [{ address: 'Vijay Nagar' }],
           items: 'Electronics',
           weight: '200kg',
-          date: '2026-05-10',
+          date: '2026-05-20',
           time: '14:00'
         });
       

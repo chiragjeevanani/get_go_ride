@@ -11,6 +11,8 @@ import {
   acceptDealWithWallet,
   createAcceptDealOrder,
   verifyAcceptDealPayment,
+  sendTypingIndicator,
+  markMessagesAsRead,
 } from '../controllers/chat.controller.js';
 
 const router = express.Router();
@@ -24,6 +26,8 @@ router.get('/driver/active', requireRole('vendor'), getDriverActiveChats);
 // Specific room details & sending messages (By Bid ID)
 router.get('/:bidId/messages', getMessages);
 router.post('/:bidId/messages', sendMessage);
+router.post('/:bidId/typing', sendTypingIndicator);
+router.patch('/:bidId/read', markMessagesAsRead);
 router.post('/:bidId/offer', sendOffer);
 router.post('/:bidId/accept', requireRole('user'), acceptDeal);
 router.post('/:bidId/accept-wallet', requireRole('user'), acceptDealWithWallet);
@@ -34,6 +38,8 @@ router.post('/:bidId/reopen', requireRole('user'), reopenDeal);
 // Specific room details & sending messages (By Request + Vendor ID composite)
 router.get('/messages/:requestId/:vendorId', getMessages);
 router.post('/messages/:requestId/:vendorId', sendMessage);
+router.post('/typing/:requestId/:vendorId', sendTypingIndicator);
+router.patch('/read/:requestId/:vendorId', markMessagesAsRead);
 router.post('/offer/:requestId/:vendorId', sendOffer);
 router.post('/accept/:requestId/:vendorId', requireRole('user'), acceptDeal);
 router.post('/accept-wallet/:requestId/:vendorId', requireRole('user'), acceptDealWithWallet);

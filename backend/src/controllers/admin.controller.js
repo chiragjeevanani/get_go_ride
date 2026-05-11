@@ -2,7 +2,108 @@ import User from '../models/User.model.js';
 import Vendor from '../models/Vendor.model.js';
 import Requirement from '../models/Requirement.model.js';
 import Bid from '../models/Bid.model.js';
+import { getRevenueModelConfig } from './settings.controller.js';
 import { success, error } from '../utils/response.js';
+
+// ─── GET /api/admin/deals ─────────────────────────────────────────────────────
+
+export const getAdminDeals = async (req, res, next) => {
+  try {
+    const { status, page = 1, limit = 20 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Build query for deals (requirements with accepted bids)
+    const query = { acceptedBid: { $exists: true, $ne: null } };
+    if (status) query.status = status;
+
+    const requirements = await Requirement.find(query)
+      .populate('user', 'name phone')
+      .populate('acceptedBid')
+      .populate({
+        path: 'acceptedBid',
+        populate: { path: 'vendor', select: 'name phone businessName' }
+      })
+      .sort({ updatedAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Requirement.countDocuments(query);
+
+    // Transform data for admin view
+    const deals = requirements.map(req => ({
+      _id: req._id,
+      requirementId: req.requirementId || req._id,
+      status: req.status,
+      serviceType: req.serviceType,
+      user: {
+        id: req.user?._id,
+        name: req.user?.name || 'Unknown',
+        phone: req.user?.phone
+      },
+      vendor: {
+        id: req.acceptedBid?.vendor?._id,
+        name: req.acceptedBid?.vendor?.name || req.acceptedBid?.vendor?.businessName || 'Unknown',
+        phone: req.acceptedBid?.vendor?.phone
+      },
+      finalAmount: req.acceptedBid?.amount || 0,
+      platformCommission: Math.round((req.acceptedBid?.amount || 0) * 0.10),
+      createdAt: req.createdAt,
+      completedAt: req.updatedAt
+    }));
+
+    return success(res, {
+      deals,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
+    }, 'Deals retrieved successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── GET /api/admin/deals/:id/bids ─────────────────────────────────────────────
+
+export const getDealBids = async (req, res, next) => {
+  try {
+    const requirement = await Requirement.findById(req.params.id)
+      .populate('user', 'name phone')
+      .populate({
+        path: 'acceptedBid',
+        populate: { path: 'vendor', select: 'name phone businessName rating' }
+      });
+
+    if (!requirement) {
+      return error(res, 'Requirement not found', 404, 'NOT_FOUND');
+    }
+
+    // Get all bids for this requirement
+    const bids = await Bid.find({ requirement: req.params.id })
+      .populate('vendor', 'name phone businessName rating vehicleType')
+      .sort({ amount: 1 });
+
+    return success(res, {
+      requirement: {
+        _id: requirement._id,
+        status: requirement.status,
+        serviceType: requirement.serviceType,
+        user: requirement.user,
+        pickup: requirement.pickup,
+        drops: requirement.drops,
+        date: requirement.date,
+        time: requirement.time,
+        createdAt: requirement.createdAt
+      },
+      acceptedBid: requirement.acceptedBid,
+      allBids: bids
+    }, 'Deal bids retrieved successfully');
+  } catch (err) {
+    next(err);
+  }
+};
 
 // ─── GET /api/admin/stats ─────────────────────────────────────────────────────
 
@@ -67,12 +168,17 @@ export const getAdminRevenueStats = async (req, res, next) => {
     });
     
     let totalBidVolume = 0;
+    let actualPlatformCommission = 0;
     completedRequirements.forEach(r => {
       if (r.acceptedBid?.amount) {
         totalBidVolume += r.acceptedBid.amount;
+        actualPlatformCommission += r.acceptedBid.platformCommission || 0;
       }
     });
-    const commissionRevenue = totalBidVolume * 0.10; // 10% Platform Commission
+
+    const config = await getRevenueModelConfig();
+    const usesCommissionModel = config.model !== 'subscription';
+    const commissionRevenue = usesCommissionModel ? actualPlatformCommission : totalBidVolume * 0.10;
     const totalRevenue = subscriptionRevenue + commissionRevenue;
 
     // 3. Category distribution
@@ -117,7 +223,8 @@ export const getAdminRevenueStats = async (req, res, next) => {
     // 4. Regional breakdown
     const cityMap = {};
     activeVendors.forEach(v => {
-      const city = v.nativeCity || v.location || 'Indore';
+      const locationCity = typeof v.location === 'string' ? v.location : (v.location?.address || '');
+      const city = v.nativeCity || locationCity || 'Indore';
       if (!cityMap[city]) {
         cityMap[city] = { leads: 0, revenue: 0, growth: '+12%' };
       }
@@ -151,6 +258,11 @@ export const getAdminRevenueStats = async (req, res, next) => {
       totalActiveSubscriptions,
       categoryPerformance,
       regionalData,
+      revenueModel: {
+        mode: config.model,
+        commissionRate: config.rate,
+        isCommissionActive: usesCommissionModel
+      },
       funnel: {
         leadsCreated: totalLeadsCount,
         bidsReceived: bidResponsesCount,

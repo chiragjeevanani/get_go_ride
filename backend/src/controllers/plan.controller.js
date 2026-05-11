@@ -214,6 +214,10 @@ export const createSubscriptionOrder = async (req, res, next) => {
       amount: Math.round(plan.price * 100), // amount in paise
       currency: 'INR',
       receipt: `sub_${plan._id.toString().slice(-6)}_${req.user.id.toString().slice(-6)}_${Date.now()}`,
+      notes: {
+        planId: plan._id.toString(),
+        vendorId: req.user.id.toString(),
+      },
     };
 
     const order = await razorpay.orders.create(options);
@@ -368,6 +372,64 @@ export const incrementLeadQuota = async (req, res, next) => {
     }
 
     return success(res, { incremented: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * @route   POST /api/plans/webhook/razorpay
+ * @desc    Process Razorpay Webhook Events (async subscription confirmation)
+ * @access  Public
+ */
+export const handleRazorpayWebhook = async (req, res, next) => {
+  try {
+    const signature = req.headers['x-razorpay-signature'];
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
+    if (webhookSecret && signature) {
+      const shasum = crypto.createHmac('sha256', webhookSecret);
+      shasum.update(typeof req.body === 'string' ? req.body : JSON.stringify(req.body));
+      const digest = shasum.digest('hex');
+
+      if (digest !== signature) {
+        return res.status(400).json({ success: false, message: 'Invalid webhook signature' });
+      }
+    } else {
+      console.log('Skipping signature validation in unconfigured/non-production environment');
+    }
+
+    const { event, payload } = req.body;
+    console.log(`Razorpay Webhook received event: ${event}`);
+
+    if (event === 'order.paid' || event === 'payment.captured') {
+      const entity = event === 'order.paid' ? payload.order.entity : payload.payment.entity;
+      const notes = entity.notes || {};
+      const { planId, vendorId } = notes;
+
+      if (planId && vendorId) {
+        const plan = await SubscriptionPlan.findById(planId);
+        if (plan) {
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + plan.durationDays);
+
+          await Vendor.findByIdAndUpdate(vendorId, {
+            $set: {
+              activeSubscription: plan._id,
+              subscriptionStatus: 'Active',
+              subscriptionExpiresAt: expiresAt,
+              subscriptionStartedAt: new Date(),
+              hasVerifiedBadge: plan.features?.verifiedBadge || false,
+              leadQuotaUsed: 0,
+              leadQuotaResetAt: new Date(),
+            }
+          });
+          console.log(`Successfully activated subscription ${plan.name} for vendor ${vendorId} via Webhook`);
+        }
+      }
+    }
+
+    return res.status(200).json({ success: true, message: 'Webhook processed successfully' });
   } catch (err) {
     next(err);
   }

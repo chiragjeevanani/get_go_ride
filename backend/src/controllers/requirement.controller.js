@@ -1,6 +1,8 @@
 import Requirement from '../models/Requirement.model.js';
 import Vendor from '../models/Vendor.model.js';
+import Bid from '../models/Bid.model.js';
 import { success, error } from '../utils/response.js';
+import { getRevenueModelConfig } from './settings.controller.js';
 
 /**
  * @route   POST /api/requirements
@@ -84,6 +86,14 @@ export const getAvailableLeads = async (req, res, next) => {
     const vendor = await Vendor.findById(req.user.id);
     if (!vendor) return error(res, 'Vendor not found', 404, 'NOT_FOUND');
 
+    // Subscription gate: verify active subscription
+    const config = await getRevenueModelConfig();
+    const isSubscriptionRequired = config.model === 'subscription' || config.model === 'subscription_commission';
+
+    if (isSubscriptionRequired && vendor.subscriptionStatus !== 'Active') {
+      return error(res, 'An active subscription plan is required to browse leads.', 403, 'ACTIVE_SUBSCRIPTION_REQUIRED');
+    }
+
     // Filter leads by vendor's service categories and status 'pending' or 'bidding'
     const leads = await Requirement.find({
       serviceType: { $in: vendor.serviceCategories },
@@ -164,7 +174,7 @@ export const getAllRequirements = async (req, res, next) => {
 export const updateRequirementStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
-    
+
     const requirement = await Requirement.findByIdAndUpdate(
       req.params.id,
       { $set: { status } },
@@ -174,6 +184,38 @@ export const updateRequirementStatus = async (req, res, next) => {
     if (!requirement) return error(res, 'Requirement not found', 404, 'NOT_FOUND');
 
     success(res, requirement, `Status updated to ${status}`);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * @route   DELETE /api/requirements/:id
+ * @desc    Delete a requirement (owner only, if not accepted)
+ * @access  Private (User/Owner)
+ */
+export const deleteRequirement = async (req, res, next) => {
+  try {
+    const requirement = await Requirement.findById(req.params.id);
+    if (!requirement) return error(res, 'Requirement not found', 404, 'NOT_FOUND');
+
+    // Only owner can delete their requirement
+    if (requirement.user.toString() !== req.user.id) {
+      return error(res, 'Access denied', 403, 'FORBIDDEN');
+    }
+
+    // Cannot delete if already accepted
+    if (requirement.status === 'accepted') {
+      return error(res, 'Cannot delete a requirement with an accepted bid', 400, 'CANNOT_DELETE');
+    }
+
+    // Delete associated bids first
+    await Bid.deleteMany({ requirement: req.params.id });
+
+    // Delete the requirement
+    await Requirement.deleteOne({ _id: req.params.id });
+
+    success(res, null, 'Requirement deleted successfully');
   } catch (err) {
     next(err);
   }
