@@ -20,29 +20,31 @@ import EarningsWallet from "../pages/EarningsWallet";
 
 const DriverRoutes = () => {
   return (
-    <Routes>
-      <Route path="auth" element={<DriverAuthPage />} />
-      <Route path="subscribe" element={<SubscriptionGate />} />
+    <div className="mobile-app-shell min-h-screen bg-white">
+      <Routes>
+        <Route path="auth" element={<DriverAuthPage />} />
+        <Route path="subscribe" element={<SubscriptionGate />} />
 
-      <Route element={<DriverMainLayout />}>
-        <Route index element={<DriverDashboard />} />
-        <Route path="dashboard" element={<DriverDashboard />} />
-        <Route path="leads" element={<LeadsScreen />} />
-        <Route path="leads/:id" element={<LeadDetails />} />
-        <Route path="chats" element={<ChatListPage />} />
-        <Route path="chat/:id" element={<DriverChatPage />} />
-        <Route path="profile" element={<DriverProfile />} />
-        <Route path="analytics" element={<AnalyticsPage />} />
-        <Route path="subscription" element={<SubscriptionManagement />} />
-        <Route path="profile/vehicle" element={<VehicleDetails />} />
-        <Route path="profile/pricing" element={<PricingAndAreas />} />
-        <Route path="profile/alerts" element={<NotificationAlerts />} />
-        <Route path="profile/security" element={<AccountSecurity />} />
-        <Route path="profile/support" element={<HelpSupport />} />
-        <Route path="checkout/:id" element={<CheckoutPage />} />
-        <Route path="earnings" element={<EarningsWallet />} />
-      </Route>
-    </Routes>
+        <Route element={<DriverMainLayout />}>
+          <Route index element={<DriverDashboard />} />
+          <Route path="dashboard" element={<DriverDashboard />} />
+          <Route path="leads" element={<LeadsScreen />} />
+          <Route path="leads/:id" element={<LeadDetails />} />
+          <Route path="chats" element={<ChatListPage />} />
+          <Route path="chat/:id" element={<DriverChatPage />} />
+          <Route path="profile" element={<DriverProfile />} />
+          <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="subscription" element={<SubscriptionManagement />} />
+          <Route path="profile/vehicle" element={<VehicleDetails />} />
+          <Route path="profile/pricing" element={<PricingAndAreas />} />
+          <Route path="profile/alerts" element={<NotificationAlerts />} />
+          <Route path="profile/security" element={<AccountSecurity />} />
+          <Route path="profile/support" element={<HelpSupport />} />
+          <Route path="checkout/:id" element={<CheckoutPage />} />
+          <Route path="earnings" element={<EarningsWallet />} />
+        </Route>
+      </Routes>
+    </div>
   );
 };
 

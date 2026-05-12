@@ -176,3 +176,24 @@
 .admin-theme .admin-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted-admin);
 }
+
+/* Native Mobile App Touch & Selection Experience */
+.mobile-app-shell {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none; /* Disables default callout/popup menu on iOS */
+  -webkit-tap-highlight-color: transparent; /* Removes touch selection highlight box */
+}
+
+/* Ensure form input and interactive selection works perfectly */
+.mobile-app-shell input,
+.mobile-app-shell textarea,
+.mobile-app-shell [contenteditable="true"] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
