@@ -34,10 +34,6 @@ const ProfilePage = () => {
   const [avatar, setAvatar] = useState(profileImg);
   const fileInputRef = useRef(null);
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
   const fetchProfile = async () => {
     try {
       const res = await userApi.getProfile();
@@ -53,6 +49,10 @@ const ProfilePage = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];

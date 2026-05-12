@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { 
   ChevronLeft, ChevronRight, Check, Truck, Home, Users, AlertTriangle, 
   MapPin, Calendar, Clock, Weight, Package, FileText, Plus, Loader2, X 
