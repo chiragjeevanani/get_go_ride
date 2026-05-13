@@ -37,7 +37,7 @@ const LeadsScreen = () => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6 pb-24 pt-4"
+      className="space-y-6 pb-24 pt-0 px-4"
     >
       {/* Header */}
       <header className="flex flex-col gap-3 -mx-4 px-4 py-3 border-b-2 border-yellow-400 sticky top-0 bg-white/90 backdrop-blur-md z-30">
@@ -58,7 +58,7 @@ const LeadsScreen = () => {
       </header>
 
          {/* Search and Filters */}
-         <div className="space-y-4 px-1">
+         <div className="space-y-4">
             <div className="relative group">
                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-300 group-focus-within:text-primary transition-colors" />
                <Input 
@@ -140,7 +140,7 @@ const LeadsScreen = () => {
       </section>
 
       {/* Suggested Routes / Areas */}
-      <Card className="bg-zinc-900 border-none p-5 relative overflow-hidden rounded-2xl mx-1">
+      <Card className="bg-zinc-900 border-none p-5 relative overflow-hidden rounded-2xl">
         <div className="relative z-10 space-y-3.5 text-white">
            <div className="space-y-0.5">
               <h3 className="font-bold text-base tracking-tight">High Demand Alert</h3>

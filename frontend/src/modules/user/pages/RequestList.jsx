@@ -82,7 +82,7 @@ const RequestList = () => {
     : ["All", "Completed", "Cancelled"];
 
   return (
-    <div className="space-y-4 pb-20 pt-2">
+    <div className="space-y-4 pb-20 pt-4 px-4">
       <header className="flex justify-between items-center py-2 border-b-2 border-primary/20 -mx-4 px-4 sticky top-0 bg-white/80 backdrop-blur-lg z-30">
         <h1 className="text-sm font-black text-black uppercase tracking-widest">My Requests</h1>
         <Button 

@@ -57,7 +57,7 @@ const ChatList = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20 pt-4 px-4">
       <header className="flex flex-col gap-1.5 py-1.5 border-b-2 border-primary/20 -mx-4 px-4 sticky top-0 bg-white/80 backdrop-blur-lg z-30">
         <div className="flex justify-between items-center">
           <h1 className="text-lg font-black text-black tracking-tighter uppercase">Messages</h1>

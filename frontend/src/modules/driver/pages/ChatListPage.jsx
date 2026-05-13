@@ -2,13 +2,22 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Search, MessageSquare, ChevronRight, 
-  Clock, CheckCircle2, MoreVertical, Zap
+  Clock, CheckCircle2, MoreVertical, Zap,
+  CheckCheck, Archive, Settings, HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useDriverState } from "../hooks/useDriverState";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +67,7 @@ const ChatListPage = () => {
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.25 }}
-      className="space-y-6 pb-24 pt-4 px-1"
+      className="space-y-6 pb-24 pt-0 px-4"
     >
       {/* Header */}
       <header className="flex flex-col gap-3 -mx-4 px-4 py-3 border-b-2 border-yellow-400 sticky top-0 bg-white/90 backdrop-blur-md z-30 mb-5">
@@ -72,14 +81,38 @@ const ChatListPage = () => {
               <p className="text-[10px] font-semibold text-zinc-500 tracking-tight mt-1">Active Negotiations</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="w-9 h-9 rounded-xl bg-zinc-50 border border-zinc-100">
-            <MoreVertical className="w-4 h-4 text-zinc-400" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="w-9 h-9 rounded-xl bg-zinc-50 border border-zinc-100">
+                <MoreVertical className="w-4 h-4 text-zinc-400" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 shadow-xl border-zinc-100">
+              <DropdownMenuLabel className="text-xs font-black uppercase tracking-widest text-zinc-400 px-3 py-2">Chat Options</DropdownMenuLabel>
+              <DropdownMenuItem className="rounded-xl focus:bg-primary/10 focus:text-primary py-2.5 px-3 cursor-pointer">
+                <CheckCheck className="w-4 h-4 mr-2" />
+                <span className="font-bold text-xs">Mark all as read</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="rounded-xl focus:bg-primary/10 focus:text-primary py-2.5 px-3 cursor-pointer">
+                <Archive className="w-4 h-4 mr-2" />
+                <span className="font-bold text-xs">Archived Messages</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="my-1 bg-zinc-50" />
+              <DropdownMenuItem className="rounded-xl focus:bg-primary/10 focus:text-primary py-2.5 px-3 cursor-pointer">
+                <Settings className="w-4 h-4 mr-2" />
+                <span className="font-bold text-xs">Message Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="rounded-xl focus:bg-primary/10 focus:text-primary py-2.5 px-3 cursor-pointer">
+                <HelpCircle className="w-4 h-4 mr-2" />
+                <span className="font-bold text-xs">Help & Support</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
       {/* Search */}
-      <div className="relative group px-1">
+      <div className="relative group">
         <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-300 group-focus-within:text-primary transition-colors" />
         <Input 
           placeholder="Search conversations..." 
@@ -163,7 +196,7 @@ const ChatListPage = () => {
       </section>
 
       {/* Quick Stats Card */}
-      <Card className="bg-zinc-900 border-none p-4.5 rounded-2xl mx-1 relative overflow-hidden group">
+      <Card className="bg-zinc-900 border-none p-4.5 rounded-2xl relative overflow-hidden group">
          <div className="relative z-10 flex items-center gap-4">
             <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-md">
                <Zap className="w-5 h-5 text-primary" fill="currentColor" />
