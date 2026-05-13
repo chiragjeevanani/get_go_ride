@@ -144,9 +144,6 @@ const DriverProfile = () => {
         : `Status: ${driver.subscriptionStatus || "None"}`, 
       path: "/driver/subscribe" 
     },
-    { icon: <BarChart2 className="w-4 h-4" />, label: "Performance", desc: `Won: ${driver.leadsWon || 0} • Rating: ${driver.rating || 0}★`, path: "/driver/dashboard" },
-    { icon: <Bell className="w-4 h-4" />, label: "Alerts", desc: "Control notification settings", path: "#", onClick: () => toast.info("Alert configurations synced with browser") },
-    { icon: <Shield className="w-4 h-4" />, label: "Account Security", desc: "Verification and passwords", path: "#", onClick: () => toast.info("Your connection is securely encrypted") },
   ];
 
   return (

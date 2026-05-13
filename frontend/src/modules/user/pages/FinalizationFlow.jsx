@@ -2,12 +2,15 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   CheckCircle2, Package, Truck, Calendar, MapPin, 
-  ChevronRight, ArrowRight, ShieldCheck, Star, Loader2 
+  ChevronRight, ArrowRight, ShieldCheck, Star, Loader2,
+  ArrowLeft, Home, MessageSquare, Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { motion, AnimatePresence } from "framer-motion";
 import { requirementApi, chatApi, userApi, settingsApi } from "@/lib/api";
 import { loadRazorpay } from "@/lib/loadRazorpay";
 import { toast } from "sonner";
@@ -21,6 +24,7 @@ const FinalizationFlow = () => {
   const [error, setError] = useState(null);
   const [confirming, setConfirming] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   const handleCancelAndReopen = () => {
     navigate(-1);
@@ -66,6 +70,15 @@ const FinalizationFlow = () => {
           requirement: reqData,
           bid: activeBid,
         });
+
+        // Check if already completed
+        const isAlreadyAccepted = reqData.status === 'accepted' || reqData.status === 'Accepted';
+        const acceptedBidId = reqData.acceptedBid?._id?.toString() || reqData.acceptedBid?.toString();
+        const currentBidId = activeBid?._id?.toString() || activeBid?.toString();
+        
+        if (isAlreadyAccepted && acceptedBidId === currentBidId) {
+          setIsCompleted(true);
+        }
       } catch (err) {
         console.error("Error loading finalization details:", err);
         setError("Failed to load deal details. Please try again.");
@@ -132,7 +145,8 @@ const FinalizationFlow = () => {
         const res = await chatApi.acceptCompositeDealWithWallet(requestId, vendorId);
         if (res.success) {
           toast.success("Deal Confirmed! Amount deducted from your wallet.", { icon: "🤝" });
-          navigate("/user/requests");
+          setIsCompleted(true);
+          setConfirming(false);
         }
       } else {
         // 2. Insufficient balance -> Top up shortfall via Razorpay, then complete booking
@@ -186,7 +200,7 @@ const FinalizationFlow = () => {
                 const finalizeRes = await chatApi.acceptCompositeDealWithWallet(requestId, vendorId);
                 if (finalizeRes.success) {
                   toast.success("Deal Accepted & Paid! Your ride is booked.", { icon: "🚗" });
-                  navigate("/user/requests");
+                  setIsCompleted(true);
                 }
               } else {
                 toast.error("Verification failed on shortfall top-up.");
@@ -222,162 +236,276 @@ const FinalizationFlow = () => {
     }
   };
 
-  return (
-    <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500 pb-10">
-      <header className="text-center space-y-4 py-6">
-        <motion.div 
-           initial={{ scale: 0 }}
-           animate={{ scale: 1 }}
-           transition={{ type: "spring", damping: 12 }}
-           className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-sm"
-        >
-           <CheckCircle2 className="w-10 h-10" />
-        </motion.div>
-        <div className="space-y-1">
-           <h1 className="text-2xl font-bold text-black tracking-tight">Confirm Your Deal</h1>
-           <p className="text-sm text-zinc-500 font-bold">You are about to finalize with {vendor.name}</p>
+  if (isCompleted) {
+    return (
+      <div className="min-h-screen bg-zinc-50 pb-10 safe-area-bottom">
+        <div className="max-w-md mx-auto p-4 space-y-6">
+          <header className="text-center space-y-4 py-8">
+            <motion.div 
+               initial={{ scale: 0, rotate: -45 }}
+               animate={{ scale: 1, rotate: 0 }}
+               transition={{ type: "spring", damping: 10, stiffness: 100 }}
+               className="w-24 h-24 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto shadow-xl shadow-emerald-200"
+            >
+               <CheckCircle2 className="w-12 h-12" />
+            </motion.div>
+            <div className="space-y-2">
+               <h1 className="text-3xl font-black text-black tracking-tighter">Booking Confirmed!</h1>
+               <p className="text-sm text-zinc-500 font-bold uppercase tracking-widest px-8">Your ride with {vendor.name} is secured</p>
+            </div>
+          </header>
+
+          <Card className="border-none shadow-xl shadow-zinc-200/50 rounded-[32px] overflow-hidden bg-white">
+            <div className="bg-emerald-500 p-6 text-white flex justify-between items-center">
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Total Amount Paid</p>
+                <p className="text-3xl font-black tracking-tight">{vendor.quote}</p>
+              </div>
+              <Badge variant="outline" className="bg-white/20 border-white/30 text-white font-black text-[10px] px-3 py-1 rounded-full uppercase tracking-widest">
+                PAID via Wallet
+              </Badge>
+            </div>
+            
+            <CardContent className="p-6 space-y-6">
+              <div className="flex items-center gap-4">
+                <Avatar className="w-14 h-14 border-4 border-zinc-50 shadow-sm">
+                  <AvatarImage src={vendor.avatar} />
+                  <AvatarFallback>{vendor.name.substring(0,2)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h4 className="font-bold text-black text-lg">{vendor.name}</h4>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-zinc-100 px-2 py-0.5 rounded-full">
+                      <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                      <span className="text-[11px] font-black">{vendor.rating}</span>
+                    </div>
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">• Professional Driver</span>
+                  </div>
+                </div>
+                <Button 
+                  size="icon" 
+                  className="rounded-full bg-primary/10 text-primary hover:bg-primary/20 h-12 w-12"
+                  onClick={() => navigate(`/user/chat/${requestId}/${vendorId}`)}
+                >
+                  <MessageSquare className="w-6 h-6" />
+                </Button>
+              </div>
+
+              <Separator className="bg-zinc-100" />
+
+              <div className="space-y-4">
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-600 shrink-0">
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Route Details</p>
+                    <p className="text-sm font-bold text-black line-clamp-1">{request.pickup}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-px bg-zinc-200 ml-0.5"></div>
+                      <ArrowRight className="w-3 h-3 text-zinc-300" />
+                    </div>
+                    <p className="text-sm font-bold text-black line-clamp-1">{request.dropoff}</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-600 shrink-0">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Scheduled For</p>
+                    <p className="text-sm font-bold text-black">{request.date}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="bg-white border border-zinc-100 rounded-3xl p-5 flex gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h5 className="text-sm font-black text-black uppercase tracking-tight">Safe Journey Guaranteed</h5>
+              <p className="text-xs text-zinc-500 font-medium leading-relaxed">Your payment is protected by our Escrow system. Only release the payment once the service is complete.</p>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-4">
+            <Button 
+              className="w-full h-16 rounded-3xl bg-black text-white text-lg font-black shadow-xl shadow-zinc-300 transition-all hover:bg-zinc-900 active:scale-[0.98]"
+              onClick={() => navigate("/user/requests")}
+            >
+              Go to My Requests
+            </Button>
+            <Button 
+              variant="ghost"
+              className="w-full text-zinc-400 font-bold hover:bg-transparent h-fit p-1"
+              onClick={() => navigate("/user/dashboard")}
+            >
+              <Home className="w-4 h-4 mr-2" />
+              Back to Home
+            </Button>
+          </div>
         </div>
-      </header>
+      </div>
+    );
+  }
 
-      <div className="space-y-6">
-        {/* Deal Summary Card */}
-        <Card className="border-none shadow-premium overflow-hidden bg-white rounded-3xl">
-           <CardContent className="p-0">
-              {/* Vendor Hero in Card */}
-              <div className="bg-zinc-50 p-6 flex items-center justify-between border-b border-zinc-100">
-                 <div className="flex items-center gap-4">
-                    <Avatar className="h-14 w-14 border-2 border-white shadow-sm ring-1 ring-zinc-200 rounded-full">
-                       <AvatarImage src={vendor.avatar} />
-                       <AvatarFallback>{vendor.name.substring(0,2)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                       <div className="flex items-center gap-1">
-                          <h4 className="font-bold text-black">{vendor.name}</h4>
-                          {vendor.isVerified && <ShieldCheck className="w-3.5 h-3.5 text-primary fill-primary/10" />}
-                       </div>
-                       <div className="flex items-center gap-1">
-                          <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                          <span className="text-xs font-bold text-zinc-600">{vendor.rating}</span>
-                          <span className="text-[10px] text-zinc-400 font-medium whitespace-nowrap px-1">• {bidData?.vendor?.totalRatings || 124} Completed Jobs</span>
-                       </div>
-                    </div>
-                 </div>
-                 <div className="flex flex-col items-end">
-                    <span className="text-[9px] uppercase font-bold text-zinc-400">Total Quote</span>
-                    <span className="text-xl font-black text-primary tracking-tight">{vendor.quote}</span>
-                 </div>
-              </div>
-
-              {/* Details List */}
-              <div className="p-6 space-y-5">
-                 <div className="flex gap-4">
-                    <div className="p-3 bg-primary text-black rounded-2xl h-fit">
-                       <Package className="w-5 h-5" />
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Service Requirement</p>
-                        <p className="text-sm font-bold text-black">{request.service}</p>
-                    </div>
-                 </div>
-
-                 <div className="flex gap-4">
-                    <div className="p-3 bg-black text-white rounded-2xl h-fit">
-                       <MapPin className="w-5 h-5" />
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Journey</p>
-                        <p className="text-sm font-bold text-black line-clamp-1">{request.pickup}</p>
-                        <ArrowRight className="w-3 h-3 text-zinc-300" />
-                        <p className="text-sm font-bold text-black line-clamp-1">{request.dropoff}</p>
-                    </div>
-                 </div>
-
-                 <div className="flex gap-4">
-                    <div className="p-3 bg-zinc-100 text-black rounded-2xl h-fit">
-                       <Calendar className="w-5 h-5" />
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Scheduled Date</p>
-                        <p className="text-sm font-bold text-black">{request.date}</p>
-                    </div>
-                 </div>
-              </div>
-           </CardContent>
-        </Card>
-
-        {/* Payment Summary details */}
-        <Card className="border-2 border-zinc-100 rounded-3xl p-5 bg-zinc-50/50 space-y-4">
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Payment Breakdown</span>
-            <span className="text-[9px] font-black text-zinc-500 bg-white px-2.5 py-1 rounded-full border border-zinc-100 uppercase tracking-wider">Escrow Protected</span>
+  return (
+    <div className="min-h-screen bg-white pb-10 safe-area-bottom">
+      <div className="max-w-md mx-auto p-4 space-y-6">
+        <header className="text-center space-y-4 py-6">
+          <motion.div 
+             initial={{ scale: 0 }}
+             animate={{ scale: 1 }}
+             transition={{ type: "spring", damping: 12 }}
+             className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-sm"
+          >
+             <CheckCircle2 className="w-10 h-10" />
+          </motion.div>
+          <div className="space-y-1">
+             <h1 className="text-2xl font-bold text-black tracking-tight">Confirm Your Deal</h1>
+             <p className="text-sm text-zinc-500 font-bold">You are about to finalize with {vendor.name}</p>
           </div>
+        </header>
 
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs font-bold text-zinc-700">
-              <span>Required Booking Amount:</span>
-              <span className="text-zinc-900 font-black">₹{bidData?.amount?.toLocaleString('en-IN') || "0"}</span>
+        <div className="space-y-6">
+          <Card className="border-none shadow-premium overflow-hidden bg-white rounded-3xl">
+             <CardContent className="p-0">
+                <div className="bg-zinc-50 p-6 flex items-center justify-between border-b border-zinc-100">
+                   <div className="flex items-center gap-4">
+                      <Avatar className="h-14 w-14 border-2 border-white shadow-sm ring-1 ring-zinc-200 rounded-full">
+                         <AvatarImage src={vendor.avatar} />
+                         <AvatarFallback>{vendor.name.substring(0,2)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                         <div className="flex items-center gap-1">
+                            <h4 className="font-bold text-black">{vendor.name}</h4>
+                            {vendor.isVerified && <ShieldCheck className="w-3.5 h-3.5 text-primary fill-primary/10" />}
+                         </div>
+                         <div className="flex items-center gap-1">
+                            <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                            <span className="text-xs font-bold text-zinc-600">{vendor.rating}</span>
+                            <span className="text-[10px] text-zinc-400 font-medium whitespace-nowrap px-1">• {bidData?.vendor?.totalRatings || 124} Completed Jobs</span>
+                         </div>
+                      </div>
+                   </div>
+                   <div className="flex flex-col items-end">
+                      <span className="text-[9px] uppercase font-bold text-zinc-400">Total Quote</span>
+                      <span className="text-xl font-black text-primary tracking-tight">{vendor.quote}</span>
+                   </div>
+                </div>
+
+                <div className="p-6 space-y-5">
+                   <div className="flex gap-4">
+                      <div className="p-3 bg-primary text-black rounded-2xl h-fit">
+                         <Package className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1">
+                          <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Service Requirement</p>
+                          <p className="text-sm font-bold text-black">{request.service}</p>
+                      </div>
+                   </div>
+
+                   <div className="flex gap-4">
+                      <div className="p-3 bg-black text-white rounded-2xl h-fit">
+                         <MapPin className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1">
+                          <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Journey</p>
+                          <p className="text-sm font-bold text-black line-clamp-1">{request.pickup}</p>
+                          <ArrowRight className="w-3 h-3 text-zinc-300" />
+                          <p className="text-sm font-bold text-black line-clamp-1">{request.dropoff}</p>
+                      </div>
+                   </div>
+
+                   <div className="flex gap-4">
+                      <div className="p-3 bg-zinc-100 text-black rounded-2xl h-fit">
+                         <Calendar className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1">
+                          <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Scheduled Date</p>
+                          <p className="text-sm font-bold text-black">{request.date}</p>
+                      </div>
+                   </div>
+                </div>
+             </CardContent>
+          </Card>
+
+          <Card className="border-2 border-zinc-100 rounded-3xl p-5 bg-zinc-50/50 space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Payment Breakdown</span>
+              <span className="text-[9px] font-black text-zinc-500 bg-white px-2.5 py-1 rounded-full border border-zinc-100 uppercase tracking-wider">Escrow Protected</span>
             </div>
-            <div className="flex justify-between text-xs font-bold text-zinc-700">
-              <span>Your Available Wallet Balance:</span>
-              <span className="text-zinc-900 font-black">₹{walletBalance.toLocaleString('en-IN')}</span>
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs font-bold text-zinc-700">
+                <span>Required Booking Amount:</span>
+                <span className="text-zinc-900 font-black">₹{bidData?.amount?.toLocaleString('en-IN') || "0"}</span>
+              </div>
+              <div className="flex justify-between text-xs font-bold text-zinc-700">
+                <span>Your Available Wallet Balance:</span>
+                <span className="text-zinc-900 font-black">₹{walletBalance.toLocaleString('en-IN')}</span>
+              </div>
             </div>
-          </div>
 
-          <div className="border-t border-zinc-200/60 pt-3">
-            {walletBalance >= (bidData?.amount || 0) ? (
-              <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                  <ShieldCheck className="w-4 h-4" />
+            <div className="border-t border-zinc-200/60 pt-3">
+              {walletBalance >= (bidData?.amount || 0) ? (
+                <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h5 className="text-[10px] font-black uppercase text-emerald-800 tracking-tight">Wallet Balance Sufficient</h5>
+                    <p className="text-[9px] font-bold text-emerald-600 uppercase mt-0.5">Amount will be debited directly upon booking</p>
+                  </div>
                 </div>
-                <div>
-                  <h5 className="text-[10px] font-black uppercase text-emerald-800 tracking-tight">Wallet Balance Sufficient</h5>
-                  <p className="text-[9px] font-bold text-emerald-600 uppercase mt-0.5">Amount will be debited directly upon booking</p>
+              ) : (
+                <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
+                  </div>
+                  <div>
+                    <h5 className="text-[10px] font-black uppercase text-amber-800 tracking-tight">Top-Up Needed (₹{((bidData?.amount || 0) - walletBalance).toLocaleString('en-IN')})</h5>
+                    <p className="text-[9px] font-bold text-amber-600 uppercase mt-0.5">Pay remaining via Razorpay securely during confirmation</p>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shrink-0">
-                  <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
-                </div>
-                <div>
-                  <h5 className="text-[10px] font-black uppercase text-amber-800 tracking-tight">Top-Up Needed (₹{((bidData?.amount || 0) - walletBalance).toLocaleString('en-IN')})</h5>
-                  <p className="text-[9px] font-bold text-amber-600 uppercase mt-0.5">Pay remaining via Razorpay securely during confirmation</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </Card>
+              )}
+            </div>
+          </Card>
 
-        {/* Action and Terms */}
-        <div className="space-y-4 pt-4">
-           <div className="flex items-start gap-3 p-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-[11px] text-zinc-500">
-              <ShieldCheck className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-              <p className="leading-relaxed">
-                 By confirming this service, you agree to Getgoride's <span className="text-primary underline cursor-pointer">Escrow Terms</span> and <span className="text-primary underline cursor-pointer">Service Policy</span>. Your payment is held securely and only released after service completion.
-              </p>
-           </div>
-           
-           <Button 
-             disabled={confirming}
-             className="w-full h-16 rounded-3xl bg-primary text-black text-lg font-black shadow-2xl shadow-primary/30 transition-all hover:brightness-95 active:scale-[0.98] disabled:opacity-50"
-             onClick={handleConfirmBooking}
-           >
-              {confirming ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Securing Ride...
-                </div>
-              ) : walletBalance >= (bidData?.amount || 0) ? "Pay & Book with Wallet" : `Top-up ₹${((bidData?.amount || 0) - walletBalance).toLocaleString('en-IN')} & Book`}
-           </Button>
-           
-           <Button 
-              variant="ghost" 
-              disabled={confirming}
-              className="w-full text-zinc-400 font-bold hover:bg-transparent h-fit p-1 disabled:opacity-50"
-              onClick={handleCancelAndReopen}
-           >
-              Cancel & Return to Chat
-           </Button>
+          <div className="space-y-4 pt-4">
+             <div className="flex items-start gap-3 p-4 bg-zinc-50 border border-zinc-100 rounded-2xl text-[11px] text-zinc-500">
+                <ShieldCheck className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                <p className="leading-relaxed">
+                   By confirming this service, you agree to Getgoride's <span className="text-primary underline cursor-pointer">Escrow Terms</span> and <span className="text-primary underline cursor-pointer">Service Policy</span>. Your payment is held securely and only released after service completion.
+                </p>
+             </div>
+             
+             <Button 
+               disabled={confirming}
+               className="w-full h-16 rounded-3xl bg-primary text-black text-lg font-black shadow-2xl shadow-primary/30 transition-all hover:brightness-95 active:scale-[0.98] disabled:opacity-50"
+               onClick={handleConfirmBooking}
+             >
+                {confirming ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Securing Ride...
+                  </div>
+                ) : walletBalance >= (bidData?.amount || 0) ? "Pay & Book with Wallet" : `Top-up ₹${((bidData?.amount || 0) - walletBalance).toLocaleString('en-IN')} & Book`}
+             </Button>
+             
+             <Button 
+                variant="ghost" 
+                disabled={confirming}
+                className="w-full text-zinc-400 font-bold hover:bg-transparent h-fit p-1 disabled:opacity-50"
+                onClick={handleCancelAndReopen}
+             >
+                Cancel & Return to Chat
+             </Button>
+          </div>
         </div>
       </div>
     </div>

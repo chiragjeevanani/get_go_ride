@@ -231,21 +231,15 @@ const RequestDetails = () => {
                        </Button>
                     </div>
 
-                    <div className="flex gap-2">
-                       <Button 
-                          className="flex-1 rounded-xl bg-white border border-zinc-200 text-black hover:bg-zinc-50 shadow-sm"
-                          onClick={() => navigate(`/user/chat/${request._id}/${vendor.vendorId}`)}
-                       >
-                          <MessageSquare className="w-4 h-4 mr-2" />
-                          Chat
-                       </Button>
-                       <Button 
-                          className="flex-1 rounded-xl shadow-lg shadow-primary/20"
-                          onClick={() => handleSelectVendor(vendor.id)}
-                       >
-                          {request.status === 'Accepted' ? 'Finalized' : 'Select Vendor'}
-                       </Button>
-                    </div>
+                     <div className="flex gap-2">
+                        <Button 
+                           className="flex-1 rounded-xl bg-white border border-zinc-200 text-black hover:bg-zinc-50 shadow-sm h-12"
+                           onClick={() => navigate(`/user/chat/${request._id}/${vendor.vendorId}`)}
+                        >
+                           <MessageSquare className="w-5 h-5 mr-2" />
+                           Chat with Driver
+                        </Button>
+                     </div>
                  </CardContent>
                </Card>
              </motion.div>

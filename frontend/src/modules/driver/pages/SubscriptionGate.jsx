@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Shield, Check, Zap, Star, ArrowRight, Loader2 } from "lucide-react";
+import { Shield, Check, Zap, Star, ArrowRight, Loader2, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -176,8 +176,22 @@ const SubscriptionGate = () => {
       <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
       
       <div className="relative z-10 space-y-6 flex flex-col h-full">
+        {/* Simple Header with Back Button */}
+        <div className="flex items-center justify-between pb-2 border-b border-zinc-100 mb-2">
+           <Button 
+             variant="ghost" 
+             size="icon" 
+             className="w-9 h-9 rounded-xl bg-zinc-50 border border-zinc-100" 
+             onClick={() => navigate(-1)}
+           >
+              <ChevronLeft className="w-5 h-5 text-zinc-600" />
+           </Button>
+           <h2 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Subscription Plans</h2>
+           <div className="w-9"></div>
+        </div>
+
         {/* Header */}
-        <div className="space-y-2 text-center">
+        <div className="space-y-2 text-center pt-2">
           <div className="w-16 h-16 bg-primary/10 rounded-2xl mx-auto flex items-center justify-center relative shadow-inner animate-pulse">
              <Shield className="w-8 h-8 text-primary" strokeWidth={2.5} />
              <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center border-4 border-white">
