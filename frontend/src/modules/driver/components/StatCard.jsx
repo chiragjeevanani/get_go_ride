@@ -15,9 +15,14 @@ export const StatCard = ({ icon: Icon, label, value, trend, trendColor, classNam
             </span>
           )}
         </div>
-        <div className="space-y-0">
-          <h3 className="text-xl font-black text-black tracking-tight leading-none">{value}</h3>
-          <p className="text-[9px] font-extrabold text-zinc-400 uppercase tracking-widest">{label}</p>
+        <div className="space-y-1">
+          <h3 className={cn(
+            "font-black text-black tracking-tight leading-tight",
+            value && value.toString().length > 8 ? "text-[15px]" : "text-xl"
+          )}>
+            {value}
+          </h3>
+          <p className="text-[9px] font-extrabold text-zinc-400 uppercase tracking-widest leading-none">{label}</p>
         </div>
       </CardContent>
     </Card>

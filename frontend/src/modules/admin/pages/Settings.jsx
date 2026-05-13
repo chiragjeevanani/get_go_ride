@@ -1,36 +1,135 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Settings as SettingsIcon, Shield, Bell, 
-  Database, Globe, Mail, 
+import {
+  Settings as SettingsIcon, Bell,
+  Database, Globe, Mail,
   Lock, Save, RefreshCw,
-  Zap, AlertTriangle, Info,
+  AlertTriangle, Info,
   ExternalLink, ChevronRight,
-  TrendingUp, IndianRupee
+  IndianRupee, Loader2, TrendingUp
 } from "lucide-react";
 import { PageHeader } from '../components/common/PageHeader';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Toast } from '../components/common/Toast';
+import { settingsApi } from '@/lib/api';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = React.useState("Platform Info");
-  const [monetizationModel, setMonetizationModel] = React.useState("perc");
   const [toast, setToast] = React.useState({ show: false, message: '', type: 'success' });
+
+  // Dynamic system configurations state
+  const [signupBonus, setSignupBonus] = React.useState("50");
+  const [maxWalletUsage, setMaxWalletUsage] = React.useState("500");
+  const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState(false);
+
+  // Revenue model state
+  const [revenueModel, setRevenueModel] = React.useState('subscription');
+  const [commissionRate, setCommissionRate] = React.useState(10);
+
+  const modelOptions = [
+    { value: 'subscription', label: 'Subscription Only', desc: 'Driver pays monthly subscription for lead access. No deal commission.' },
+    { value: 'subscription_commission', label: 'Subscription + Commission', desc: 'Driver pays subscription AND per-deal commission (both).' },
+    { value: 'commission', label: 'Commission Only', desc: 'Driver pays commission per completed deal only. No subscription required.' },
+  ];
+
+  React.useEffect(() => {
+    fetchSystemSettings();
+    fetchRevenueModel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchSystemSettings = async () => {
+    try {
+      const res = await settingsApi.get();
+      if (res.success) {
+        setSignupBonus(res.data.walletSignupBonus?.toString() || "50");
+        setMaxWalletUsage(res.data.maxWalletUsage?.toString() || "500");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to fetch system settings", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRevenueModel = async () => {
+    try {
+      const res = await fetch('/api/settings/revenue-model', { credentials: 'include' });
+      const data = await res.json();
+      if (data.success) {
+        setRevenueModel(data.data.revenueModel || 'subscription');
+        setCommissionRate(data.data.commissionRate || 10);
+      }
+    } catch (err) {
+      console.error('Failed to fetch revenue model:', err);
+    }
+  };
+
+  const handleRevenueModelSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/settings/revenue-model', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ revenueModel, commissionRate }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Revenue model updated successfully', 'success');
+      } else {
+        showToast(data.message || 'Failed to update revenue model', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update revenue model', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
+  const handleSaveAll = async () => {
+    setSaving(true);
+    try {
+      const res = await settingsApi.update({
+        walletSignupBonus: Number(signupBonus),
+        maxWalletUsage: Number(maxWalletUsage)
+      });
+      if (res.success) {
+        showToast("All system configurations saved successfully!", "success");
+      }
+    } catch (err) {
+      showToast(err.message || "Failed to update configurations", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const navItems = [
     { label: "Platform Info", icon: Globe },
-    { label: "Commission & Fees", icon: Zap },
+    { label: "Wallet Settings", icon: IndianRupee },
+    { label: "Commission & Fees", icon: TrendingUp },
     { label: "Notifications", icon: Bell },
     { label: "Security & Access", icon: Lock },
     { label: "System health", icon: Database },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-[400px] flex flex-col justify-center items-center gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="text-[10px] font-black tracking-widest uppercase text-zinc-500">Loading system settings...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -39,10 +138,11 @@ const Settings = () => {
         subtitle="Configure platform operations, security, and integration rules" 
         actions={
           <Button 
-            onClick={() => showToast("Configuration saved to cloud registry", "success")}
+            onClick={handleSaveAll}
+            disabled={saving}
             className="bg-primary text-black font-black uppercase tracking-widest text-[10px] h-10 px-6 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
           >
-             <Save className="w-4 h-4 mr-2" />
+             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
              Save All Changes
           </Button>
         }
@@ -97,11 +197,11 @@ const Settings = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                       <div className="space-y-2">
                         <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Application Name</label>
-                        <input defaultValue="Safar Setto" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-xs font-black text-zinc-900 dark:text-white focus:outline-none focus:border-primary" />
+                        <input defaultValue="GetGoLoad" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-xs font-black text-zinc-900 dark:text-white focus:outline-none focus:border-primary" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Support Email</label>
-                        <input defaultValue="support@safarsetto.com" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-xs font-black text-zinc-900 dark:text-white focus:outline-none focus:border-primary" />
+                        <input defaultValue="support@getgoload.com" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-xs font-black text-zinc-900 dark:text-white focus:outline-none focus:border-primary" />
                       </div>
                       <div className="space-y-2 md:col-span-2">
                         <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Platform Tagline</label>
@@ -142,136 +242,145 @@ const Settings = () => {
               </div>
             )}
 
+            {activeTab === "Wallet Settings" && (
+              <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+                {/* Wallet System Settings Section */}
+                <div className="admin-card p-8 border-zinc-200 dark:border-zinc-900 space-y-8 relative overflow-hidden group">
+                  <div className="space-y-1 relative z-10">
+                      <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                        <IndianRupee className="w-4 h-4 text-primary" />
+                        Wallet System Configurations
+                      </h3>
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic">Define sign-up rewards & maximum wallet balance usage ceilings</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Default Sign Up Reward (INR)</label>
+                        <div className="relative">
+                          <input 
+                            type="number"
+                            value={signupBonus} 
+                            onChange={(e) => setSignupBonus(e.target.value)}
+                            className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary focus:outline-none focus:border-primary" 
+                          />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-zinc-400 uppercase">₹ Bonus</span>
+                        </div>
+                        <p className="text-[8px] text-zinc-400 font-bold uppercase block px-1 leading-normal">Free starting wallet balance awarded to users upon successful registration</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Max Wallet Balance Usage Per Booking (INR)</label>
+                        <div className="relative">
+                          <input 
+                            type="number"
+                            value={maxWalletUsage} 
+                            onChange={(e) => setMaxWalletUsage(e.target.value)}
+                            className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary focus:outline-none focus:border-primary" 
+                          />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-zinc-400 uppercase">₹ Max Limit</span>
+                        </div>
+                        <p className="text-[8px] text-zinc-400 font-bold uppercase block px-1 leading-normal">Sets the maximum wallet funds a user can apply toward a single logistics transaction</p>
+                      </div>
+                  </div>
+
+                  {/* Summary preview */}
+                  <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 space-y-1 relative z-10">
+                     <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Operational Summary:</h4>
+                     <p className="text-[9px] text-zinc-500 font-extrabold uppercase leading-relaxed">
+                       Newly registered users will start with a free promotional balance of <span className="text-zinc-950 font-black">₹{signupBonus}</span>.
+                       When finalizing bookings, users are allowed to apply up to <span className="text-zinc-950 font-black">₹{maxWalletUsage}</span> directly from their wallet balance to subsidize their final bid payout.
+                     </p>
+                  </div>
+
+                  <IndianRupee className="absolute -right-4 -bottom-4 w-32 h-32 text-primary opacity-[0.02] rotate-[-15deg] group-hover:opacity-[0.05] transition-opacity" />
+                </div>
+              </div>
+            )}
+
             {activeTab === "Commission & Fees" && (
               <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-                {/* Commission Model */}
+                {/* Revenue Model Configuration */}
                 <div className="admin-card p-8 border-zinc-200 dark:border-zinc-900 space-y-8">
                    <div className="space-y-1">
-                      <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest">Monetization Model</h3>
-                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic">Choose how the platform earns from lead conversions</p>
+                      <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest">Revenue Model Configuration</h3>
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic">Choose how the platform earns revenue from vendors</p>
                    </div>
 
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[
-                        { id: 'perc', title: 'Percentage Based', desc: 'A share of the total deal value finalized between user & vendor.', icon: TrendingUp },
-                        { id: 'fixed', title: 'Fixed Lead Fee', desc: 'A flat fee charged to the vendor for every successful lead secured.', icon: IndianRupee },
-                      ].map((model) => (
-                        <button 
-                          key={model.id}
+                   <div className="grid grid-cols-1 gap-4">
+                      {modelOptions.map((option) => (
+                        <button
+                          key={option.value}
                           onClick={() => {
-                            setMonetizationModel(model.id);
-                            showToast(`Switched to ${model.title} model`);
+                            setRevenueModel(option.value);
                           }}
                           className={cn(
                             "p-6 rounded-2xl border-2 text-left transition-all group relative overflow-hidden",
-                            monetizationModel === model.id ? "border-primary bg-primary/[0.03]" : "border-zinc-200 dark:border-zinc-900 hover:border-zinc-700"
+                            revenueModel === option.value ? "border-primary bg-primary/[0.03]" : "border-zinc-200 dark:border-zinc-900 hover:border-zinc-700"
                           )}
                         >
-                           <div className="relative z-10 space-y-4">
-                              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm", monetizationModel === model.id ? "bg-primary text-black" : "bg-zinc-100 dark:bg-zinc-900 text-zinc-500")}>
-                                 <model.icon className="w-5 h-5" />
+                           <div className="relative z-10 flex items-start gap-4">
+                              <div className={cn(
+                                "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors",
+                                revenueModel === option.value ? "border-primary bg-primary" : "border-zinc-400"
+                              )}>
+                                {revenueModel === option.value && (
+                                  <div className="w-2 h-2 rounded-full bg-black" />
+                                )}
                               </div>
                               <div className="space-y-1">
-                                 <h4 className={cn("text-xs font-black uppercase tracking-widest", monetizationModel === model.id ? "text-zinc-900 dark:text-white" : "text-zinc-500")}>{model.title}</h4>
-                                 <p className="text-[10px] font-bold text-zinc-500 leading-relaxed uppercase tracking-tight">{model.desc}</p>
+                                 <h4 className={cn("text-xs font-black uppercase tracking-widest", revenueModel === option.value ? "text-zinc-900 dark:text-white" : "text-zinc-500")}>{option.label}</h4>
+                                 <p className="text-[10px] font-bold text-zinc-500 leading-relaxed uppercase tracking-tight">{option.desc}</p>
                               </div>
                            </div>
-                           {monetizationModel === model.id && <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" />}
                         </button>
                       ))}
                    </div>
+
+                   {/* Commission Rate Input (shown when commission modes are selected) */}
+                   {revenueModel !== 'subscription' && (
+                     <div className="space-y-2 pt-4 border-t border-zinc-200 dark:border-zinc-900">
+                       <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">
+                          Commission Rate (%)
+                       </label>
+                       <div className="relative max-w-[200px]">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={commissionRate}
+                            onChange={(e) => setCommissionRate(Number(e.target.value))}
+                            className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary italic focus:outline-none focus:border-primary"
+                          />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-500">%</span>
+                       </div>
+                       <p className="text-[8px] text-zinc-400 font-bold uppercase block px-1 leading-normal">
+                         Percentage of each completed deal that goes to the platform as commission
+                       </p>
+                     </div>
+                   )}
                 </div>
 
-                 {/* Base Rates */}
-                 <div className="admin-card p-8 border-zinc-200 dark:border-zinc-900 space-y-8">
-                    <div className="space-y-1">
-                       <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest">
-                          {monetizationModel === 'perc' ? 'Base Commission Rates' : 'Fixed Fee Configuration'}
-                       </h3>
-                       <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic">Default values applied across categories</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                       <div className="space-y-2">
-                         <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">
-                            {monetizationModel === 'perc' ? 'Standard Rate (%)' : 'Fixed Fee Per Lead (₹)'}
-                         </label>
-                         <div className="relative">
-                            <input 
-                              defaultValue={monetizationModel === 'perc' ? "10" : "150"} 
-                              className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary italic focus:outline-none focus:border-primary" 
-                            />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-500">
-                               {monetizationModel === 'perc' ? '%' : '₹'}
-                            </span>
-                         </div>
-                       </div>
-                       
-                       {monetizationModel === 'perc' && (
-                         <div className="space-y-2">
-                           <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Min. Guarantee (₹)</label>
-                           <div className="relative">
-                              <input defaultValue="50" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary italic focus:outline-none focus:border-primary" />
-                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-500">₹</span>
-                           </div>
-                         </div>
-                       )}
-
-                       <div className="space-y-2">
-                         <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">GST / Tax (%)</label>
-                         <div className="relative">
-                            <input defaultValue="18" className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary italic focus:outline-none focus:border-primary" />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-500">%</span>
-                         </div>
-                       </div>
-                    </div>
-                 </div>
-
-                {/* Category Overrides */}
-                <div className="admin-card p-8 border-zinc-200 dark:border-zinc-900 space-y-6">
-                   <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                         <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest">Category Overrides</h3>
-                         <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic">Specific rates for different service types</p>
-                      </div>
-                      <Button variant="outline" className="h-8 border-zinc-200 dark:border-zinc-800 text-[9px] font-black uppercase tracking-widest px-4 rounded-lg">
-                         Add Override
-                      </Button>
-                   </div>
-
-                   <div className="space-y-2">
-                      {[
-                        { category: "House Shifting", rate: "12%", type: "Percentage" },
-                        { category: "Emergency Dispatch", rate: "₹99", type: "Fixed" },
-                        { category: "Industrial Cargo", rate: "8%", type: "Percentage" },
-                      ].map((item, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 bg-zinc-100 dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-900 group">
-                           <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full bg-primary" />
-                              <span className="text-[11px] font-black text-zinc-900 dark:text-white uppercase tracking-tight">{item.category}</span>
-                           </div>
-                           <div className="flex items-center gap-6">
-                              <div className="text-right">
-                                 <p className="text-[10px] font-black text-primary italic">{item.rate}</p>
-                                 <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">{item.type}</p>
-                              </div>
-                              <Button variant="ghost" size="icon" className="w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                                 <RefreshCw className="w-3 h-3 text-zinc-500" />
-                              </Button>
-                           </div>
-                        </div>
-                      ))}
-                   </div>
+                {/* Save Button */}
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handleRevenueModelSave}
+                    disabled={saving}
+                    className="bg-primary text-black font-black uppercase tracking-widest text-[10px] h-10 px-6 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save Revenue Model
+                  </Button>
                 </div>
               </div>
             )}
 
             {/* Empty States for other tabs */}
-            {!["Platform Info", "Commission & Fees"].includes(activeTab) && (
+            {!["Platform Info", "Commission & Fees", "Wallet Settings"].includes(activeTab) && (
               <div className="admin-card p-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-transparent flex flex-col items-center justify-center gap-4 text-center">
                  <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center">
                     <SettingsIcon className="w-8 h-8 text-zinc-700 animate-spin-slow" />
-                 </div>
+                  </div>
                  <div className="space-y-1">
                     <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest italic">{activeTab} Module</h3>
                     <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest max-w-[250px]">The {activeTab.toLowerCase()} configuration interface is currently being optimized for deployment.</p>

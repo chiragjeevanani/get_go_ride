@@ -15,40 +15,37 @@ import SavedAddresses from "../pages/SavedAddresses";
 import SupportPage from "../pages/SupportPage";
 import LocationSearchPage from "../pages/LocationSearchPage";
 import NearbyVehicles from "../pages/NearbyVehicles";
-import FavoriteVendors from "../pages/FavoriteVendors";
-import NotificationSettings from "../pages/NotificationSettings";
-import SecuritySettings from "../pages/SecuritySettings";
 import Wallet from "../pages/Wallet";
 
 const UserRoutes = () => {
   return (
-    <Routes>
-      {/* Public Pages like Auth */}
-      <Route path="auth" element={<AuthPage />} />
+    <div className="mobile-app-shell min-h-screen bg-white">
+      <Routes>
+        {/* Public Pages like Auth */}
+        <Route path="auth" element={<AuthPage />} />
+        <Route path="login" element={<AuthPage />} />
 
-      {/* Main App with Shared Shell Layout */}
-      <Route element={<UserMainLayout />}>
-        <Route index element={<Dashboard />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="post-requirement" element={<CreateRequirement />} />
-        <Route path="nearby-vehicles" element={<NearbyVehicles />} />
-        <Route path="search-location" element={<LocationSearchPage />} />
-        <Route path="requests" element={<RequestList />} />
-        <Route path="request/:id" element={<RequestDetails />} />
-        <Route path="vendor-profile/:id" element={<VendorProfile />} />
-        <Route path="chats" element={<ChatList />} />
-        <Route path="chat/:requestId/:vendorId" element={<ChatPage />} />
-        <Route path="finalize/:requestId/:vendorId" element={<FinalizePage />} />
-        <Route path="profile" element={<ProfilePage />} />
-        <Route path="payments" element={<PaymentMethods />} />
-        <Route path="addresses" element={<SavedAddresses />} />
-        <Route path="vendors" element={<FavoriteVendors />} />
-        <Route path="alerts" element={<NotificationSettings />} />
-        <Route path="security" element={<SecuritySettings />} />
-        <Route path="wallet" element={<Wallet />} />
-        <Route path="support" element={<SupportPage />} />
-      </Route>
-    </Routes>
+        {/* Main App with Shared Shell Layout */}
+        <Route element={<UserMainLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="post-requirement" element={<CreateRequirement />} />
+          <Route path="nearby-vehicles" element={<NearbyVehicles />} />
+          <Route path="search-location" element={<LocationSearchPage />} />
+          <Route path="requests" element={<RequestList />} />
+          <Route path="request/:id" element={<RequestDetails />} />
+          <Route path="vendor-profile/:id" element={<VendorProfile />} />
+          <Route path="chats" element={<ChatList />} />
+          <Route path="chat/:requestId/:vendorId" element={<ChatPage />} />
+          <Route path="finalize/:requestId/:vendorId" element={<FinalizePage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="payments" element={<PaymentMethods />} />
+          <Route path="addresses" element={<SavedAddresses />} />
+          <Route path="wallet" element={<Wallet />} />
+          <Route path="support" element={<SupportPage />} />
+        </Route>
+      </Routes>
+    </div>
   );
 };
 

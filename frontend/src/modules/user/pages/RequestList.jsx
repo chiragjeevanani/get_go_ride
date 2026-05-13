@@ -8,6 +8,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { requirementApi } from "@/lib/api";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const RequestList = () => {
   const navigate = useNavigate();
@@ -15,51 +18,34 @@ const RequestList = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [filterStatus, setFilterStatus] = useState("All");
-  const [requests, setRequests] = useState([
-    {
-      id: "REQ-101",
-      service: "House Shifting (1BHK)",
-      pickup: "Borivali East, Mumbai",
-      dropoff: "Powai, Mumbai",
-      date: "09 April 2026",
-      status: "Responding",
-      responses: 4,
-      isNew: true,
-    },
-    {
-      id: "REQ-100",
-      service: "Industrial Goods (2T)",
-      pickup: "Vapi, Gujarat",
-      dropoff: "Vasai, Maharashtra",
-      date: "05 April 2026",
-      status: "Finalized",
-      responses: 8,
-      isNew: false,
-    },
-    {
-        id: "REQ-099",
-        service: "Personal Car - SUV",
-        pickup: "Pune",
-        dropoff: "Mumbai Airport",
-        date: "01 April 2026",
-        status: "Completed",
-        responses: 3,
-        isNew: false,
-    }
-  ]);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load persisted requests from localStorage
-    const savedRequests = JSON.parse(localStorage.getItem("user_requests") || "[]");
-    if (savedRequests.length > 0) {
-      setRequests(prev => {
-        // Filter out any duplicates just in case
-        const existingIds = new Set(prev.map(r => r.id));
-        const uniqueSaved = savedRequests.filter(r => !existingIds.has(r.id));
-        return [...uniqueSaved, ...prev];
-      });
-    }
+    fetchRequests();
   }, []);
+
+  const fetchRequests = async () => {
+    try {
+      const res = await requirementApi.getMy();
+      const mapped = res.data.map(req => ({
+        id: req.requirementId,
+        _id: req._id,
+        service: `${(req.serviceType || 'Goods').toUpperCase()} - ${req.vehicleType || 'Any'}`,
+        pickup: req.pickup?.address || "N/A",
+        dropoff: req.drops?.[0]?.address || "N/A",
+        date: req.date ? new Date(req.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A',
+        status: ['pending', 'bidding', 'open'].includes(req.status) ? 'Responding' : (req.status === 'accepted' ? 'Finalized' : (req.status || 'Open').charAt(0).toUpperCase() + (req.status || 'Open').slice(1)),
+        responses: req.bidCount || 0,
+        isNew: ['pending', 'bidding', 'open'].includes(req.status)
+      }));
+      setRequests(mapped);
+    } catch (err) {
+      toast.error("Failed to load requests");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredRequests = requests.filter(r => {
     // Tab Filter
@@ -71,8 +57,9 @@ const RequestList = () => {
     const statusMatch = filterStatus === "All" || r.status === filterStatus;
     
     // Search Filter
-    const searchMatch = r.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                       r.service.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.toLowerCase();
+    const searchMatch = (r.id?.toLowerCase() || "").includes(query) || 
+                       (r.service?.toLowerCase() || "").includes(query);
                        
     return tabMatch && statusMatch && searchMatch;
   });
@@ -145,11 +132,11 @@ const RequestList = () => {
       <div className="space-y-4">
         {filteredRequests.map((req, index) => (
           <motion.div
-            key={req.id}
+            key={req._id || index}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            onClick={() => navigate(`/user/request/${req.id}`)}
+            onClick={() => navigate(`/user/request/${req._id}`)}
           >
             <Card className="border-none shadow-premium hover:shadow-lg transition-all cursor-pointer overflow-visible">
               <CardContent className="p-0">
@@ -203,7 +190,14 @@ const RequestList = () => {
           </motion.div>
         ))}
 
-        {filteredRequests.length === 0 && (
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-[10px] font-black uppercase tracking-widest mt-4 text-zinc-400">Fetching Requests...</p>
+          </div>
+        )}
+
+        {!loading && filteredRequests.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
              <Package className="w-16 h-16 opacity-10 mb-4" />
              <p className="text-sm">No requests found</p>

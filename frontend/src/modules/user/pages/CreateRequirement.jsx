@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { 
   ChevronLeft, ChevronRight, Check, Truck, Home, Users, AlertTriangle, 
   MapPin, Calendar, Clock, Weight, Package, FileText, Plus, Loader2, X 
@@ -10,13 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from "react-router-dom";
+import { requirementApi, categoryApi, vehicleApi } from "@/lib/api";
+import { toast } from "sonner";
 import goodsImg from "@/assets/categories/Truck-removebg-preview.png";
 import houseImg from "@/assets/categories/shifting.jpg";
-import passengerImg from "@/assets/categories/passenger-removebg-preview.png";
 import emergencyImg from "@/assets/categories/Emergency-removebg-preview.png";
-import bikeImg from "@/assets/categories/Bike-removebg-preview.png";
-import autoImg from "@/assets/categories/auto-removebg-preview.png";
-import cabImg from "@/assets/categories/cab-removebg-preview.png";
 
 const CreateRequirement = () => {
   const navigate = useNavigate();
@@ -34,6 +32,7 @@ const CreateRequirement = () => {
     date: "",
     time: "",
     notes: "",
+    price: 1733,
   };
   const initialStep = location.state?.step || 1;
 
@@ -41,8 +40,103 @@ const CreateRequirement = () => {
   const [formData, setFormData] = useState(initialState);
   const [activeLocField, setActiveLocField] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
+
+  const getTodayString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getCurrentTimeString = () => {
+    const d = new Date();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const handleDateChange = (val) => {
+    const today = getTodayString();
+    if (val && val < today) {
+       toast.error("Booking date cannot be in the past.");
+       updateData("date", "");
+       return;
+    }
+    updateData("date", val);
+    if (val === today && formData.time) {
+       const nowTime = getCurrentTimeString();
+       if (formData.time < nowTime) {
+          toast.error("Booking time cannot be in the past.");
+          updateData("time", "");
+       }
+    }
+  };
+
+  const handleTimeChange = (val) => {
+    const today = getTodayString();
+    if (formData.date === today && val) {
+       const nowTime = getCurrentTimeString();
+       if (val < nowTime) {
+          toast.error("Booking time cannot be in the past.");
+          updateData("time", "");
+          return;
+       }
+    }
+    updateData("time", val);
+  };
   const [locLoading, setLocLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const timeoutRef = useRef(null);
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [vehicles, setVehicles] = useState([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(false);
+
+  useEffect(() => {
+    if (!formData.serviceType) {
+      setVehicles([]);
+      return;
+    }
+    const fetchVehicles = async () => {
+      setVehiclesLoading(true);
+      try {
+        const res = await vehicleApi.getAll(formData.serviceType);
+        setVehicles(res.data || []);
+      } catch (err) {
+        console.error("Failed to fetch vehicles dynamically", err);
+      } finally {
+        setVehiclesLoading(false);
+      }
+    };
+    fetchVehicles();
+  }, [formData.serviceType]);
+
+  useEffect(() => {
+    const fetchCats = async () => {
+       try {
+          const res = await categoryApi.getAll();
+          const cats = res?.data || [];
+          setCategories(cats.map(cat => {
+             let defaultImg = goodsImg;
+             if (cat.slug === 'house-shifting') defaultImg = houseImg;
+             if (cat.slug === 'emergency') defaultImg = emergencyImg;
+             
+             return {
+               id: cat.slug,
+               title: cat.name,
+               image: cat.image || defaultImg,
+               desc: cat.description || "Logistics Service"
+             };
+          }));
+       } catch (err) {
+          console.error("Failed to load categories", err);
+       } finally {
+          setCategoriesLoading(false);
+       }
+    };
+    fetchCats();
+  }, []);
 
   // Still support pre-filling from Dashboard's quick navigation
   useEffect(() => {
@@ -95,12 +189,25 @@ const CreateRequirement = () => {
   };
 
   const handleSelectSuggestion = (suggestion) => {
-     if (activeLocField?.name === "pickup") {
+     if (activeLocField === "pickup" || activeLocField?.name === "pickup") {
          updateData("pickup", suggestion.display_name);
+         setFormData(prev => ({
+            ...prev,
+            pickupCoords: { lat: suggestion.lat, lon: suggestion.lon }
+         }));
      } else {
+         const index = activeLocField?.index !== undefined ? activeLocField.index : 0;
          const newDrops = [...formData.drops];
-         newDrops[activeLocField.index] = suggestion.display_name;
-         updateData("drops", newDrops);
+         newDrops[index] = suggestion.display_name;
+         setFormData(prev => {
+            const newCoords = prev.dropsCoords ? [...prev.dropsCoords] : [];
+            newCoords[index] = { lat: suggestion.lat, lon: suggestion.lon };
+            return {
+               ...prev,
+               drops: newDrops,
+               dropsCoords: newCoords
+            };
+         });
      }
      setSuggestions([]);
      setActiveLocField(null);
@@ -121,19 +228,33 @@ const CreateRequirement = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const openPicker = (type, index = null) => {
-    navigate("/user/search-location", { 
-        state: { 
-            type, 
-            index, 
-            formData, 
-            step 
-        } 
-    });
-  };
 
-  const nextStep = () => setStep((s) => Math.min(s + 1, totalSteps));
-  const prevStep = () => setStep((s) => Math.max(s - 1, 1));
+  const nextStep = () => {
+      if (step === 5) {
+        const today = getTodayString();
+        if (!formData.date) {
+           toast.error("Please select a date.");
+           return;
+        }
+        if (formData.date < today) {
+           toast.error("Booking date cannot be in the past.");
+           return;
+        }
+        if (!formData.time) {
+           toast.error("Please select a time.");
+           return;
+        }
+        if (formData.date === today) {
+           const nowTime = getCurrentTimeString();
+           if (formData.time < nowTime) {
+              toast.error("Booking time cannot be in the past.");
+              return;
+           }
+        }
+      }
+     setStep((s) => Math.min(s + 1, totalSteps));
+   };
+   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
   const steps = [
     { title: "Locations", description: "Where should we pick up and drop?" },
@@ -149,7 +270,7 @@ const CreateRequirement = () => {
       case 1:
         return (
           <div className="space-y-4">
-            <Card className="border-none shadow-premium rounded-[1.5rem] bg-white overflow-hidden relative z-[100]">
+            <Card className="border-none shadow-premium rounded-[1.5rem] bg-white relative z-[50] overflow-visible">
                <CardContent className="p-4 space-y-3">
                   <div className="flex items-center gap-2">
                      <h3 className="text-[10px] font-black uppercase tracking-widest text-black/40">Route Details</h3>
@@ -207,13 +328,13 @@ const CreateRequirement = () => {
                   </div>
 
                   {/* Suggestions Dropdown */}
-                  <AnimatePresence>
+                  <AnimatePresence mode="wait">
                      {activeLocField && suggestions.length > 0 && (
                         <motion.div 
-                           initial={{ opacity: 0, y: -10 }}
+                           initial={{ opacity: 0, y: 5 }}
                            animate={{ opacity: 1, y: 0 }}
-                           exit={{ opacity: 0, y: -10 }}
-                           className="absolute top-[85%] left-4 right-4 bg-white rounded-2xl shadow-xl border border-zinc-100 overflow-hidden z-[110]"
+                           exit={{ opacity: 0, y: 5 }}
+                           className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.2)] border border-zinc-100 overflow-hidden z-[9999] ring-1 ring-black/5"
                         >
                            {suggestions.map((item, idx) => (
                            <div 
@@ -252,73 +373,67 @@ const CreateRequirement = () => {
           </div>
         );
       case 2:
-        const services = [
-          { id: "goods", title: "Goods Transport", image: goodsImg, desc: "Commercial or bulk items" },
-          { id: "house", title: "House Shifting", image: houseImg, desc: "Furniture & household items" },
-          { id: "passenger", title: "Passenger", image: passengerImg, desc: "Taxis, Rickshaws, Buses" },
-          { id: "emergency", title: "Emergency", image: emergencyImg, desc: "Instant response services" },
-          { id: "construction", title: "Construction", image: goodsImg, desc: "Building & heavy material" },
-        ];
         return (
           <div className="grid grid-cols-1 gap-2.5">
-            {services.map((s) => (
-              <Card 
-                key={s.id} 
-                className={cn(
-                  "cursor-pointer border-2 transition-all rounded-xl",
-                  formData.serviceType === s.id ? "border-primary bg-primary/5 shadow-sm" : "border-zinc-50"
-                )}
-                onClick={() => { updateData("serviceType", s.id); updateData("vehicleType", ""); }}
-              >
-                <CardContent className="p-2.5 flex items-center gap-3">
-                  <div className={cn("w-10 h-10 rounded-lg overflow-hidden shrink-0", formData.serviceType === s.id ? "bg-primary/20" : "bg-zinc-50")}>
-                    <img 
-                      src={s.image} 
-                      alt={s.title} 
-                      className="w-full h-full object-contain p-1"
-                    />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-black text-black">{s.title}</span>
-                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">{s.desc}</span>
-                  </div>
-                  {formData.serviceType === s.id && <Check className="ml-auto w-4 h-4 text-primary" />}
-                </CardContent>
-              </Card>
-            ))}
+            {categoriesLoading ? (
+               <div className="flex flex-col items-center justify-center py-10 gap-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Loading Services...</p>
+               </div>
+            ) : (
+               <>
+               {categories.map((s) => (
+                 <Card 
+                   key={s.id} 
+                   className={cn(
+                     "cursor-pointer border-2 transition-all rounded-xl",
+                     formData.serviceType === s.id ? "border-primary bg-primary/5 shadow-sm" : "border-zinc-50"
+                   )}
+                   onClick={() => { updateData("serviceType", s.id); updateData("vehicleType", ""); }}
+                 >
+                   <CardContent className="p-2.5 flex items-center gap-3">
+                     <div className={cn("w-10 h-10 rounded-lg overflow-hidden shrink-0", formData.serviceType === s.id ? "bg-primary/20" : "bg-zinc-50")}>
+                       <img 
+                         src={s.image} 
+                         alt={s.title} 
+                         className="w-full h-full object-contain p-1"
+                       />
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="text-xs font-black text-black">{s.title}</span>
+                       <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">{s.desc}</span>
+                     </div>
+                     {formData.serviceType === s.id && <Check className="ml-auto w-4 h-4 text-primary" />}
+                   </CardContent>
+                 </Card>
+               ))}
+               </>
+            )}
           </div>
         );
-      case 3:
-        const vehicleOptions = {
-          goods: [
-            { id: "mini", title: "2.5 Tonnes - 8 ft", details: "LCV • 4 Tyres • Open Body", image: goodsImg, mostBooked: true },
-            { id: "tempo", title: "3 Tonnes - 10 ft", details: "LCV • 4 Tyres • Open Body", image: goodsImg },
-            { id: "eicher", title: "5 Tonnes - 14 ft", details: "ICV • 6 Tyres • Closed Container", image: goodsImg },
-            { id: "trailer", title: "7 Tonnes - 17 ft", details: "HCV • 6 Tyres • High Deck", image: goodsImg },
-          ],
-          house: [
-            { id: "ace", title: "Tata Ace - 7 ft", details: "4 Tyres • Small Furniture", image: goodsImg, mostBooked: true },
-            { id: "pickup", title: "Bolero Pickup", details: "4 Tyres • Medium Load", image: goodsImg },
-            { id: "14ft", title: "Eicher 14ft", details: "6 Tyres • Household Bulky", image: goodsImg },
-          ],
-          passenger: [
-            { id: "bike", title: "Bike / Scooter", details: "1 Seat • Single Parcel", image: bikeImg, mostBooked: true },
-            { id: "auto", title: "Rickshaw / Auto", details: "3 Seats • City Travel", image: autoImg },
-            { id: "mini", title: "Mini Sedan", details: "4 Seats • AC Comfort", image: cabImg },
-            { id: "bus", title: "Minibus / Tempo", details: "12-24 Seats • Group Tour", image: passengerImg },
-          ],
-          emergency: [
-            { id: "basic", title: "Basic Ambulance", details: "First Aid • Oxygen Support", image: emergencyImg, mostBooked: true },
-            { id: "icu", title: "ICU Ventilator", details: "Critical Care • Life Support", image: emergencyImg },
-            { id: "tow", title: "Towing Truck", details: "24/7 Roadside Recovery", image: goodsImg },
-          ],
-          construction: [
-            { id: "tipper", title: "Tipper Truck", details: "6 Tyres • Sand/Brick", image: goodsImg, mostBooked: true },
-            { id: "jcb", title: "JCB / Loader", details: "Heavy Excavator", image: goodsImg },
-            { id: "crane", title: "Mobile Crane", details: "Lifting 10T+", image: goodsImg },
-          ]
-        };
-        const currentOptions = vehicleOptions[formData.serviceType] || vehicleOptions.goods;
+      case 3: {
+        if (vehiclesLoading) {
+          return (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+               <Loader2 className="w-8 h-8 text-primary animate-spin" />
+               <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Loading Fleet Options...</span>
+            </div>
+          );
+        }
+
+        if (vehicles.length === 0) {
+          return (
+            <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
+               <AlertTriangle className="w-8 h-8 text-amber-500" />
+               <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">No vehicles available for this category.</span>
+            </div>
+          );
+        }
+
+        let fallbackImg = goodsImg;
+        if (formData.serviceType === "house-shifting" || formData.serviceType === "house") fallbackImg = houseImg;
+        if (formData.serviceType === "emergency") fallbackImg = emergencyImg;
+
         return (
           <div className="space-y-3">
             <div className="flex items-center gap-2 px-1">
@@ -326,42 +441,57 @@ const CreateRequirement = () => {
                <div className="h-px flex-1 bg-zinc-50"></div>
             </div>
             <div className="grid grid-cols-1 gap-2.5">
-              {currentOptions.map((v) => (
-                <Card 
-                  key={v.id} 
-                  className={cn(
-                    "cursor-pointer border-2 transition-all relative overflow-hidden rounded-xl",
-                    formData.vehicleType === v.id ? "border-primary bg-primary/5 shadow-sm" : "border-zinc-50"
-                  )}
-                  onClick={() => updateData("vehicleType", v.id)}
-                >
-                  {v.mostBooked && (
-                     <div className="absolute top-0 left-0 bg-emerald-500 text-white text-[7px] font-black uppercase px-2 py-0.5 rounded-br-lg shadow-sm z-20 tracking-widest">
-                        Best Option
-                     </div>
-                  )}
-                  <CardContent className="p-3 flex items-center gap-4">
-                    <div className={cn(
-                        "w-12 h-12 rounded-lg overflow-hidden transition-all shrink-0",
-                        formData.vehicleType === v.id ? "bg-primary shadow-inner rotate-3 scale-110" : "bg-zinc-50"
-                    )}>
-                      <img 
-                        src={v.image} 
-                        alt={v.title} 
-                        className="w-full h-full object-contain p-1"
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-black text-black text-xs">{v.title}</span>
-                      <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-tighter">{v.details}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {vehicles.map((v) => {
+                const vehicleId = v._id || v.id;
+                return (
+                  <Card 
+                    key={vehicleId} 
+                    className={cn(
+                      "cursor-pointer border-2 transition-all relative overflow-hidden rounded-xl",
+                      formData.vehicleType === vehicleId ? "border-primary bg-primary/5 shadow-sm" : "border-zinc-50"
+                    )}
+                    onClick={() => updateData("vehicleType", vehicleId)}
+                  >
+                    {v.isMostBooked && (
+                       <div className="absolute top-0 left-0 bg-emerald-500 text-white text-[7px] font-black uppercase px-2 py-0.5 rounded-br-lg shadow-sm z-20 tracking-widest">
+                          Best Option
+                       </div>
+                    )}
+                    <CardContent className="p-3 flex items-center gap-4">
+                      <div className={cn(
+                          "w-12 h-12 rounded-lg overflow-hidden transition-all shrink-0",
+                          formData.vehicleType === vehicleId ? "bg-primary shadow-inner rotate-3 scale-110" : "bg-zinc-50"
+                      )}>
+                        <img 
+                          src={v.image || fallbackImg} 
+                          alt={v.name} 
+                          className="w-full h-full object-contain p-1"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-black text-black text-xs leading-none">{v.name}</span>
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                          {v.capacity && (
+                             <span className="text-[8px] bg-zinc-100 text-zinc-500 dark:text-zinc-400 px-2 py-0.5 rounded-md font-black uppercase tracking-wider">
+                                {v.capacity}
+                             </span>
+                          )}
+                          {v.details && (
+                             <span className="text-[8px] bg-primary/10 text-primary px-2 py-0.5 rounded-md font-black uppercase tracking-wider border border-primary/10">
+                                {v.details}
+                             </span>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         );
-      case 4:
+      }
+      case 4: {
         if (formData.serviceType === "house") {
           const houseSizes = [
             { id: "1bhk", title: "1 BHK", desc: "Small house / Flat", icon: Home },
@@ -414,40 +544,7 @@ const CreateRequirement = () => {
           );
         }
 
-        if (formData.serviceType === "passenger") {
-           return (
-             <div className="space-y-5">
-               <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Passengers</label>
-                    <div className="relative">
-                      <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                      <Input 
-                        type="number" 
-                        placeholder="e.g. 3" 
-                        className="pl-10 bg-white h-11 text-xs font-bold"
-                        value={formData.loadValue}
-                        onChange={(e) => updateData("loadValue", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Luggage (KG)</label>
-                    <div className="relative">
-                      <Weight className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                      <Input 
-                        type="number" 
-                        placeholder="e.g. 10" 
-                        className="pl-10 bg-white h-11 text-xs font-bold"
-                        value={formData.luggageWeight || ""}
-                        onChange={(e) => updateData("luggageWeight", e.target.value)}
-                      />
-                    </div>
-                  </div>
-               </div>
-             </div>
-           );
-        }
+
         
         if (formData.serviceType === "emergency") {
            return (
@@ -479,30 +576,57 @@ const CreateRequirement = () => {
             <div className="space-y-4">
               <div className="space-y-3">
                  <div className="space-y-1.5">
-                   <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Material</label>
-                   <Input 
-                     placeholder="e.g. Cement, Sand" 
-                     className="bg-white h-11 font-bold text-xs"
-                     value={formData.materialType || ""}
-                     onChange={(e) => updateData("materialType", e.target.value)}
-                   />
+                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Item Details</label>
+                    <div className="relative">
+                      <Package className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                      <Input 
+                        placeholder="What are you moving?" 
+                        className="pl-10 bg-white h-11 text-xs font-bold"
+                        value={formData.items || ""}
+                        onChange={(e) => updateData("items", e.target.value)}
+                      />
+                    </div>
                  </div>
-                 <div className="space-y-1.5">
-                   <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Quantity</label>
-                   <div className="relative">
-                     <Weight className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                     <Input 
-                       placeholder="e.g. 5 Tonnes" 
-                       className="pl-10 bg-white h-11 text-xs font-bold"
-                       value={formData.loadValue}
-                       onChange={(e) => updateData("loadValue", e.target.value)}
-                     />
-                   </div>
+
+                 <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Weight</label>
+                      <div className="flex bg-zinc-50 rounded-xl overflow-hidden border border-zinc-100">
+                        <input 
+                          type="number"
+                          placeholder="0"
+                          className="w-full bg-transparent px-3 py-2 text-xs font-black text-black outline-none"
+                          value={formData.loadValue}
+                          onChange={(e) => updateData("loadValue", e.target.value)}
+                        />
+                        <select 
+                          className="bg-zinc-100 px-2 text-[8px] font-black uppercase text-zinc-500 outline-none border-l border-zinc-200"
+                          value={formData.loadType}
+                          onChange={(e) => updateData("loadType", e.target.value)}
+                        >
+                          <option value="kg">kg</option>
+                          <option value="ton">ton</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Estimate Price</label>
+                      <div className="flex items-center bg-zinc-50 rounded-xl px-3 py-2 border border-zinc-100">
+                        <span className="text-[10px] font-black text-primary mr-1">₹</span>
+                        <input 
+                          type="number"
+                          className="w-full bg-transparent text-xs font-black text-black outline-none"
+                          value={formData.price}
+                          onChange={(e) => updateData("price", e.target.value)}
+                        />
+                      </div>
+                    </div>
                  </div>
               </div>
             </div>
           );
-       }
+        }
 
         return (
           <div className="space-y-5">
@@ -527,6 +651,7 @@ const CreateRequirement = () => {
                 <Weight className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <Input 
                   type="number" 
+                  min="0"
                   placeholder={formData.loadType === "kg" ? "e.g. 500" : "count"} 
                   className="pl-10 bg-white h-11 text-xs font-bold"
                   value={formData.loadValue}
@@ -536,6 +661,7 @@ const CreateRequirement = () => {
             </div>
           </div>
         );
+      }
       case 5:
         return (
           <div className="space-y-4">
@@ -547,7 +673,8 @@ const CreateRequirement = () => {
                   type="date" 
                   className="pl-10 bg-white h-11 text-xs font-bold"
                   value={formData.date}
-                  onChange={(e) => updateData("date", e.target.value)}
+                  min={getTodayString()}
+                  onChange={(e) => handleDateChange(e.target.value)}
                 />
               </div>
             </div>
@@ -559,7 +686,8 @@ const CreateRequirement = () => {
                   type="time" 
                   className="pl-10 bg-white h-11 text-xs font-bold"
                   value={formData.time}
-                  onChange={(e) => updateData("time", e.target.value)}
+                  min={formData.date === getTodayString() ? getCurrentTimeString() : undefined}
+                  onChange={(e) => handleTimeChange(e.target.value)}
                 />
               </div>
             </div>
@@ -589,7 +717,8 @@ const CreateRequirement = () => {
                         <span className="text-xl font-black text-black">₹</span>
                         <input 
                            type="number" 
-                           defaultValue="1733"
+                           value={formData.price}
+                           onChange={(e) => updateData("price", Number(e.target.value))}
                            className="text-3xl font-black w-32 border-none bg-transparent focus:outline-none focus:ring-0 text-center text-black selection:bg-primary/20"
                            style={{ fontVariantNumeric: "tabular-nums" }}
                         />
@@ -615,8 +744,8 @@ const CreateRequirement = () => {
                         <span className="text-[8px] font-black">₹</span>
                      </div>
                      <span className="text-[10px] font-bold text-black tracking-tight relative z-10">
-                        Coin Discount: <span className="line-through text-zinc-400">₹1,733</span>
-                        <span className="ml-1 text-black font-black">₹1,664</span>
+                        Coin Discount: <span className="line-through text-zinc-400">₹{formData.price || 1733}</span>
+                        <span className="ml-1 text-black font-black">₹{Math.round((formData.price || 1733) * 0.96)}</span>
                      </span>
                   </motion.div>
 
@@ -647,7 +776,7 @@ const CreateRequirement = () => {
                   <div className="w-full border border-zinc-100 rounded-xl p-3 flex flex-col gap-2 bg-white/50">
                      <div className="flex justify-between items-center px-1">
                         <span className="text-[10px] font-black text-black">50% Advance</span>
-                        <span className="text-sm font-black text-black tabular-nums">₹866</span>
+                        <span className="text-sm font-black text-black tabular-nums">₹{Math.round((formData.price || 1733) * 0.5)}</span>
                      </div>
                      <div className="h-px bg-zinc-50"></div>
                      <div className="flex justify-between items-center text-[9px] font-bold text-zinc-400 uppercase tracking-widest px-1">
@@ -665,9 +794,27 @@ const CreateRequirement = () => {
                </div>
                
                <div className="grid grid-cols-2 gap-2 pb-6">
-                  <div className="p-2.5 bg-zinc-50 rounded-xl border border-zinc-100/50">
-                     <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-0.5">Vehicle</p>
-                     <p className="text-[11px] font-bold text-black">{formData.vehicleType || "Selected"}</p>
+                  <div className="p-2.5 bg-zinc-50 rounded-xl border border-zinc-100/50 flex flex-col justify-between">
+                     <div>
+                        <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-0.5">Vehicle</p>
+                        <p className="text-[11px] font-bold text-black leading-tight">
+                            {(() => {
+                               const selectedVehicle = vehicles.find(v => (v._id || v.id) === formData.vehicleType);
+                               return selectedVehicle ? selectedVehicle.name : (formData.vehicleType || "Selected");
+                            })()}
+                        </p>
+                     </div>
+                     {(() => {
+                        const selectedVehicle = vehicles.find(v => (v._id || v.id) === formData.vehicleType);
+                        if (selectedVehicle) {
+                           return (
+                              <p className="text-[8px] text-zinc-400 font-black uppercase tracking-wider mt-1.5">
+                                 {selectedVehicle.capacity} • {selectedVehicle.details}
+                              </p>
+                           );
+                        }
+                        return null;
+                     })()}
                   </div>
                   <div className="p-2.5 bg-zinc-50 rounded-xl border border-zinc-100/50">
                      <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-0.5">Service</p>
@@ -682,26 +829,48 @@ const CreateRequirement = () => {
     }
   };
 
-  const handleFinalSubmit = () => {
-    // Generate a new request object from form data
-    const newRequest = {
-      id: `REQ-${Math.floor(Math.random() * 900) + 200}`,
-      service: `${formData.serviceType.charAt(0).toUpperCase() + formData.serviceType.slice(1)} - ${formData.vehicleType || 'Any'}`,
-      pickup: formData.pickup || "Current Location",
-      dropoff: formData.drops[0] || "Destination",
-      date: formData.date ? new Date(formData.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : "Today",
-      status: "Responding",
-      responses: 0,
-      isNew: true,
-      price: "₹1,733"
-    };
+  const handleFinalSubmit = async () => {
+    setSubmitting(true);
+    try {
+      const selectedVehicle = vehicles.find(v => (v._id || v.id) === formData.vehicleType);
+      const vehicleName = selectedVehicle ? selectedVehicle.name : formData.vehicleType;
 
-    // Save to localStorage to simulate a database for the prototype
-    const existing = JSON.parse(localStorage.getItem("user_requests") || "[]");
-    localStorage.setItem("user_requests", JSON.stringify([newRequest, ...existing]));
+      // Prepare data for backend
+      const payload = {
+        serviceType: formData.serviceType,
+        vehicleType: vehicleName,
+        pickup: { 
+          address: formData.pickup,
+          lat: formData.pickupCoords?.lat || null,
+          lon: formData.pickupCoords?.lon || null
+        },
+        drops: formData.drops.map((addr, idx) => ({ 
+          address: addr,
+          lat: formData.dropsCoords?.[idx]?.lat || null,
+          lon: formData.dropsCoords?.[idx]?.lon || null
+        })),
+        items: (formData.serviceType === 'house' || formData.serviceType === 'house-shifting') 
+          ? `House Shifting (${formData.houseSize || 'N/A'})` 
+          : (formData.serviceType === 'emergency')
+            ? 'Emergency Assistance' 
+            : (formData.serviceType === 'construction')
+              ? (formData.items || 'Construction Material')
+              : (formData.items || 'General Goods'),
+        weight: formData.loadValue ? `${formData.loadValue}${formData.loadType === 'kg' ? 'kg' : ''}` : '',
+        date: formData.date,
+        time: formData.time,
+        notes: formData.notes,
+        price: formData.price || 1733
+      };
 
-    // Navigate to requests tracking
-    navigate("/user/requests");
+      await requirementApi.create(payload);
+      toast.success("Requirement posted successfully!");
+      navigate("/user/requests");
+    } catch (err) {
+      toast.error(err.message || "Failed to post requirement");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -729,14 +898,14 @@ const CreateRequirement = () => {
         <Progress value={(step / totalSteps) * 100} className="h-1" />
       </div>
 
-      <div className="min-h-[400px]">
-        <AnimatePresence>
+      <div className="min-h-[400px] relative">
+        <AnimatePresence mode="wait">
           <motion.div
             key={step}
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 15 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
+            exit={{ opacity: 0, x: -15 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
           >
             {renderStep()}
           </motion.div>
@@ -773,8 +942,14 @@ const CreateRequirement = () => {
           <Button 
             className="w-full rounded-xl h-11 shadow-lg shadow-primary/20 font-black text-sm uppercase tracking-widest"
             onClick={handleFinalSubmit}
+            disabled={submitting}
           >
-            Post Requirements
+            {submitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Posting...
+              </>
+            ) : "Post Requirements"}
           </Button>
         </div>
       )}

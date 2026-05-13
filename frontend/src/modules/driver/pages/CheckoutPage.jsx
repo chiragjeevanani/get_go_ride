@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   ChevronLeft, Package, MapPin, CheckCircle2, 
@@ -12,16 +12,45 @@ import { useDriverState } from "../hooks/useDriverState";
 import { cn } from "@/lib/utils";
 import Lottie from "lottie-react";
 import paymentSuccessLottie from "@/assets/Lottie/PaymentSuccess.json";
+import { io } from "socket.io-client";
+import { toast } from "sonner";
 
 // Assets
 
 const CheckoutPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { leads } = useDriverState();
+  const { leads, driver } = useDriverState();
   const lead = leads.find(l => l.id === id) || leads[0];
+  const hasActiveSubscription = driver?.subscriptionStatus === 'Active' || !!driver?.isSubscribed;
   
   const [step, setStep] = useState('payment'); // 'payment' | 'processing' | 'success'
+
+  useEffect(() => {
+    if (id) {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
+      const socket = io(backendUrl);
+      socket.emit("join_chat", { bidId: id });
+
+      socket.on("deal_reopened", ({ bidId }) => {
+        if (id === bidId) {
+          toast.warning("Customer reopened negotiation! Returning to chat...", {
+            icon: "⚠️",
+            duration: 3000
+          });
+          setTimeout(() => {
+            navigate(`/driver/chats/${id}`);
+          }, 2000);
+        }
+      });
+
+      return () => {
+        socket.emit("leave_chat", { bidId: id });
+        socket.off("deal_reopened");
+        socket.disconnect();
+      };
+    }
+  }, [id, navigate]);
 
   const handleProcessPayment = () => {
     setStep('processing');
@@ -101,19 +130,23 @@ const CheckoutPage = () => {
                  <div className="bg-zinc-900 p-6 space-y-4">
                     <div className="space-y-2.5">
                        <div className="flex justify-between items-center text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                          <span>Agreed Value</span>
-                          <span className="text-white font-black">₹ 1500.00</span>
+                          <span>Agreed Value (Rider Pays)</span>
+                          <span className="text-white font-black">₹ {lead?.price || 1500}.00</span>
                        </div>
                        <div className="flex justify-between items-center text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                          <span>Gateway Service</span>
-                          <span className="text-white font-black">₹ 45.00</span>
+                          <span>Gateway Lock Fee</span>
+                          <span className="text-white font-black">
+                            {hasActiveSubscription ? "₹ 0.00 (Plan Active)" : "₹ 45.00"}
+                          </span>
                        </div>
                     </div>
                     <div className="h-px bg-zinc-800 w-full"></div>
                     <div className="flex justify-between items-center">
                        <div className="space-y-0.5">
-                          <p className="text-[8px] font-black text-primary uppercase tracking-[0.2em]">Net Total</p>
-                          <p className="text-2xl font-black text-white tracking-tighter">₹ 1,545.00</p>
+                          <p className="text-[8px] font-black text-primary uppercase tracking-[0.2em]">Platform Net Fee</p>
+                          <p className="text-2xl font-black text-white tracking-tighter">
+                            {hasActiveSubscription ? "₹ 0.00" : "₹ 45.00"}
+                          </p>
                        </div>
                        <ShieldCheck className="w-8 h-8 text-primary/20" />
                     </div>

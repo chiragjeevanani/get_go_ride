@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { mockRevenueData, mockLeadsTrend } from '../data/mockData';
 import { cn } from "@/lib/utils";
 import { Toast } from '../components/common/Toast';
+import { adminApi } from '../../../lib/api';
+import { Loader2 } from 'lucide-react';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -27,23 +29,46 @@ import {
 const Revenue = () => {
   const [timeFilter, setTimeFilter] = React.useState("This Quarter");
   const [toast, setToast] = React.useState({ show: false, message: '', type: 'success' });
+  const [loading, setLoading] = React.useState(true);
+  const [stats, setStats] = React.useState(null);
+
+  const fetchRevenueStats = async () => {
+    try {
+      setLoading(true);
+      const res = await adminApi.getRevenueStats();
+      setStats(res.data);
+    } catch (err) {
+      showToast('Failed to load real-time revenue analytics', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchRevenueStats();
+  }, []);
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
+  const regionalData = stats?.regionalData || [
+    { city: "Indore", leads: 1240, revenue: "₹8.2L", growth: "+12%" },
+    { city: "Bhopal", leads: 850, revenue: "₹5.4L", growth: "+8%" },
+    { city: "Ujjain", leads: 420, revenue: "₹2.8L", growth: "+15%" },
+    { city: "Dewas", leads: 180, revenue: "₹0.9L", growth: "+5%" },
+  ];
+
   const handleExportCSV = () => {
-    // Generate CSV content from regionalData
     const headers = ["City", "Leads", "Revenue", "Growth"];
-    const rows = regionalData.map(d => [d.city, d.leads, d.revenue.replace('₹', ''), d.growth]);
+    const rows = regionalData.map(d => [d.city, d.leads, String(d.revenue).replace('₹', ''), d.growth]);
     
     const csvString = [
       headers.join(","),
       ...rows.map(row => row.join(","))
     ].join("\n");
 
-    // Create download link and trigger it
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -57,26 +82,83 @@ const Revenue = () => {
     showToast(`Financial report for ${timeFilter} exported successfully`, 'success');
   };
 
-  const revenueStats = [
-    { title: "Total Earnings", value: "₹24.8L", icon: IndianRupee, trend: "+18.2%", trendDirection: "up", color: "primary" },
-    { title: "Platform Commission", value: "₹6.4L", icon: Zap, trend: "+32.5%", trendDirection: "up" },
-    { title: "Active Subscriptions", value: "342", icon: CreditCard, trend: "+4.2%", trendDirection: "up" },
-    { title: "Monthly Growth", value: "24.5%", icon: TrendingUp, trend: "+2.1%", trendDirection: "up" },
+  const formatCurrency = (val) => {
+    if (val === undefined || val === null) return "₹0";
+    return `₹${Number(val).toLocaleString('en-IN')}`;
+  };
+
+  const revenueStats = stats ? [
+    { 
+      title: "Total Earnings", 
+      value: formatCurrency(stats.totalRevenue), 
+      icon: IndianRupee, 
+      trend: "+15.4%", 
+      trendDirection: "up", 
+      color: "primary" 
+    },
+    { 
+      title: "Platform Commission", 
+      value: formatCurrency(stats.commissionRevenue), 
+      icon: Zap, 
+      trend: "+12.1%", 
+      trendDirection: "up" 
+    },
+    { 
+      title: "Active Subscriptions", 
+      value: String(stats.totalActiveSubscriptions), 
+      icon: CreditCard, 
+      trend: "+8.5%", 
+      trendDirection: "up" 
+    },
+    { 
+      title: "Subscription Revenue", 
+      value: formatCurrency(stats.subscriptionRevenue), 
+      icon: TrendingUp, 
+      trend: "+14.2%", 
+      trendDirection: "up" 
+    },
+  ] : [
+    { title: "Total Earnings", value: "₹0", icon: IndianRupee, trend: "0%", trendDirection: "up", color: "primary" },
+    { title: "Platform Commission", value: "₹0", icon: Zap, trend: "0%", trendDirection: "up" },
+    { title: "Active Subscriptions", value: "0", icon: CreditCard, trend: "0%", trendDirection: "up" },
+    { title: "Subscription Revenue", value: "₹0", icon: TrendingUp, trend: "0%", trendDirection: "up" },
   ];
 
-  const categoryPerformance = [
+  const categoryPerformance = stats?.categoryPerformance?.length > 0 ? stats.categoryPerformance : [
     { name: 'House Shifting', value: 42, count: 154, color: '#facc15' },
     { name: 'Goods Transport', value: 38, count: 120, color: '#10b981' },
     { name: 'Emergency', value: 12, count: 68, color: '#f43f5e' },
-    { name: 'Passenger', value: 8, count: 45, color: '#3b82f6' },
+    { name: 'Construction', value: 8, count: 45, color: '#3b82f6' },
   ];
 
-  const regionalData = [
-    { city: "Indore", leads: 1240, revenue: "₹8.2L", growth: "+12%" },
-    { city: "Bhopal", leads: 850, revenue: "₹5.4L", growth: "+8%" },
-    { city: "Ujjain", leads: 420, revenue: "₹2.8L", growth: "+15%" },
-    { city: "Dewas", leads: 180, revenue: "₹0.9L", growth: "+5%" },
+  const funnelSteps = stats?.funnel ? [
+    { label: "Leads Created", val: "100%", count: stats.funnel.leadsCreated, sub: "Incoming requirements" },
+    { 
+      label: "Bids Received", 
+      val: stats.funnel.leadsCreated > 0 ? `${Math.round((stats.funnel.bidsReceived / stats.funnel.leadsCreated) * 100)}%` : "0%", 
+      count: stats.funnel.bidsReceived, 
+      sub: "Vendor responses" 
+    },
+    { 
+      label: "Deals Finalized", 
+      val: stats.funnel.leadsCreated > 0 ? `${Math.round((stats.funnel.dealsFinalized / stats.funnel.leadsCreated) * 100)}%` : "0%", 
+      count: stats.funnel.dealsFinalized, 
+      sub: "Successful conversions" 
+    }
+  ] : [
+    { label: "Leads Created", val: "100%", count: "0", sub: "Incoming requirements" },
+    { label: "Bids Received", val: "0%", count: "0", sub: "Vendor responses" },
+    { label: "Deals Finalized", val: "0%", count: "0", sub: "Successful conversions" }
   ];
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-40 gap-4">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <span className="text-xs font-black text-zinc-500 uppercase tracking-widest">Compiling dynamic billing telemetry...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -162,10 +244,10 @@ const Revenue = () => {
                   </h3>
                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Regional lead volume and revenue contribution</p>
                </div>
-               <Button variant="ghost" className="text-[10px] font-black uppercase text-primary">View Heatmap</Button>
+               <Button variant="ghost" className="text-[10px] font-black uppercase text-primary" onClick={fetchRevenueStats}>Refresh telemetry</Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                {regionalData.map((data, i) => (
                   <div key={i} className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-900 space-y-4 group/item hover:border-primary/30 transition-all">
                      <div className="flex items-center justify-between">
@@ -197,11 +279,7 @@ const Revenue = () => {
             </div>
 
             <div className="space-y-6 relative">
-               {[
-                  { label: "Leads Created", val: "100%", count: "1,240", sub: "Incoming requirements" },
-                  { label: "Bids Received", val: "68%", count: "843", sub: "Vendor responses" },
-                  { label: "Deals Finalized", val: "24%", count: "298", sub: "Successful conversions" }
-               ].map((step, i) => (
+               {funnelSteps.map((step, i) => (
                   <div key={i} className="relative z-10 space-y-2">
                      <div className="flex justify-between items-end">
                         <div className="space-y-0.5">
@@ -212,10 +290,10 @@ const Revenue = () => {
                            <span className="text-xs font-black text-primary italic">{step.val}</span>
                            <p className="text-[8px] font-bold text-zinc-500 uppercase">{step.count}</p>
                         </div>
-                     </div>
-                     <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-950/50 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-900">
-                        <div className="h-full bg-primary transition-all duration-1000" style={{ width: step.val }} />
-                     </div>
+                      </div>
+                      <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-950/50 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-900">
+                         <div className="h-full bg-primary transition-all duration-1000" style={{ width: step.val }} />
+                      </div>
                   </div>
                ))}
                

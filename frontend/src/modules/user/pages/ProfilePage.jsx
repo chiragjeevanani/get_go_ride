@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { userApi } from "@/lib/api";
+import { toast } from "sonner";
 import { 
   Dialog, DialogContent, DialogHeader, 
   DialogTitle, DialogTrigger, DialogFooter,
@@ -24,20 +26,33 @@ import profileImg from "@/assets/profile.jpg";
 const ProfilePage = () => {
   const navigate = useNavigate();
 
-  const [userData, setUserData] = useState({
-    name: "Felix Karanth",
-    phone: "+91 98765 43210",
-    avatar: profileImg,
-    membership: "Gold",
-    requests: 24,
-    saved: 12
-  });
-
-  const [editData, setEditData] = useState({ ...userData });
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editData, setEditData] = useState({ name: "", phone: "" });
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [errors, setErrors] = useState({ name: "", phone: "" });
-  const [avatar, setAvatar] = useState(userData.avatar);
+  const [avatar, setAvatar] = useState(profileImg);
   const fileInputRef = useRef(null);
+
+  const fetchProfile = async () => {
+    try {
+      const res = await userApi.getProfile();
+      setUserData(res.data);
+      setAvatar(res.data.profileImage || profileImg);
+      setLoading(false);
+    } catch (err) {
+      toast.error("Session expired. Please log in again.");
+      localStorage.removeItem('gtgl_token');
+      localStorage.removeItem('gtgl_refresh_token');
+      localStorage.removeItem('gtgl_user');
+      navigate("/user/auth");
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -53,7 +68,7 @@ const ProfilePage = () => {
     return regex.test(phone.replace(/\s/g, ""));
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     let newErrors = { name: "", phone: "" };
     let hasError = false;
 
@@ -62,33 +77,35 @@ const ProfilePage = () => {
       hasError = true;
     }
 
-    if (editData.phone.length !== 10) {
-      newErrors.phone = "Must be exactly 10 digits";
-      hasError = true;
-    }
-
     if (hasError) {
       setErrors(newErrors);
       return;
     }
 
-    // Format for display
-    const formattedPhone = `+91 ${editData.phone.slice(0, 5)} ${editData.phone.slice(5)}`;
-    setUserData({ ...userData, name: editData.name, phone: formattedPhone });
-    setIsEditDialogOpen(false);
-    setErrors({ name: "", phone: "" });
+    try {
+      const res = await userApi.updateProfile({ 
+        name: editData.name,
+        profileImage: avatar === profileImg ? "" : avatar 
+      });
+      setUserData(res.data);
+      localStorage.setItem('gtgl_user', JSON.stringify(res.data));
+      setIsEditDialogOpen(false);
+      toast.success("Profile updated!");
+    } catch (err) {
+      toast.error(err.message || "Failed to update profile");
+    }
   };
 
   const menuItems = [
     { icon: <Package className="w-4 h-4" />, label: "Order History", desc: "View past and active requests", path: "/user/requests" },
     { icon: <CreditCard className="w-4 h-4" />, label: "Payments", desc: "Manage cards and methods", path: "/user/payments" },
     { icon: <MapPin className="w-4 h-4" />, label: "Addresses", desc: "Select frequent locations", path: "/user/addresses" },
-    { icon: <Heart className="w-4 h-4" />, label: "Vendors", desc: "Your favorite providers", path: "/user/vendors" },
     { icon: <Wallet className="w-4 h-4" />, label: "Wallet", desc: "Manage coins & balance", path: "/user/wallet" },
-    { icon: <Bell className="w-4 h-4" />, label: "Alerts", desc: "Control notification settings", path: "/user/alerts" },
-    { icon: <ShieldCheck className="w-4 h-4" />, label: "Security", desc: "Account protection tools", path: "/user/security" },
     { icon: <HelpCircle className="w-4 h-4" />, label: "Support", desc: "Get help with requests", path: "/user/support" },
   ];
+
+  if (loading) return <div className="flex justify-center items-center h-screen font-black uppercase text-[10px] tracking-widest">Loading Profile...</div>;
+  if (!userData) return <div className="flex justify-center items-center h-screen font-black uppercase text-[10px] tracking-widest">Profile not found</div>;
 
   return (
     <div className="px-4 space-y-3 pb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -128,8 +145,7 @@ const ProfilePage = () => {
                     size="icon" 
                     className="h-6 w-6 rounded-full hover:bg-zinc-100" 
                     onClick={() => {
-                      const cleanPhone = userData.phone.replace(/\D/g, "").slice(-10);
-                      setEditData({ ...userData, phone: cleanPhone });
+                      setEditData({ name: userData.name, phone: userData.phone });
                     }}
                   >
                     <Edit3 className="w-3 h-3 text-zinc-400" />
@@ -167,17 +183,10 @@ const ProfilePage = () => {
                       </div>
                       <Input 
                         value={editData.phone}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, "").slice(0, 10);
-                          setEditData({ ...editData, phone: val });
-                          if (errors.phone) setErrors({ ...errors, phone: "" });
-                        }}
-                        placeholder="10-digit mobile number"
-                        className={cn(
-                          "h-11 rounded-xl bg-zinc-50 border-zinc-100 font-bold text-xs transition-all",
-                          errors.phone && "border-rose-500 bg-rose-50/30"
-                        )}
+                        disabled
+                        className="h-11 rounded-xl bg-zinc-100 border-zinc-100 font-bold text-xs text-zinc-400 cursor-not-allowed"
                       />
+                      <p className="text-[8px] font-bold text-zinc-300 uppercase px-1">Phone number cannot be changed</p>
                     </div>
                   </div>
                   <DialogFooter className="flex-row gap-2 pt-2">
@@ -204,7 +213,7 @@ const ProfilePage = () => {
            <p className="text-[10px] text-zinc-400 font-black tracking-widest uppercase">{userData.phone}</p>
             <div className="flex items-center justify-center pt-1.5">
                <Badge className="bg-primary text-black hover:bg-primary border-none rounded-md text-[9px] px-2.5 py-0.5 font-black tracking-widest uppercase">
-                  {userData.membership} Member
+                  {userData.wallet?.balance > 500 ? "Gold" : "Standard"} Member
                </Badge>
             </div>
          </div>
@@ -215,13 +224,13 @@ const ProfilePage = () => {
      <div className="grid grid-cols-2 gap-2.5">
          <Card className="border-2 border-primary/10 shadow-sm bg-white rounded-xl overflow-hidden">
             <CardContent className="p-2.5 flex flex-col items-center">
-                <span className="text-lg font-black text-black">{userData.requests}</span>
+                <span className="text-lg font-black text-black">{userData.requirementsCount || 0}</span>
                 <span className="text-[8px] uppercase font-black text-zinc-400 tracking-widest">Total Requests</span>
             </CardContent>
          </Card>
          <Card className="border-2 border-primary/10 shadow-sm bg-white rounded-xl overflow-hidden">
             <CardContent className="p-2.5 flex flex-col items-center">
-                <span className="text-lg font-black text-black">{userData.saved}</span>
+                <span className="text-lg font-black text-black">{userData.savedVendorsCount || 0}</span>
                 <span className="text-[8px] uppercase font-black text-zinc-400 tracking-widest">Saved Vendors</span>
             </CardContent>
          </Card>

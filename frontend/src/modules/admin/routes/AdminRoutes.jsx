@@ -14,6 +14,8 @@ const Moderation = lazy(() => import('../pages/Moderation'));
 const Settings = lazy(() => import('../pages/Settings'));
 const Notifications = lazy(() => import('../pages/Notifications'));
 const ActivityFeed = lazy(() => import('../pages/ActivityFeed'));
+const Faqs = lazy(() => import('../pages/Faqs'));
+const Login = lazy(() => import('../pages/Login'));
 
 // Placeholder Loading Component
 const PageLoading = () => (
@@ -27,6 +29,10 @@ const AdminRoutes = () => {
   return (
     <Suspense fallback={<PageLoading />}>
       <Routes>
+        {/* Unprotected standalone login page */}
+        <Route path="login" element={<Login />} />
+
+        {/* Protected layout and children */}
         <Route element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
@@ -43,7 +49,8 @@ const AdminRoutes = () => {
           <Route path="moderation" element={<Moderation />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="dashboard" replace />} />
+          <Route path="faqs" element={<Faqs />} />
+          <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Route>
       </Routes>
     </Suspense>

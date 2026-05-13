@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Directory)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(npm test *)",
+      "Bash(npx vitest *)",
+      "Bash(npx jest *)"
+    ]
+  }
+}

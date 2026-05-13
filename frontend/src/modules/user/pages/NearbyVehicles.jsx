@@ -26,45 +26,12 @@ const NearbyVehicles = () => {
   // Dummy vehicle data
   const vehicles = [
     {
-      id: 1,
-      name: "Bike",
-      type: "Bike",
-      distance: "0.5 km",
-      time: "3 min",
-      status: "Available",
-      price: "₹40",
-      image: bikeImg,
-      color: "bg-zinc-50 text-zinc-600"
-    },
-    {
-      id: 2,
-      name: "Auto",
-      type: "Auto",
-      distance: "1.2 km",
-      time: "5 min",
-      status: "Available",
-      price: "₹85",
-      image: autoImg,
-      color: "bg-zinc-50 text-zinc-600"
-    },
-    {
-      id: 3,
-      name: "Mini Cab",
-      type: "Cab",
-      distance: "2.1 km",
-      time: "7 min",
-      status: "Available",
-      price: "₹120",
-      image: cabImg,
-      color: "bg-zinc-50 text-zinc-600"
-    },
-    {
       id: 4,
-      name: "Delivery",
+      name: "Delivery Truck",
       type: "Truck",
       distance: "3.5 km",
       time: "12 min",
-      status: "Busy",
+      status: "Available",
       price: "₹250",
       image: truck2Img,
       color: "bg-zinc-50 text-zinc-600"
@@ -88,23 +55,8 @@ const NearbyVehicles = () => {
   };
 
   const handleBookNow = (v) => {
-    // Map nearby vehicle types to the established service/vehicle types in the app flow
-    let serviceType = "passenger";
+    let serviceType = "goods";
     let vehicleType = "mini";
-
-    if (v.type === "Bike") {
-      serviceType = "passenger";
-      vehicleType = "auto"; // Assuming bike falls under passenger/quick transport
-    } else if (v.type === "Auto") {
-      serviceType = "passenger";
-      vehicleType = "auto";
-    } else if (v.type === "Cab") {
-      serviceType = "passenger";
-      vehicleType = "mini";
-    } else if (v.type === "Truck") {
-      serviceType = "goods";
-      vehicleType = "mini";
-    }
 
     navigate("/user/post-requirement", {
       state: {

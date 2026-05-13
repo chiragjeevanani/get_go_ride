@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ChevronLeft, Phone, MapPin, ArrowRight, ShieldCheck, 
-  Truck, Check, User, Briefcase, MapPinned, Info, Zap
+  Truck, Check, User, Briefcase, MapPinned, Info, Zap, Home
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,14 +13,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import Lottie from "lottie-react";
 import loginAnimation from "@/assets/Lottie/LoginPage.json";
 import { cn } from "@/lib/utils";
+import { authApi, categoryApi, vehicleApi, vendorApi } from "@/lib/api";
+import { toast } from "sonner";
+import { useEffect } from "react";
 
 const DriverAuthPage = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1); // 1: Splash/Onboarding, 2: Phone, 3: OTP, 4-7: Wizard
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState(["", "", "", ""]);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
+    nativeCity: "",
     vehicleType: "",
     capacity: "",
     regNumber: "",
@@ -29,6 +34,31 @@ const DriverAuthPage = () => {
     profileImage: null
   });
 
+  const [backendCategories, setBackendCategories] = useState([]);
+  const [backendVehicles, setBackendVehicles] = useState([]);
+  const [isCustomVehicle, setIsCustomVehicle] = useState(false);
+  const [customCategory, setCustomCategory] = useState("");
+  const [isNewUser, setIsNewUser] = useState(false);
+
+  useEffect(() => {
+    if (step < 4) return;
+    const fetchOnboardingData = async () => {
+      try {
+        const catRes = await categoryApi.getAll();
+        const vehRes = await vehicleApi.getAll();
+        
+        const cats = catRes.data || [];
+        const vehs = vehRes.data || [];
+        
+        setBackendCategories(cats);
+        setBackendVehicles(vehs);
+      } catch (err) {
+        console.error("Failed to fetch onboarding metadata:", err);
+      }
+    };
+    fetchOnboardingData();
+  }, [step]);
+
   const onboardingSlides = [
     { 
       title: "Earn More. Drive Smart.", 
@@ -36,9 +66,6 @@ const DriverAuthPage = () => {
       icon: <Truck className="w-20 h-20 text-primary" /> 
     }
   ];
-
-  const vehicleTypes = ["Mini Truck (Tata Ace)", "Pick-up (Bolero)", "Intermediate Truck (6-14ft)", "Heavy Truck", "Rickshaw"];
-  const serviceCategories = ["Goods Transport", "House Shifting", "Passenger", "Emergency"];
 
   const handleNext = () => setStep(s => s + 1);
   const handleBack = () => setStep(s => s - 1);
@@ -49,6 +76,83 @@ const DriverAuthPage = () => {
     newOtp[index] = value;
     setOtp(newOtp);
     if (value && index < 3) document.getElementById(`otp-${index + 1}`).focus();
+  };
+
+  const handleSendOtp = async () => {
+    try {
+      setLoading(true);
+      const res = await authApi.sendOtp(phoneNumber, 'vendor');
+      toast.success(res.message);
+      
+      if (res.data._devOtp) {
+        setOtp(res.data._devOtp.split(""));
+        toast.info(`Dev Mode: OTP is ${res.data._devOtp}`);
+      }
+      
+      setStep(3);
+    } catch (error) {
+      toast.error(error.message || "Failed to send OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    try {
+      setLoading(true);
+      const otpString = otp.join("");
+      const res = await authApi.verifyOtp(phoneNumber, otpString, 'vendor');
+      
+      const { accessToken, refreshToken, vendor, isNewUser } = res.data;
+      setIsNewUser(isNewUser);
+      
+      localStorage.setItem('gtgl_driver_token', accessToken);
+      localStorage.setItem('gtgl_driver_refresh_token', refreshToken);
+      localStorage.setItem('gtgl_driver', JSON.stringify(vendor));
+      
+      toast.success("Verified successfully!");
+
+      // If existing vendor and onboarding complete, go to dashboard
+      // Otherwise, start/continue the wizard
+      if (!isNewUser && vendor.onboardingComplete) {
+        navigate("/driver/dashboard");
+      } else {
+        setStep(4);
+      }
+    } catch (error) {
+      toast.error(error.message || "Invalid OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitOnboarding = async () => {
+    try {
+      setLoading(true);
+      const payload = {
+        name: formData.name,
+        profileImage: formData.profileImage,
+        nativeCity: formData.nativeCity,
+        vehicleType: formData.vehicleType,
+        vehicleRegNumber: formData.regNumber,
+        vehicleCapacity: formData.capacity,
+        serviceCategories: formData.categories,
+        operatingAreas: formData.areas,
+        location: formData.areas || "Default Local"
+      };
+      
+      const res = await vendorApi.submitOnboarding(payload);
+      
+      if (res.data) {
+        localStorage.setItem('gtgl_driver', JSON.stringify(res.data));
+      }
+      toast.success("Profile saved successfully!");
+      navigate("/driver/subscribe");
+    } catch (error) {
+      toast.error(error.message || "Failed to save onboarding details");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleImageUpload = (e) => {
@@ -133,8 +237,11 @@ const DriverAuthPage = () => {
                     className="pl-16 h-14 text-lg font-bold tracking-widest bg-white border-2 border-zinc-100 rounded-xl focus:border-primary shadow-sm transition-all text-black"
                     value={phoneNumber}
                     onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, "");
-                      if (val.length <= 10) setPhoneNumber(val);
+                      let val = e.target.value.replace(/\D/g, "");
+                      if (val.length > 10) {
+                        val = val.slice(-10);
+                      }
+                      setPhoneNumber(val);
                     }}
                   />
                </div>
@@ -149,11 +256,11 @@ const DriverAuthPage = () => {
 
             <div className="pt-4">
                <Button 
-                 disabled={phoneNumber.length !== 10}
+                 disabled={phoneNumber.length !== 10 || loading}
                  className="w-full h-12 rounded-xl bg-primary text-zinc-900 text-sm font-bold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none transition-all"
-                 onClick={handleNext}
+                 onClick={handleSendOtp}
                >
-                  Send Otp
+                  {loading ? "Sending..." : "Send Otp"}
                </Button>
             </div>
           </div>
@@ -192,17 +299,17 @@ const DriverAuthPage = () => {
                
                <p className="text-center">
                   <span className="text-[10px] text-zinc-500 font-bold tracking-tight">Didn't receive code?</span> <br/>
-                  <Button variant="link" className="p-0 h-fit text-primary font-bold text-[9px] tracking-tight mt-1">Resend OTP in 56s</Button>
+                  <Button variant="link" className="p-0 h-fit text-primary font-bold text-[9px] tracking-tight mt-1" onClick={handleSendOtp}>Resend OTP</Button>
                </p>
             </div>
 
             <div className="pt-4">
                <Button 
-                 disabled={otp.some(d => !d)}
+                 disabled={otp.some(d => !d) || loading}
                  className="w-full h-12 rounded-xl bg-primary text-zinc-900 text-sm font-bold shadow-lg shadow-primary/20 transition-all"
-                 onClick={handleNext}
+                 onClick={handleVerifyOtp}
                >
-                  Verify Now
+                  {loading ? "Verifying..." : "Verify Now"}
                </Button>
             </div>
           </div>
@@ -259,11 +366,13 @@ const DriverAuthPage = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1">Native City</label>
-                    <Input 
-                      placeholder="Indore" 
-                      className="h-11 rounded-xl bg-white border-2 border-zinc-100 font-bold text-black text-sm focus:border-primary shadow-sm"
-                    />
+                     <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1">Native City</label>
+                     <Input 
+                       placeholder="Indore" 
+                       className="h-11 rounded-xl bg-white border-2 border-zinc-100 font-bold text-black text-sm focus:border-primary shadow-sm"
+                       value={formData.nativeCity}
+                       onChange={(e) => setFormData({...formData, nativeCity: e.target.value})}
+                     />
                   </div>
                </div>
             </div>
@@ -296,41 +405,245 @@ const DriverAuthPage = () => {
 
             <div className="space-y-4 flex-1 overflow-y-auto no-scrollbar pr-1">
                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1">Vehicle Type</label>
-                    <div className="grid grid-cols-1 gap-1.5">
-                      {vehicleTypes.map((type) => (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1">Select Vehicle Type</label>
+                    <div className="grid grid-cols-1 gap-2">
+                      {(backendVehicles.length > 0 ? backendVehicles : [
+                        { _id: "v1", name: "Mini Truck (Tata Ace)", capacity: "800kg", details: "LCV • 4 Tyres • Open Body", categorySlug: "goods" },
+                        { _id: "v2", name: "Pick-up (Bolero)", capacity: "1.5 Tonnes", details: "Pickup • 4 Tyres", categorySlug: "goods" },
+                        { _id: "v3", name: "Intermediate Truck (6-14ft)", capacity: "5 Tonnes", details: "ICV • 6 Tyres", categorySlug: "goods" },
+                        { _id: "v4", name: "Heavy Truck", capacity: "15 Tonnes", details: "HCV • 10-12 Tyres", categorySlug: "goods" }
+                      ]).map((veh) => (
                         <div 
-                          key={type}
-                          onClick={() => setFormData({...formData, vehicleType: type})}
+                          key={veh._id}
+                          onClick={() => {
+                            setIsCustomVehicle(false);
+                            setFormData(prev => ({
+                              ...prev,
+                              vehicleType: veh.name,
+                              capacity: veh.capacity,
+                              categories: veh.categorySlugs || (veh.categorySlug ? [veh.categorySlug] : [])
+                            }));
+                          }}
                           className={cn(
-                            "p-3 rounded-xl border-2 transition-all flex justify-between items-center cursor-pointer",
-                            formData.vehicleType === type ? "border-primary bg-primary/5" : "border-zinc-100 bg-white"
+                            "p-3.5 rounded-xl border-2 transition-all flex items-center justify-between cursor-pointer",
+                            (!isCustomVehicle && formData.vehicleType === veh.name) 
+                              ? "border-primary bg-primary/5 ring-2 ring-primary/20" 
+                              : "border-zinc-100 bg-white hover:border-zinc-200"
                           )}
                         >
-                          <span className="text-[11px] font-bold text-zinc-900">{type}</span>
-                          {formData.vehicleType === type && <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center"><Check className="w-2.5 h-2.5 text-zinc-900" strokeWidth={4} /></div>}
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-zinc-50 rounded-lg flex items-center justify-center border border-zinc-100">
+                              {veh.image ? (
+                                <img src={veh.image} alt={veh.name} className="w-8 h-8 object-contain" />
+                              ) : (
+                                <Truck className="w-5 h-5 text-zinc-400 group-hover:text-primary transition-colors" />
+                              )}
+                            </div>
+                            <div className="text-left">
+                              <h4 className="text-[12px] font-bold text-zinc-950 leading-none">{veh.name}</h4>
+                              <p className="text-[10px] text-zinc-500 font-bold mt-1">{veh.capacity} • {veh.details || "Standard Vehicle"}</p>
+                            </div>
+                          </div>
+                          {(!isCustomVehicle && formData.vehicleType === veh.name) && (
+                            <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                              <Check className="w-3 h-3 text-zinc-900" strokeWidth={4} />
+                            </div>
+                          )}
                         </div>
                       ))}
+
+                      {/* Custom Vehicle Trigger */}
+                      <div 
+                        onClick={() => {
+                          setIsCustomVehicle(true);
+                          setFormData(prev => ({
+                            ...prev,
+                            vehicleType: "",
+                            capacity: "",
+                            categories: []
+                          }));
+                          setCustomCategory("");
+                        }}
+                        className={cn(
+                          "p-3.5 rounded-xl border-2 transition-all flex items-center justify-between cursor-pointer",
+                          isCustomVehicle 
+                            ? "border-primary bg-primary/5 ring-2 ring-primary/20" 
+                            : "border-zinc-100 bg-white hover:border-zinc-200"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-zinc-50 rounded-lg flex items-center justify-center border border-zinc-100">
+                            <Zap className="w-5 h-5 text-primary" />
+                          </div>
+                          <div className="text-left">
+                            <h4 className="text-[12px] font-bold text-zinc-950 leading-none">Other / Custom Vehicle</h4>
+                            <p className="text-[10px] text-zinc-500 font-bold mt-1">My vehicle is not listed in options</p>
+                          </div>
+                        </div>
+                        {isCustomVehicle && (
+                          <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                            <Check className="w-3 h-3 text-zinc-900" strokeWidth={4} />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
+
+                  {/* Standard Vehicle Categories Accordion Form */}
+                  {(!isCustomVehicle && formData.vehicleType) && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="space-y-3.5 bg-zinc-50/50 p-4 rounded-xl border border-dashed border-zinc-200 mt-2"
+                    >
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1">
+                          Select Operating Categories for <span className="text-primary font-extrabold">{formData.vehicleType}</span>
+                        </label>
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                          {(backendCategories.length > 0 ? backendCategories : [
+                            { _id: "c1", name: "Goods Transport", slug: "goods" },
+                            { _id: "c2", name: "House Shifting", slug: "house" },
+                            { _id: "c3", name: "Emergency", slug: "emergency" },
+                            { _id: "c4", name: "Construction", slug: "construction" }
+                          ]).map((cat) => {
+                            const isSelected = formData.categories.includes(cat.slug);
+                            return (
+                              <button
+                                type="button"
+                                key={cat._id}
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    categories: prev.categories.includes(cat.slug)
+                                      ? prev.categories.filter(s => s !== cat.slug)
+                                      : [...prev.categories, cat.slug]
+                                  }));
+                                }}
+                                className={cn(
+                                  "flex items-center justify-between p-2.5 rounded-xl border text-left transition-all bg-white",
+                                  isSelected 
+                                    ? "bg-primary/5 border-primary/40 text-zinc-900"
+                                    : "border-zinc-100 text-zinc-500 hover:border-zinc-200"
+                                )}
+                              >
+                                <span className="text-[10px] font-bold uppercase tracking-wider leading-none">{cat.name}</span>
+                                <div className={cn(
+                                  "w-3.5 h-3.5 rounded-full flex items-center justify-center border transition-all",
+                                  isSelected 
+                                    ? "bg-primary border-primary text-black" 
+                                    : "border-zinc-300"
+                                )}>
+                                  {isSelected && (
+                                    <svg className="w-2 h-2 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {formData.categories.length === 0 && (
+                          <p className="text-[9px] font-bold text-amber-500 italic uppercase px-1 mt-1">* Select at least one category</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Custom Vehicle Details Accordion Form */}
+                  {isCustomVehicle && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="space-y-3.5 bg-zinc-50/50 p-4 rounded-xl border border-dashed border-zinc-200 mt-2"
+                    >
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1">Custom Vehicle Model Name</label>
+                        <Input 
+                          placeholder="e.g. Tata Ultra 1518, Mahindra Maxx" 
+                          className="h-11 rounded-xl bg-white border-2 border-zinc-100 font-bold text-zinc-900 text-xs focus:border-primary shadow-sm"
+                          value={formData.vehicleType}
+                          onChange={(e) => setFormData(prev => ({ ...prev, vehicleType: e.target.value }))}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1">Vehicle Classifications (Select Multiple)</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(backendCategories.length > 0 ? backendCategories : [
+                            { _id: "c1", name: "Goods Transport", slug: "goods" },
+                            { _id: "c2", name: "House Shifting", slug: "house" },
+                            { _id: "c3", name: "Emergency", slug: "emergency" },
+                            { _id: "c4", name: "Construction", slug: "construction" }
+                          ]).map((cat) => {
+                            const isSelected = formData.categories.includes(cat.slug);
+                            return (
+                              <button
+                                type="button"
+                                key={cat._id}
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    categories: prev.categories.includes(cat.slug)
+                                      ? prev.categories.filter(s => s !== cat.slug)
+                                      : [...prev.categories, cat.slug]
+                                  }));
+                                }}
+                                className={cn(
+                                  "flex items-center justify-between p-2.5 rounded-xl border text-left transition-all",
+                                  isSelected 
+                                    ? "bg-primary/5 border-primary/40 text-zinc-900"
+                                    : "bg-white border-zinc-100 text-zinc-500 hover:border-zinc-200"
+                                )}
+                              >
+                                <span className="text-[10px] font-bold uppercase tracking-wider leading-none">{cat.name}</span>
+                                <div className={cn(
+                                  "w-3.5 h-3.5 rounded-full flex items-center justify-center border transition-all",
+                                  isSelected 
+                                    ? "bg-primary border-primary text-black" 
+                                    : "border-zinc-300"
+                                )}>
+                                  {isSelected && (
+                                    <svg className="w-2 h-2 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1">Custom Load Capacity</label>
+                        <Input 
+                          placeholder="e.g. 10 Tonnes, 900kg" 
+                          className="h-11 rounded-xl bg-white border-2 border-zinc-100 font-bold text-zinc-900 text-xs focus:border-primary shadow-sm"
+                          value={formData.capacity}
+                          onChange={(e) => setFormData(prev => ({ ...prev, capacity: e.target.value }))}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
                   
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1">Reg. Number</label>
-                      <Input placeholder="MP-09-XX-XXXX" className="h-11 rounded-xl bg-white border-2 border-zinc-100 font-bold text-zinc-900 text-xs" />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1">Capacity</label>
-                      <Input placeholder="e.g. 500kg" className="h-11 rounded-xl bg-white border-2 border-zinc-100 font-bold text-zinc-900 text-xs" />
-                    </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1">Registration Plate Number</label>
+                    <Input 
+                      placeholder="e.g. MP-09-AB-1234" 
+                      className="h-11 rounded-xl bg-white border-2 border-zinc-100 font-bold text-zinc-900 text-xs focus:border-primary"
+                      value={formData.regNumber}
+                      onChange={(e) => setFormData(prev => ({ ...prev, regNumber: e.target.value.toUpperCase() }))}
+                    />
                   </div>
                </div>
             </div>
 
             <div className="pt-2">
                <Button 
-                 disabled={!formData.vehicleType}
+                 disabled={!formData.vehicleType || !formData.regNumber || !formData.capacity || !formData.categories || formData.categories.length === 0}
                  className="w-full h-11 rounded-xl bg-primary text-zinc-900 text-sm font-bold shadow-lg shadow-primary/20 transition-all"
                  onClick={handleNext}
                >
@@ -340,7 +653,36 @@ const DriverAuthPage = () => {
           </div>
         );
 
-      case 6: // Wizard Step 3: Categories
+      case 6: // Wizard Step 3: Service Categories (Dynamic multi-select)
+        const getCategoryIcon = (iconName) => {
+          switch (iconName?.toLowerCase()) {
+            case 'truck':
+            case 'package':
+            case 'goods':
+              return <Truck className="w-4 h-4" />;
+            case 'home':
+            case 'house':
+              return <Home className="w-4 h-4" />;
+            case 'flame':
+            case 'shield':
+            case 'emergency':
+              return <ShieldCheck className="w-4 h-4" />;
+            case 'construction':
+            case 'wrench':
+            case 'crane':
+              return <Briefcase className="w-4 h-4" />;
+            default:
+              return <Briefcase className="w-4 h-4" />;
+          }
+        };
+
+        const availableCategories = backendCategories.length > 0 ? backendCategories : [
+          { _id: "c1", name: "Goods Transport", slug: "goods", description: "Logistics and goods hauling", icon: "Truck" },
+          { _id: "c2", name: "House Shifting", slug: "house", description: "Residential relocation packages", icon: "Home" },
+          { _id: "c3", name: "Emergency Response", slug: "emergency", description: "Critical emergency breakdown assistance", icon: "Flame" },
+          { _id: "c4", name: "Construction Hauling", slug: "construction", description: "Aggregates and raw material supplies", icon: "Briefcase" }
+        ];
+
         return (
           <div className="flex flex-col py-6 px-5 space-y-6">
             <div className="space-y-3">
@@ -350,35 +692,46 @@ const DriverAuthPage = () => {
                </div>
                <div className="space-y-0.5">
                   <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Service Categories</h1>
-                  <p className="text-[10px] text-zinc-500 font-bold tracking-tight">Select what you offer</p>
+                  <p className="text-[10px] text-zinc-500 font-bold tracking-tight">What jobs do you want to accept?</p>
                </div>
             </div>
 
-            <div className="space-y-3.5 flex-1">
-               <div className="grid grid-cols-1 gap-2">
-                  {serviceCategories.map((cat) => (
+            <div className="space-y-3.5 flex-1 overflow-y-auto no-scrollbar pr-1">
+               <div className="grid grid-cols-1 gap-2.5">
+                  {availableCategories.map((cat) => (
                     <div 
-                      key={cat}
-                      onClick={() => toggleCategory(cat)}
+                      key={cat._id}
+                      onClick={() => toggleCategory(cat.slug)}
                       className={cn(
-                        "p-4 rounded-xl border-2 transition-all flex items-center gap-3 cursor-pointer relative overflow-hidden",
-                        formData.categories.includes(cat) ? "border-primary bg-primary/5" : "border-zinc-100 bg-white"
+                        "p-3.5 rounded-xl border-2 transition-all flex items-center gap-3 cursor-pointer relative overflow-hidden group",
+                        formData.categories.includes(cat.slug) 
+                          ? "border-primary bg-primary/5 ring-2 ring-primary/20" 
+                          : "border-zinc-100 bg-white hover:border-zinc-200"
                       )}
                     >
                       <div className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-                        formData.categories.includes(cat) ? "bg-primary text-zinc-900" : "bg-zinc-50 text-zinc-300"
+                        "w-9 h-9 rounded-lg flex items-center justify-center transition-all border",
+                        formData.categories.includes(cat.slug) 
+                          ? "bg-primary border-primary text-zinc-900 shadow-sm" 
+                          : "bg-zinc-50 border-zinc-100 text-zinc-400 group-hover:bg-primary/5 group-hover:text-primary"
                       )}>
-                        <Briefcase className="w-4 h-4" />
+                        {getCategoryIcon(cat.icon)}
                       </div>
-                      <span className="text-xs font-bold text-zinc-900 tracking-tight">{cat}</span>
-                      {formData.categories.includes(cat) && <Check className="absolute right-4 w-4 h-4 text-primary stroke-[3]" />}
+                      <div className="text-left flex-1 pr-6">
+                        <span className="text-xs font-bold text-zinc-950 block leading-tight">{cat.name}</span>
+                        <span className="text-[9px] text-zinc-500 font-bold block mt-0.5 leading-tight">{cat.description || "Accept requests under this category"}</span>
+                      </div>
+                      {formData.categories.includes(cat.slug) && (
+                        <div className="absolute right-4 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                          <Check className="w-3 h-3 text-zinc-900 stroke-[4]" />
+                        </div>
+                      )}
                     </div>
                   ))}
                </div>
                <div className="p-3 bg-zinc-50 rounded-xl flex gap-2.5 border border-zinc-100">
                   <Info className="w-4 h-4 text-primary shrink-0" />
-                  <p className="text-[9px] font-bold text-zinc-500 leading-relaxed italic">You can change these categories anytime from your profile settings.</p>
+                  <p className="text-[9px] font-bold text-zinc-500 leading-relaxed italic">You can change these service categories anytime from your driver settings.</p>
                </div>
             </div>
 
@@ -434,11 +787,11 @@ const DriverAuthPage = () => {
 
             <div className="pt-2">
                <Button 
-                 disabled={!formData.areas}
+                 disabled={!formData.areas || loading}
                  className="w-full h-11 rounded-xl bg-primary text-zinc-900 text-sm font-bold shadow-lg shadow-primary/20 transition-all"
-                 onClick={() => navigate("/driver/subscribe")}
+                 onClick={handleSubmitOnboarding}
                >
-                  Complete Onboarding
+                  {loading ? "Completing..." : "Complete Onboarding"}
                </Button>
             </div>
           </div>
@@ -458,7 +811,7 @@ const DriverAuthPage = () => {
            animate={{ opacity: 1, x: 0 }}
            exit={{ opacity: 0, x: -20 }}
            transition={{ duration: 0.3 }}
-        >
+         >
            {renderContent()}
         </motion.div>
       </AnimatePresence>
@@ -467,3 +820,4 @@ const DriverAuthPage = () => {
 };
 
 export default DriverAuthPage;
+

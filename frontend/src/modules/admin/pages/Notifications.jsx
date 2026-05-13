@@ -1,129 +1,93 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Bell, Truck, CreditCard, 
+  Bell, Truck, CreditCard, Users,
   Layers, Settings, AlertTriangle,
   Clock, CheckCircle2, MoreVertical,
   Mail, MessageSquare, ShieldCheck,
-  Filter, Trash2, Ghost
+  Filter, Trash2, Ghost, Send
 } from "lucide-react";
 import { PageHeader } from '../components/common/PageHeader';
 import { Button } from "@/components/ui/button";
-import { mockNotifications } from '../data/mockData';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Toast } from '../components/common/Toast';
 
-const Notifications = () => {
+const Broadcasts = () => {
   const [activeFilter, setActiveFilter] = React.useState('all');
-  const [notifications, setNotifications] = React.useState(mockNotifications);
+  const [broadcasts, setBroadcasts] = React.useState([
+    { id: 1, type: 'vendor', title: 'New Platform Rules', message: 'All vendors must re-verify their documents.', time: '2 hours ago', audience: 'All Vendors' },
+    { id: 2, type: 'user', title: 'Holiday Discount', message: 'Get 20% off on your next ride!', time: '1 day ago', audience: 'All Users' },
+  ]);
   const [toast, setToast] = React.useState({ show: false, message: '', type: 'success' });
+  const [isCreating, setIsCreating] = React.useState(false);
+  const [newBroadcast, setNewBroadcast] = React.useState({ title: '', message: '', target: 'vendor' });
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
-  const [digestSettings, setDigestSettings] = React.useState({
-    daily: true,
-    instant: true
-  });
-
-  const toggleDigest = (key) => {
-    const newState = !digestSettings[key];
-    setDigestSettings(prev => ({ ...prev, [key]: newState }));
-    showToast(`${key === 'daily' ? 'Daily Summary' : 'Instant Critical'} ${newState ? 'enabled' : 'disabled'}`, newState ? 'success' : 'info');
-  };
-
-  const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-    showToast("All notifications marked as read");
-  };
-
-  const handleClearAll = () => {
-    setNotifications([]);
-    showToast("Notification center cleared", "error");
+  const handleSendBroadcast = () => {
+    if(!newBroadcast.title || !newBroadcast.message) {
+      showToast('Please fill all fields', 'error');
+      return;
+    }
+    setBroadcasts(prev => [{
+      id: Date.now(),
+      type: newBroadcast.target,
+      title: newBroadcast.title,
+      message: newBroadcast.message,
+      time: 'Just now',
+      audience: newBroadcast.target === 'vendor' ? 'All Vendors' : 'All Users'
+    }, ...prev]);
+    setIsCreating(false);
+    setNewBroadcast({ title: '', message: '', target: 'vendor' });
+    showToast('Broadcast sent successfully', 'success');
   };
 
   const handleDelete = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    showToast("Notification removed");
+    setBroadcasts(prev => prev.filter(n => n.id !== id));
+    showToast("Broadcast removed");
   };
 
-  const filteredNotifications = notifications.filter(n => {
+  const filteredBroadcasts = broadcasts.filter(n => {
     if (activeFilter === 'all') return true;
-    if (activeFilter === 'subs') return n.type === 'subscription';
     return n.type === activeFilter;
   });
-
-  const counts = {
-    all: notifications.length,
-    vendor: notifications.filter(n => n.type === 'vendor').length,
-    subs: notifications.filter(n => n.type === 'subscription').length,
-    leads: notifications.filter(n => n.type === 'leads').length,
-    system: notifications.filter(n => !['vendor', 'subscription', 'leads'].includes(n.type)).length,
-  };
-
-  const getIcon = (type) => {
-    switch (type) {
-      case 'vendor': return <Truck className="w-5 h-5 text-primary" />;
-      case 'subscription': return <CreditCard className="w-5 h-5 text-emerald-500" />;
-      case 'leads': return <Layers className="w-5 h-5 text-blue-500" />;
-      default: return <Bell className="w-5 h-5 text-zinc-500" />;
-    }
-  };
-
-  const getBadgeColor = (type) => {
-    switch (type) {
-      case 'vendor': return "bg-primary/10 text-primary border-primary/20";
-      case 'subscription': return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
-      case 'leads': return "bg-blue-500/10 text-blue-500 border-blue-500/20";
-      default: return "bg-zinc-800 text-zinc-500 border-zinc-700";
-    }
-  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <PageHeader 
-        title="System Notifications" 
-        subtitle="Manage platform alerts and administrative reports" 
+        title="Admin Broadcast" 
+        subtitle="Push notifications and announcements to users and vendors" 
         actions={
           <div className="flex items-center gap-2">
              <Button 
-              variant="outline" 
-              onClick={handleMarkAllRead}
-              className="border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-400 text-[10px] font-black uppercase tracking-widest h-10 px-4 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-all"
+              onClick={() => setIsCreating(true)}
+              className="bg-primary text-black font-black uppercase text-[10px] tracking-widest h-10 px-6 rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
              >
-                Mark All Read
-             </Button>
-             <Button 
-              variant="outline" 
-              onClick={handleClearAll}
-              className="border-rose-500/20 bg-rose-500/5 text-rose-500 text-[10px] font-black uppercase tracking-widest h-10 px-4 rounded-xl hover:bg-rose-500/10 transition-colors"
-             >
-                Clear All
+                <Send className="w-4 h-4 mr-2" />
+                New Broadcast
              </Button>
           </div>
         }
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-         {/* Filter Sidebar */}
          <div className="space-y-6">
             <div className="admin-card p-6 bg-zinc-50 dark:bg-zinc-950/20 border-zinc-200 dark:border-zinc-900 overflow-hidden relative group">
                <div className="relative z-10 space-y-6">
                   <h3 className="text-xs font-black text-zinc-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
                      <Filter className="w-4 h-4 text-primary" />
-                     Alert Categories
+                     Broadcast Targets
                   </h3>
                   
                   <div className="space-y-2">
                      {[
-                       { id: 'all', label: 'All Alerts', count: counts.all },
-                       { id: 'vendor', label: 'Vendor Events', count: counts.vendor },
-                       { id: 'subs', label: 'Subscription Alerts', count: counts.subs },
-                       { id: 'leads', label: 'Leads activity', count: counts.leads },
-                       { id: 'system', label: 'System Health', count: counts.system },
+                       { id: 'all', label: 'All History' },
+                       { id: 'vendor', label: 'Vendors Only' },
+                       { id: 'user', label: 'Users Only' },
                      ].map((filter) => (
                        <button
                          key={filter.id}
@@ -136,135 +100,106 @@ const Notifications = () => {
                          )}
                        >
                          <span className="text-[10px] font-black uppercase tracking-widest">{filter.label}</span>
-                         <Badge className={cn(
-                            "text-[9px] transition-all border-none",
-                            activeFilter === filter.id 
-                                ? "bg-primary text-black" 
-                                : "bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-500 group-hover/btn:bg-zinc-200 dark:group-hover/btn:bg-zinc-800"
-                         )}>
-                            {filter.count}
-                         </Badge>
                        </button>
                      ))}
                   </div>
                </div>
-               <Bell className="absolute -right-4 -bottom-4 w-32 h-32 text-primary opacity-[0.02] rotate-[-15deg]" />
-            </div>
-
-            <div className="admin-card p-6 bg-zinc-50 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-900">
-               <h3 className="text-xs font-black text-zinc-900 dark:text-white uppercase tracking-widest flex items-center gap-2 mb-4">
-                  <Settings className="w-4 h-4 text-zinc-500" />
-                  Email Digest
-               </h3>
-                <div className="space-y-4">
-                   <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900">
-                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Daily Summary</span>
-                      <div 
-                        onClick={() => toggleDigest('daily')}
-                        className={cn(
-                          "w-8 h-4 rounded-full relative p-0.5 border cursor-pointer transition-all duration-300",
-                          digestSettings.daily ? "bg-emerald-500/20 border-emerald-500/20" : "bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
-                        )}
-                      >
-                         <div className={cn(
-                           "w-3 h-3 rounded-full transition-all duration-300 absolute top-0.5",
-                           digestSettings.daily ? "bg-emerald-500 translate-x-3.5" : "bg-zinc-400 translate-x-0"
-                         )} />
-                      </div>
-                   </div>
-                   <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900">
-                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Instant Critical</span>
-                      <div 
-                        onClick={() => toggleDigest('instant')}
-                        className={cn(
-                          "w-8 h-4 rounded-full relative p-0.5 border cursor-pointer transition-all duration-300",
-                          digestSettings.instant ? "bg-emerald-500/20 border-emerald-500/20" : "bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
-                        )}
-                      >
-                         <div className={cn(
-                           "w-3 h-3 rounded-full transition-all duration-300 absolute top-0.5",
-                           digestSettings.instant ? "bg-emerald-500 translate-x-3.5" : "bg-zinc-400 translate-x-0"
-                         )} />
-                      </div>
-                   </div>
-                </div>
             </div>
          </div>
 
-         {/* Notifications List */}
          <div className="lg:col-span-3 space-y-4">
-            {filteredNotifications.length > 0 ? (
-               filteredNotifications.map((notification, i) => (
+            {isCreating && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                className="admin-card p-6 border-zinc-200 dark:border-zinc-900 space-y-4 bg-zinc-50/50"
+              >
+                <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2">
+                  <Send className="w-4 h-4 text-primary" />
+                  Compose Broadcast
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1 block">Title</label>
+                    <input 
+                      type="text" 
+                      value={newBroadcast.title}
+                      onChange={(e) => setNewBroadcast(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="e.g., Important Platform Update" 
+                      className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold placeholder:text-zinc-400 focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1 block">Message</label>
+                    <textarea 
+                      value={newBroadcast.message}
+                      onChange={(e) => setNewBroadcast(prev => ({ ...prev, message: e.target.value }))}
+                      placeholder="Enter the broadcast message..." 
+                      className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold placeholder:text-zinc-400 focus:outline-none focus:border-primary min-h-[100px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1 block">Target Audience</label>
+                    <select 
+                      value={newBroadcast.target}
+                      onChange={(e) => setNewBroadcast(prev => ({ ...prev, target: e.target.value }))}
+                      className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-primary"
+                    >
+                      <option value="vendor">All Vendors</option>
+                      <option value="user">All Users</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="ghost" onClick={() => setIsCreating(false)} className="text-zinc-500 hover:bg-zinc-200 font-black uppercase text-[10px] tracking-widest">Cancel</Button>
+                    <Button onClick={handleSendBroadcast} className="bg-primary text-black hover:bg-primary/90 font-black uppercase text-[10px] tracking-widest">Send Now</Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {filteredBroadcasts.length > 0 ? (
+               filteredBroadcasts.map((b, i) => (
                   <motion.div 
-                    key={notification.id}
+                    key={b.id}
                     initial={{ opacity: 0, y: 10, x: -10 }}
                     animate={{ opacity: 1, y: 0, x: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className={cn(
-                      "admin-card p-6 border-zinc-200 dark:border-zinc-900 flex items-start gap-4 transition-all group cursor-pointer relative",
-                      !notification.isRead ? "bg-zinc-100 dark:bg-zinc-900/50 border-l-4 border-l-primary" : "opacity-80 hover:opacity-100"
-                    )}
+                    className="admin-card p-6 border-zinc-200 dark:border-zinc-900 flex items-start gap-4 transition-all group"
                   >
                      <div className={cn(
                        "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border",
-                       getBadgeColor(notification.type)
+                       b.type === 'vendor' ? "bg-primary/10 border-primary/20 text-primary" : "bg-blue-500/10 border-blue-500/20 text-blue-500"
                      )}>
-                        {getIcon(notification.type)}
+                        {b.type === 'vendor' ? <Truck className="w-5 h-5" /> : <Users className="w-5 h-5" />}
                      </div>
 
                      <div className="flex-1 space-y-1">
                         <div className="flex items-center justify-between">
-                           <h4 className="text-sm font-black text-zinc-900 dark:text-white uppercase italic tracking-tighter">{notification.title}</h4>
+                           <h4 className="text-sm font-black text-zinc-900 dark:text-white uppercase italic tracking-tighter">{b.title}</h4>
                            <span className="text-[9px] font-bold text-zinc-600 uppercase flex items-center gap-1.5">
                               <Clock className="w-3 h-3" />
-                              {notification.time}
+                              {b.time}
                            </span>
                         </div>
-                        <p className="text-xs text-zinc-500 font-bold leading-relaxed uppercase tracking-tight">{notification.message}</p>
-                        
-                        {!notification.isRead && (
-                           <div className="pt-3 flex gap-4">
-                              <Button 
-                                variant="link" 
-                                onClick={() => {
-                                  setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n));
-                                  showToast("Issue reviewed");
-                                }}
-                                className="p-0 h-fit text-primary font-black uppercase text-[10px] tracking-widest"
-                              >
-                                Review Issue
-                              </Button>
-                              <Button 
-                                variant="link" 
-                                onClick={() => handleDelete(notification.id)}
-                                className="p-0 h-fit text-zinc-600 font-black uppercase text-[10px] tracking-widest"
-                              >
-                                Dismiss
-                              </Button>
-                           </div>
-                        )}
+                        <p className="text-xs text-zinc-500 font-bold leading-relaxed uppercase tracking-tight">{b.message}</p>
+                        <div className="pt-2">
+                           <Badge className="bg-zinc-100 text-zinc-500 border-none uppercase tracking-widest text-[8px]">{b.audience}</Badge>
+                        </div>
                      </div>
 
-                     <div className="p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <MoreVertical className="w-4 h-4 text-zinc-700" />
-                     </div>
+                     <Button variant="ghost" onClick={() => handleDelete(b.id)} className="opacity-0 group-hover:opacity-100 text-rose-500 hover:text-rose-600 hover:bg-rose-50 p-2 h-8 w-8 rounded-full transition-all">
+                       <Trash2 className="w-4 h-4" />
+                     </Button>
                   </motion.div>
                ))
             ) : (
                <div className="admin-card p-20 flex flex-col items-center justify-center opacity-30 text-center gap-4">
                   <Ghost className="w-20 h-20 text-zinc-500" />
                   <div className="space-y-1">
-                     <h3 className="text-xl font-black text-zinc-900 dark:text-white uppercase italic">All caught up!</h3>
-                     <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">No new alerts at this moment</p>
+                     <h3 className="text-xl font-black text-zinc-900 dark:text-white uppercase italic">No Broadcasts</h3>
+                     <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">No history found for this category</p>
                   </div>
                </div>
             )}
-            
-            <div className="pt-8 flex justify-center">
-               <Button variant="ghost" className="text-zinc-500 hover:text-zinc-900 dark:text-white font-black uppercase text-[10px] tracking-[0.3em] gap-2">
-                  Load Archived Alerts
-               </Button>
-            </div>
          </div>
       </div>
        <Toast 
@@ -277,4 +212,4 @@ const Notifications = () => {
   );
 };
 
-export default Notifications;
+export default Broadcasts;

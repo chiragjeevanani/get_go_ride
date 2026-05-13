@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopHeader } from './TopHeader';
 import { useAdminTheme } from '../../hooks/useAdminTheme';
@@ -8,6 +8,19 @@ import { cn } from "@/lib/utils";
 const AdminLayout = () => {
   const [isCollapsed, setCollapsed] = useState(false);
   const { theme, toggleTheme } = useAdminTheme();
+
+  const token = localStorage.getItem('gtgl_admin_token') || localStorage.getItem('gtgl_token');
+  let isAdmin = false;
+  try {
+    const user = JSON.parse(localStorage.getItem('gtgl_admin_user') || localStorage.getItem('gtgl_user') || '{}');
+    isAdmin = user && user.role === 'admin';
+  } catch (e) {
+    isAdmin = false;
+  }
+
+  if (!token || !isAdmin) {
+    return <Navigate to="/admin/login" replace />;
+  }
 
   return (
     <div className={cn(

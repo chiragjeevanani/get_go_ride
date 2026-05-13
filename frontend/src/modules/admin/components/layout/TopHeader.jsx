@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Bell, Search, User, Menu, 
   Settings, LogOut, ChevronDown, Shield 
@@ -16,6 +17,18 @@ import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from '../common/ThemeToggle';
 
 export const TopHeader = ({ theme, toggleTheme }) => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('gtgl_token');
+    localStorage.removeItem('gtgl_refresh_token');
+    localStorage.removeItem('gtgl_user');
+    localStorage.removeItem('gtgl_admin_token');
+    localStorage.removeItem('gtgl_admin_refresh_token');
+    localStorage.removeItem('gtgl_admin_user');
+    navigate('/admin/login');
+  };
+
   return (
     <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-40 transition-all admin-theme">
       {/* Search Bar Area */}
@@ -69,7 +82,9 @@ export const TopHeader = ({ theme, toggleTheme }) => {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-3 pl-2 pr-1 h-11 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 group">
                <div className="flex flex-col items-end text-right hidden md:flex">
-                  <span className="text-xs font-bold text-zinc-900 dark:text-white leading-none">Super Admin</span>
+                  <span className="text-xs font-bold text-zinc-900 dark:text-white leading-none">
+                     {JSON.parse(localStorage.getItem('gtgl_admin_user') || localStorage.getItem('gtgl_user') || '{}')?.name || 'Super Admin'}
+                  </span>
                   <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mt-1">Management Hub</span>
                </div>
                <div className="w-10 h-10 rounded-lg bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-zinc-900 shadow-lg shadow-zinc-200 dark:shadow-none group-hover:scale-105 transition-transform">
@@ -91,7 +106,7 @@ export const TopHeader = ({ theme, toggleTheme }) => {
                <span className="text-[11px] font-bold uppercase tracking-widest">System Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800 my-1" />
-            <DropdownMenuItem className="p-3 rounded-lg flex items-center gap-3 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-500 cursor-pointer font-bold transition-colors">
+            <DropdownMenuItem onClick={handleLogout} className="p-3 rounded-lg flex items-center gap-3 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-500 cursor-pointer font-bold transition-colors">
                <div className="w-8 h-8 rounded-md bg-rose-50 dark:bg-rose-950/50 flex items-center justify-center">
                   <LogOut className="w-4 h-4 text-rose-500" />
                </div>

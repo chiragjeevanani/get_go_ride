@@ -32,6 +32,7 @@ export const LineChart = ({ data, dataKey, color = "#52525b" }) => {
         <YAxis 
           axisLine={false} 
           tickLine={false} 
+          allowDecimals={false}
           tick={{ fill: 'var(--color-text-muted-admin)', fontSize: 10, fontWeight: 'bold' }}
         />
         <Tooltip 

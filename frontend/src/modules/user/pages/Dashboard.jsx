@@ -10,9 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { userApi, requirementApi, categoryApi } from "@/lib/api";
+import { toast } from "sonner";
 import goodsImg from "@/assets/categories/Truck-removebg-preview.png";
 import houseImg from "@/assets/categories/shifting.jpg";
-import passengerImg from "@/assets/categories/passenger-removebg-preview.png";
 import emergencyImg from "@/assets/categories/Emergency-removebg-preview.png";
 import truck2Img from "@/assets/categories/truck2-removebg-preview.png";
 import profileImg from "@/assets/profile.jpg";
@@ -22,28 +23,61 @@ const Dashboard = () => {
   const [pickup, setPickup] = useState("");
   const [drop, setDrop] = useState("");
   const [showAllCategories, setShowAllCategories] = useState(false);
-  const [recentRequests, setRecentRequests] = useState([
-    { id: "REQ-101", service: "House Shifting", status: "Responding", responses: 4, date: "Today, 12:30 PM" },
-    { id: "REQ-102", service: "Goods Transport", status: "Finalized", responses: 5, date: "Yesterday" },
-  ]);
+  const [recentRequests, setRecentRequests] = useState([]);
+  const [balance, setBalance] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("user_requests") || "[]");
-    if (saved.length > 0) {
-      setRecentRequests(prev => {
-        const existingIds = new Set(prev.map(r => r.id));
-        const unique = saved.filter(r => !existingIds.has(r.id));
-        return [...unique, ...prev].slice(0, 5); // Show latest 5
-      });
-    }
+    const fetchData = async () => {
+      try {
+        const results = await Promise.allSettled([
+          userApi.getProfile(),
+          requirementApi.getMy(),
+          categoryApi.getAll()
+        ]);
+        
+        const [profileResult, requirementsResult, categoriesResult] = results;
+        
+        if (profileResult.status === 'fulfilled') {
+           setBalance(profileResult.value?.data?.wallet?.balance || 0);
+        }
+        
+        if (categoriesResult.status === 'fulfilled') {
+           const cats = categoriesResult.value?.data || [];
+           setCategories(cats.map(cat => {
+             let defaultImg = goodsImg;
+             if (cat.slug === 'house-shifting') defaultImg = houseImg;
+             if (cat.slug === 'emergency') defaultImg = emergencyImg;
+             return {
+               id: cat.slug,
+               title: cat.name,
+               image: cat.image || defaultImg
+             };
+           }));
+        }
+        
+        if (requirementsResult.status === 'fulfilled') {
+           const reqs = requirementsResult.value?.data || [];
+           const mapped = reqs.slice(0, 5).map(req => ({
+             id: req.requirementId,
+             _id: req._id,
+             service: `${(req.serviceType || 'Goods').toUpperCase()} - ${req.vehicleType || 'Any'}`,
+             status: ['pending', 'bidding', 'open'].includes(req.status) ? 'Responding' : (req.status === 'accepted' ? 'Finalized' : (req.status || 'Open').charAt(0).toUpperCase() + (req.status || 'Open').slice(1)),
+             responses: req.bids?.length || 0,
+             date: new Date(req.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+           }));
+           setRecentRequests(mapped);
+        }
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
-
-  const categories = [
-    { id: "goods", title: "Goods Transport", image: goodsImg },
-    { id: "house", title: "House Shifting", image: houseImg },
-    { id: "passenger", title: "Passenger", image: passengerImg },
-    { id: "emergency", title: "Emergency", image: emergencyImg },
-  ];
 
   const handlePostRequirement = () => {
     navigate("/user/post-requirement");
@@ -66,7 +100,7 @@ const Dashboard = () => {
             <div className="w-3.5 h-3.5 bg-primary rounded-full flex items-center justify-center shadow-inner">
                <span className="text-[8px] font-black">₹</span>
             </div>
-            <span className="text-[9px] font-black tracking-tighter uppercase">2,450</span>
+            <span className="text-[9px] font-black tracking-tighter uppercase">{balance.toLocaleString()}</span>
           </div>
           
           <div 
@@ -194,7 +228,7 @@ const Dashboard = () => {
 
         <div className="flex flex-col gap-2.5">
           {recentRequests.map((req) => (
-            <Card key={req.id} className="border-2 border-primary/20 shadow-premium hover:shadow-md transition-all rounded-xl overflow-hidden bg-white cursor-pointer" onClick={() => navigate("/user/requests")}>
+            <Card key={req._id || req.id} className="border-2 border-primary/20 shadow-premium hover:shadow-md transition-all rounded-xl overflow-hidden bg-white cursor-pointer" onClick={() => navigate("/user/requests")}>
               <CardContent className="p-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-zinc-50 rounded-lg text-zinc-400 group-hover:bg-primary/10 transition-colors border border-zinc-100">

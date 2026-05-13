@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Search, MessageSquare, ChevronRight, 
   Clock, CheckCircle2, MoreVertical, Zap,
-  CheckCheck, Archive, Settings, HelpCircle
+  CheckCheck, Archive, Settings, HelpCircle, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,47 +20,66 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useDriverState } from "../hooks/useDriverState";
 import { cn } from "@/lib/utils";
+import { chatApi } from "@/lib/api";
 
 const ChatListPage = () => {
   const navigate = useNavigate();
-  const { leads } = useDriverState();
   const [searchTerm, setSearchTerm] = useState("");
+  const [chats, setChats] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock active chats based on leads (simulating accepted leads with conversations)
-  const activeChats = [
-    {
-      id: "L-001",
-      userName: "John Doe",
-      lastMsg: "Thanks, let me check and get back to you.",
-      time: "12:35 PM",
-      unread: 0,
-      service: "Goods Transport",
-      status: "Negotiating"
-    },
-    {
-      id: "L-002",
-      userName: "Anita Sharma",
-      lastMsg: "Can we do it for ₹1800?",
-      time: "11:20 AM",
-      unread: 2,
-      service: "House Shifting",
-      status: "Waiting"
-    },
-    {
-      id: "L-003",
-      userName: "Vikram Singh",
-      lastMsg: "See you at 4 PM tomorrow.",
-      time: "Yesterday",
-      unread: 0,
-      service: "Passenger",
-      status: "Finalized"
+  useEffect(() => {
+    loadActiveChats();
+  }, []);
+
+  const loadActiveChats = async () => {
+    try {
+      setLoading(true);
+      const res = await chatApi.getDriverActiveChats();
+      const activeChats = res.data || res || [];
+      
+      const formatted = activeChats.map((c) => {
+        const reqInfo = c.requirement || {};
+        const userInfo = reqInfo.user || {};
+        
+        let timeStr = "Just now";
+        try {
+          const d = new Date(c.lastMessage?.createdAt || reqInfo.createdAt);
+          timeStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        } catch (e) {}
+
+        return {
+          id: c.id, // Bid ID
+          userName: userInfo.name || "Customer",
+          lastMsg: c.lastMessage?.text || `Proposal sent: ₹${c.amount}`,
+          time: timeStr,
+          unread: 0,
+          service: reqInfo.serviceType ? reqInfo.serviceType.toUpperCase() : "LOGISTICS",
+          status: c.status === "accepted" ? "Finalized" : "Negotiating"
+        };
+      });
+
+      setChats(formatted);
+    } catch (err) {
+      console.error("Error loading driver active chats:", err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const filteredChats = activeChats.filter(chat => 
+  const filteredChats = chats.filter(chat => 
     chat.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     chat.service.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-40 bg-white h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mt-4">Retrieving active chats...</p>
+      </div>
+    );
+  }
 
   return (
     <motion.div 
