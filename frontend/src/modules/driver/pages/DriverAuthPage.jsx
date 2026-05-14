@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ChevronLeft, Phone, MapPin, ArrowRight, ShieldCheck, 
-  Truck, Check, User, Briefcase, MapPinned, Info, Zap, Home
+  Truck, Check, User, Briefcase, MapPinned, Info, Zap, Home, FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import Lottie from "lottie-react";
 import loginAnimation from "@/assets/Lottie/LoginPage.json";
 import { cn } from "@/lib/utils";
 import { authApi, categoryApi, vehicleApi, vendorApi } from "@/lib/api";
+import { storage } from "@/lib/storage";
 import { toast } from "sonner";
 import { useEffect } from "react";
 
@@ -31,7 +32,10 @@ const DriverAuthPage = () => {
     regNumber: "",
     categories: [],
     areas: "",
-    profileImage: null
+    profileImage: null,
+    licenseDoc: null,
+    rcDoc: null,
+    aadharDoc: null
   });
 
   const [backendCategories, setBackendCategories] = useState([]);
@@ -106,9 +110,12 @@ const DriverAuthPage = () => {
       const { accessToken, refreshToken, vendor, isNewUser } = res.data;
       setIsNewUser(isNewUser);
       
+      // Clear other module tokens to prevent cross-contamination
+      storage.clearAll();
+
       localStorage.setItem('gtgl_driver_token', accessToken);
       localStorage.setItem('gtgl_driver_refresh_token', refreshToken);
-      localStorage.setItem('gtgl_driver', JSON.stringify(vendor));
+      storage.setDriver(vendor);
       
       toast.success("Verified successfully!");
 
@@ -129,6 +136,13 @@ const DriverAuthPage = () => {
   const handleSubmitOnboarding = async () => {
     try {
       setLoading(true);
+      
+      // Prepare documents array if provided
+      const documents = [];
+      if (formData.licenseDoc) documents.push({ title: "Driving License", url: formData.licenseDoc });
+      if (formData.rcDoc) documents.push({ title: "Vehicle RC", url: formData.rcDoc });
+      if (formData.aadharDoc) documents.push({ title: "Aadhar Card", url: formData.aadharDoc });
+
       const payload = {
         name: formData.name,
         profileImage: formData.profileImage,
@@ -138,13 +152,14 @@ const DriverAuthPage = () => {
         vehicleCapacity: formData.capacity,
         serviceCategories: formData.categories,
         operatingAreas: formData.areas,
-        location: formData.areas || "Default Local"
+        location: formData.areas || "Default Local",
+        documents: documents
       };
       
       const res = await vendorApi.submitOnboarding(payload);
       
       if (res.data) {
-        localStorage.setItem('gtgl_driver', JSON.stringify(res.data));
+        storage.setDriver(res.data);
       }
       toast.success("Profile saved successfully!");
       navigate("/driver/subscribe");
@@ -161,6 +176,22 @@ const DriverAuthPage = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData(prev => ({ ...prev, profileImage: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDocUpload = (e, field) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size too large. Max 5MB allowed.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, [field]: reader.result }));
+        toast.success(`${field.replace('Doc', '').toUpperCase()} uploaded`);
       };
       reader.readAsDataURL(file);
     }
@@ -320,8 +351,8 @@ const DriverAuthPage = () => {
           <div className="flex flex-col py-6 px-5 space-y-6">
             <div className="space-y-3">
                <div className="flex justify-between items-center mb-2">
-                 <Progress value={25} className="h-1.5 flex-1 mr-3 bg-zinc-100" />
-                 <span className="text-[10px] font-bold text-primary tracking-tight">Step 1/4</span>
+                 <Progress value={20} className="h-1.5 flex-1 mr-3 bg-zinc-100" />
+                 <span className="text-[10px] font-bold text-primary tracking-tight">Step 1/5</span>
                </div>
                <div className="space-y-0.5">
                   <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Personal Details</h1>
@@ -394,8 +425,8 @@ const DriverAuthPage = () => {
           <div className="flex flex-col py-6 px-5 space-y-6">
             <div className="space-y-3">
                <div className="flex justify-between items-center mb-2">
-                 <Progress value={50} className="h-1.5 flex-1 mr-3 bg-zinc-100" />
-                 <span className="text-[10px] font-bold text-primary tracking-tight">Step 2/4</span>
+                 <Progress value={40} className="h-1.5 flex-1 mr-3 bg-zinc-100" />
+                 <span className="text-[10px] font-bold text-primary tracking-tight">Step 2/5</span>
                </div>
                <div className="space-y-0.5">
                   <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Vehicle Details</h1>
@@ -687,8 +718,8 @@ const DriverAuthPage = () => {
           <div className="flex flex-col py-6 px-5 space-y-6">
             <div className="space-y-3">
                <div className="flex justify-between items-center mb-2">
-                 <Progress value={75} className="h-1.5 flex-1 mr-3 bg-zinc-100" />
-                 <span className="text-[10px] font-bold text-primary tracking-tight">Step 3/4</span>
+                 <Progress value={60} className="h-1.5 flex-1 mr-3 bg-zinc-100" />
+                 <span className="text-[10px] font-bold text-primary tracking-tight">Step 3/5</span>
                </div>
                <div className="space-y-0.5">
                   <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Service Categories</h1>
@@ -752,8 +783,8 @@ const DriverAuthPage = () => {
           <div className="flex flex-col py-6 px-5 space-y-6">
             <div className="space-y-3">
                <div className="flex justify-between items-center mb-2">
-                 <Progress value={100} className="h-1.5 flex-1 mr-3 bg-zinc-100" />
-                 <span className="text-[10px] font-bold text-primary tracking-tight">Final Step</span>
+                 <Progress value={80} className="h-1.5 flex-1 mr-3 bg-zinc-100" />
+                 <span className="text-[10px] font-bold text-primary tracking-tight">Step 4/5</span>
                </div>
                <div className="space-y-0.5">
                   <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Operating Areas</h1>
@@ -775,13 +806,6 @@ const DriverAuthPage = () => {
                        />
                     </div>
                   </div>
-                  <div className="bg-emerald-50 p-4 rounded-xl flex gap-3.5 border border-emerald-100">
-                     <ShieldCheck className="w-6 h-6 text-emerald-500 shrink-0" />
-                     <div className="space-y-0.5">
-                        <p className="text-[11px] font-bold text-emerald-800 leading-tight">Verification in Progress</p>
-                        <p className="text-[9px] font-semibold text-emerald-600 leading-relaxed tracking-tight">Our team will verify your vehicle details within 24 hours.</p>
-                     </div>
-                  </div>
                </div>
             </div>
 
@@ -789,9 +813,84 @@ const DriverAuthPage = () => {
                <Button 
                  disabled={!formData.areas || loading}
                  className="w-full h-11 rounded-xl bg-primary text-zinc-900 text-sm font-bold shadow-lg shadow-primary/20 transition-all"
+                 onClick={handleNext}
+               >
+                  Next Step
+               </Button>
+            </div>
+          </div>
+        );
+
+      case 8: // Wizard Step 5: Document Upload
+        return (
+          <div className="flex flex-col py-6 px-5 space-y-6">
+            <div className="space-y-3">
+               <div className="flex justify-between items-center mb-2">
+                 <Progress value={100} className="h-1.5 flex-1 mr-3 bg-zinc-100" />
+                 <span className="text-[10px] font-bold text-primary tracking-tight">Final Step</span>
+               </div>
+               <div className="space-y-0.5">
+                  <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Document Verification</h1>
+                  <p className="text-[10px] text-zinc-500 font-bold tracking-tight">Upload docs to get verified badge</p>
+               </div>
+            </div>
+
+            <div className="space-y-4 flex-1 overflow-y-auto no-scrollbar">
+               {[
+                 { id: 'license', label: 'Driving License', field: 'licenseDoc' },
+                 { id: 'rc', label: 'Vehicle RC', field: 'rcDoc' },
+                 { id: 'aadhar', label: 'Aadhar Card', field: 'aadharDoc' }
+               ].map((doc) => (
+                 <div key={doc.id} className="space-y-2">
+                    <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1 uppercase">{doc.label}</label>
+                    <div 
+                      onClick={() => document.getElementById(`${doc.id}-upload`).click()}
+                      className={cn(
+                        "h-24 w-full rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-1 cursor-pointer transition-all relative overflow-hidden",
+                        formData[doc.field] ? "border-primary bg-primary/5" : "border-zinc-200 bg-zinc-50 hover:border-primary/40"
+                      )}
+                    >
+                       {formData[doc.field] ? (
+                         <>
+                            <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center z-10">
+                               <Check className="w-3 h-3 text-zinc-900 stroke-[4]" />
+                            </div>
+                            <img src={formData[doc.field]} alt={doc.label} className="w-full h-full object-cover opacity-60" />
+                            <span className="absolute bottom-2 bg-white/90 px-3 py-1 rounded-full text-[8px] font-black uppercase text-zinc-900 shadow-sm border border-zinc-100">Tap to Change</span>
+                         </>
+                       ) : (
+                         <>
+                            <FileText className="w-6 h-6 text-zinc-300" />
+                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Click to Upload</span>
+                         </>
+                       )}
+                    </div>
+                    <input 
+                      id={`${doc.id}-upload`}
+                      type="file"
+                      accept="image/*,application/pdf"
+                      className="hidden"
+                      onChange={(e) => handleDocUpload(e, doc.field)}
+                    />
+                 </div>
+               ))}
+
+               <div className="bg-emerald-50 p-4 rounded-xl flex gap-3.5 border border-emerald-100">
+                  <ShieldCheck className="w-6 h-6 text-emerald-500 shrink-0" />
+                  <div className="space-y-0.5">
+                     <p className="text-[11px] font-bold text-emerald-800 leading-tight">Fast Verification</p>
+                     <p className="text-[9px] font-semibold text-emerald-600 leading-relaxed tracking-tight">Our team will verify your vehicle details within 24 hours.</p>
+                  </div>
+               </div>
+            </div>
+
+            <div className="pt-2">
+               <Button 
+                 disabled={loading}
+                 className="w-full h-11 rounded-xl bg-primary text-zinc-900 text-sm font-bold shadow-lg shadow-primary/20 transition-all"
                  onClick={handleSubmitOnboarding}
                >
-                  {loading ? "Completing..." : "Complete Onboarding"}
+                  {loading ? "Submitting..." : "Complete Signup"}
                </Button>
             </div>
           </div>

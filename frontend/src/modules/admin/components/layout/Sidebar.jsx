@@ -55,15 +55,17 @@ export const Sidebar = ({ isCollapsed, setCollapsed }) => {
       )}
     >
       {/* Brand Logo Section */}
-      <div className="h-20 flex items-center px-6 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#09090b]">
+      <div className="h-24 flex items-center px-6 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#09090b]">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg admin-logo-accent flex items-center justify-center shrink-0 shadow-lg shadow-yellow-500/20">
-             <Shield className="w-5 h-5 text-zinc-950 dark:text-zinc-900" strokeWidth={2.5} />
-          </div>
+          <img 
+            src="/getgoride_logo_no_bg.png" 
+            alt="Logo" 
+            className="w-10 h-auto shrink-0" 
+          />
           {!isCollapsed && (
             <div className="flex flex-col">
               <span className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-tight leading-none">GetGoLoad</span>
-              <span className="text-[10px] font-bold admin-logo-text uppercase tracking-widest mt-1">Admin Panel</span>
+              <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mt-1">Admin Panel</span>
             </div>
           )}
         </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   MessageSquare, ChevronLeft, Car, ShieldCheck, FileText, 
-  MapPin, Package, CheckCircle2, AlertCircle,
+  MapPin, Package, CheckCircle2, AlertCircle, ExternalLink,
   Truck, HelpCircle, Edit3, ArrowRight, Loader2, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -153,9 +153,8 @@ const VehicleDetails = () => {
   // Required Verification Documents Mapping
   const requiredDocTypes = [
     { name: "Driving License", icon: FileText },
-    { name: "RC (Registration)", icon: ShieldCheck },
-    { name: "Vehicle Permit", icon: FileText },
-    { name: "Insurance Policy", icon: ShieldCheck }
+    { name: "Vehicle RC", icon: ShieldCheck },
+    { name: "Aadhar Card", icon: FileText }
   ];
 
   const processedDocs = requiredDocTypes.map(type => {
@@ -379,7 +378,7 @@ const VehicleDetails = () => {
                            </div>
                         ) : doc.isUploaded ? (
                            <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => setSelectedDoc(doc)}>
-                              <span className={cn("text-[9px] font-bold tracking-tight uppercase", doc.color)}>{doc.status}</span>
+                              <span className={cn("text-[9px] font-bold tracking-tight uppercase", doc.color)}>{doc.status}</span><Edit3 onClick={(e) => { e.stopPropagation(); triggerDocUpload(doc.name); }} className="w-3.5 h-3.5 ml-2 text-zinc-400 cursor-pointer" />
                               {doc.status === "Verified" ? (
                                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                               ) : doc.status === "Rejected" ? (
@@ -498,13 +497,24 @@ const VehicleDetails = () => {
         <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none rounded-[2rem] bg-white shadow-2xl">
            <div className="relative aspect-[4/3] bg-zinc-50 flex items-center justify-center p-4 overflow-hidden border-b border-zinc-100">
               {resolveDocUrl(selectedDoc?.fileUrl) ? (
-                 <motion.img 
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    src={resolveDocUrl(selectedDoc.fileUrl)} 
-                    alt={selectedDoc.name} 
-                    className="w-full h-full object-contain rounded-xl shadow-lg border border-zinc-200"
-                 />
+                  <div className="relative group/view w-full h-full">
+                    <motion.img 
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        src={resolveDocUrl(selectedDoc.fileUrl)} 
+                        alt={selectedDoc.name} 
+                        className="w-full h-full object-contain rounded-xl shadow-lg border border-zinc-200"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/view:opacity-100 transition-opacity bg-black/5 rounded-xl pointer-events-none">
+                       <Button 
+                          onClick={() => window.open(resolveDocUrl(selectedDoc.fileUrl), '_blank')}
+                          className="pointer-events-auto bg-zinc-900/80 backdrop-blur-md text-white font-bold px-4 py-2 rounded-xl flex items-center gap-2 text-[10px] uppercase tracking-widest border border-white/10"
+                       >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          Full Preview
+                       </Button>
+                    </div>
+                  </div>
               ) : (
                  <motion.div 
                     initial={{ scale: 0.9, opacity: 0 }}
@@ -536,7 +546,7 @@ const VehicleDetails = () => {
                  </div>
               </div>
               <Button onClick={() => setSelectedDoc(null)} className="w-full bg-zinc-900 text-white font-bold h-12 rounded-2xl shadow-xl shadow-zinc-900/10 hover:bg-zinc-800 transition-all">
-                 Close Preview
+                 Close
               </Button>
            </div>
         </DialogContent>

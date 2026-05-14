@@ -10,7 +10,8 @@ export const Modal = ({
   title, 
   description, 
   children, 
-  size = 'md' 
+  size = 'md',
+  compact = false
 }) => {
   const sizes = {
     sm: 'max-w-md',
@@ -47,25 +48,37 @@ export const Modal = ({
                   )}
                 >
                   {/* Header */}
-                  <div className="px-6 pt-6 pb-2 flex justify-between items-start">
-                    <div className="space-y-1">
-                      <Dialog.Title className="text-xl font-black text-zinc-900 uppercase tracking-tight">
+                  <div className={cn(
+                    "flex justify-between items-start",
+                    compact ? "px-5 pt-5 pb-1" : "px-6 pt-6 pb-2"
+                  )}>
+                    <div className="space-y-0.5">
+                      <Dialog.Title className={cn(
+                        "font-black text-zinc-900 uppercase tracking-tight",
+                        compact ? "text-base" : "text-xl"
+                      )}>
                         {title}
                       </Dialog.Title>
                       {description && (
-                        <Dialog.Description className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                        <Dialog.Description className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
                           {description}
                         </Dialog.Description>
                       )}
                     </div>
                     
-                    <Dialog.Close className="p-2 rounded-xl bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:border-zinc-300 transition-all cursor-pointer">
-                      <X className="w-4 h-4" />
+                    <Dialog.Close className={cn(
+                      "rounded-xl bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:border-zinc-300 transition-all cursor-pointer",
+                      compact ? "p-1.5" : "p-2"
+                    )}>
+                      <X className={compact ? "w-3.5 h-3.5" : "w-4 h-4"} />
                     </Dialog.Close>
                   </div>
 
                   {/* Body */}
-                  <div className="px-6 pb-6 pt-2 overflow-y-auto max-h-[85vh] admin-scrollbar">
+                  <div className={cn(
+                    "overflow-y-auto max-h-[85vh] admin-scrollbar",
+                    compact ? "px-5 pb-5 pt-1" : "px-6 pb-6 pt-2"
+                  )}>
                     {children}
                   </div>
                 </motion.div>

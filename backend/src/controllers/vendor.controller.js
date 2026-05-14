@@ -1,4 +1,5 @@
 import Vendor from '../models/Vendor.model.js';
+import SystemSetting from '../models/SystemSetting.model.js';
 import Bid from '../models/Bid.model.js';
 import Requirement from '../models/Requirement.model.js';
 import mongoose from 'mongoose';
@@ -74,7 +75,8 @@ export const submitOnboarding = async (req, res, next) => {
       vehicleCapacity, 
       serviceCategories, 
       operatingAreas, 
-      location 
+      location,
+      documents
     } = req.body;
     
     const updateFields = {
@@ -86,6 +88,15 @@ export const submitOnboarding = async (req, res, next) => {
       location,
       onboardingComplete: true
     };
+
+    if (documents && Array.isArray(documents)) {
+      updateFields.documents = documents.map(doc => ({
+        title: doc.title,
+        fileUrl: doc.url || doc.fileUrl,
+        status: 'Pending',
+        uploadedAt: new Date()
+      }));
+    }
 
     if (name !== undefined) updateFields.name = name;
     if (profileImage !== undefined) updateFields.profileImage = profileImage;
@@ -411,6 +422,39 @@ export const getMyAnalytics = async (req, res, next) => {
     };
 
     success(res, analyticsData, 'Vendor analytics retrieved successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * @route   GET /api/vendors/me/wallet
+ * @desc    Get vendor wallet balance and transactions
+ * @access  Private (Vendor)
+ */
+export const getMyWallet = async (req, res, next) => {
+  try {
+    const vendor = await Vendor.findById(req.user.id);
+    if (!vendor) return error(res, 'Vendor not found', 404, 'NOT_FOUND');
+    
+    // Auto-credit signup bonus if wallet is empty and no transactions exist
+    if ((vendor.wallet.balance || 0) === 0 && vendor.wallet.transactions.length === 0) {
+      const bonusSetting = await SystemSetting.findOne({ key: 'walletSignupBonus' });
+      const signupBonus = bonusSetting ? Number(bonusSetting.value) : 50;
+      
+      if (signupBonus > 0) {
+        vendor.wallet.balance = signupBonus;
+        vendor.wallet.transactions.push({
+          type: 'credit',
+          amount: signupBonus,
+          description: 'Welcome Sign-up Bonus',
+          date: new Date()
+        });
+        await vendor.save();
+      }
+    }
+    
+    success(res, vendor.wallet, 'Wallet retrieved successfully');
   } catch (err) {
     next(err);
   }

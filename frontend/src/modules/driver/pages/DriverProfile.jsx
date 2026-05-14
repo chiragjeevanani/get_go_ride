@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { 
-  User, Car, MapPin, IndianRupee, Camera, 
+  User, Car, MapPin, IndianRupee, Camera, FileText,
   ChevronRight, CheckCircle, ShieldCheck, LogOut, Edit3, Settings,
   BarChart2, Star, Zap, Bell, Shield, HelpCircle, X, Loader2, Plus, Check
 } from "lucide-react";
@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useDriverState } from "../hooks/useDriverState";
 import { cn } from "@/lib/utils";
 import { categoryApi, vehicleApi, vendorApi } from "@/lib/api";
+import { storage } from "@/lib/storage";
 import { toast } from "sonner";
 import profileImg from "@/assets/profile.jpg";
 
@@ -60,7 +61,7 @@ const DriverProfile = () => {
         try {
           toast.loading("Updating profile image...", { id: "avatar-update" });
           const res = await vendorApi.updateProfile({ profileImage: reader.result });
-          localStorage.setItem('gtgl_driver', JSON.stringify(res.data));
+          storage.setDriver(res.data);
           setDriver(res.data);
           toast.success("Profile photo updated successfully!", { id: "avatar-update" });
         } catch (err) {
@@ -119,7 +120,7 @@ const DriverProfile = () => {
       };
 
       const res = await vendorApi.submitOnboarding(payload);
-      localStorage.setItem('gtgl_driver', JSON.stringify(res.data));
+      storage.setDriver(res.data);
       setDriver(res.data);
       
       toast.success("Profile details updated successfully!");
@@ -134,7 +135,7 @@ const DriverProfile = () => {
   const avatar = driver.profileImage || profileImg;
 
   const menuItems = [
-    { icon: <Car className="w-4 h-4" />, label: "Vehicle Details", desc: `${driver.vehicleType || "Not configured"} • ${driver.vehicleRegNumber || "No Reg"}`, path: "#", onClick: openEditModal },
+    { icon: <Car className="w-4 h-4" />, label: "Vehicle Details", desc: `${driver.vehicleType || "Not configured"} • ${driver.vehicleRegNumber || "No Reg"}`, path: "/driver/profile/vehicle" },
     { icon: <IndianRupee className="w-4 h-4" />, label: "Pricing & Service Areas", desc: driver.operatingAreas || "Set operating cities", path: "#", onClick: openEditModal },
     { 
       icon: <ShieldCheck className="w-4 h-4" />, 
@@ -144,6 +145,7 @@ const DriverProfile = () => {
         : `Status: ${driver.subscriptionStatus || "None"}`, 
       path: "/driver/subscribe" 
     },
+    { icon: <HelpCircle className="w-4 h-4" />, label: "Help & Support", desc: "FAQs & Fleet Assistance", path: "/driver/profile/support" },
   ];
 
   return (
@@ -210,13 +212,43 @@ const DriverProfile = () => {
       </div>
 
       {/* Completion Meter Section */}
-      <div className="px-1">
+      <div className="px-1 space-y-2.5">
         <Card className="border-2 border-primary/10 shadow-sm bg-white rounded-xl overflow-hidden p-3 space-y-2">
            <div className="flex justify-between items-center px-1">
               <span className="text-[10px] font-bold text-zinc-700 tracking-tight">Profile Status</span>
-              <span className="text-[10px] font-bold text-primary">Onboarding Active</span>
+              <span className="text-[10px] font-bold text-primary uppercase">Onboarding Active</span>
            </div>
            <Progress value={driver.onboardingComplete ? 100 : 50} className="h-1.5 bg-primary/5" />
+        </Card>
+
+        {/* Verification Docs Summary Card */}
+        <Card 
+          className="border-none shadow-sm bg-zinc-50/50 rounded-xl overflow-hidden p-3 cursor-pointer hover:bg-zinc-100 transition-colors"
+          onClick={() => navigate("/driver/profile/vehicle")}
+        >
+           <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                 <div className="w-8 h-8 rounded-lg bg-white border border-zinc-100 flex items-center justify-center text-zinc-400">
+                    <ShieldCheck className="w-4 h-4" />
+                 </div>
+                 <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-zinc-900 uppercase tracking-tight">Verification Documents</span>
+                    <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">
+                       {driver.documents?.filter(d => d.status === 'Verified').length || 0} / {driver.documents?.length || 0} Docs Approved
+                    </span>
+                 </div>
+              </div>
+              <div className="flex items-center gap-2">
+                 <div className="flex -space-x-1.5">
+                    {driver.documents?.slice(0, 3).map((doc, i) => (
+                       <div key={i} className="w-5 h-5 rounded-full border-2 border-white bg-zinc-200 flex items-center justify-center">
+                          <FileText className="w-2.5 h-2.5 text-zinc-500" />
+                       </div>
+                    ))}
+                 </div>
+                 <ChevronRight className="w-3.5 h-3.5 text-zinc-300" />
+              </div>
+           </div>
         </Card>
       </div>
 

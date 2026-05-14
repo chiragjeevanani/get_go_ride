@@ -225,117 +225,117 @@ const UserManagement = () => {
         onClose={() => setIsDetailModalOpen(false)}
         title="Customer Profile"
         description="Detailed view of user activity and status"
-        size="lg"
+        size="md"
       >
         {selectedUser && (
-          <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+          <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
             {/* User Hero */}
-            <div className="flex flex-col md:flex-row items-center gap-6 bg-zinc-50 border border-zinc-100 p-6 rounded-2xl relative overflow-hidden group">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-primary/10 transition-colors" />
+            <div className="flex flex-col md:flex-row items-center gap-4 bg-zinc-50 border border-zinc-100 p-4 rounded-xl relative overflow-hidden group">
+               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-primary/10 transition-colors" />
                
-               <div className="w-20 h-20 rounded-2xl bg-white border border-zinc-200 flex items-center justify-center text-2xl font-black text-primary shadow-lg relative z-10 shrink-0">
-                  <div className="w-full h-full rounded-2xl bg-zinc-50 flex items-center justify-center">
+               <div className="w-14 h-14 rounded-xl bg-white border border-zinc-200 flex items-center justify-center text-lg font-black text-primary shadow-md relative z-10 shrink-0">
+                  <div className="w-full h-full rounded-xl bg-zinc-50 flex items-center justify-center">
                     {selectedUser.name.split(' ').map(n => n[0]).join('')}
                   </div>
                </div>
 
-               <div className="flex-1 space-y-3 text-center md:text-left relative z-10">
-                  <div className="space-y-1">
+               <div className="flex-1 space-y-2 text-center md:text-left relative z-10">
+                  <div className="space-y-0.5">
                      <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
-                        <h2 className="text-2xl font-black text-zinc-900 uppercase italic tracking-tighter">{selectedUser.name}</h2>
-                        <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-black text-[8px] uppercase tracking-widest px-2 py-0.5 rounded-full">
+                        <h2 className="text-lg font-black text-zinc-900 uppercase italic tracking-tighter">{selectedUser.name}</h2>
+                        <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-black text-[7px] uppercase tracking-widest px-2 py-0.5 rounded-full">
                            {selectedUser.status}
                         </Badge>
                      </div>
-                     <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Joined: {selectedUser.joinDate}</p>
+                     <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest">Joined: {selectedUser.joinDate}</p>
                   </div>
                   
                   <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                     <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl border border-zinc-100">
-                        <Phone className="w-3.5 h-3.5 text-primary" />
-                        <span className="text-[10px] font-black text-zinc-900">{selectedUser.phone}</span>
+                     <div className="flex items-center gap-2 px-2 py-1 bg-white rounded-lg border border-zinc-100">
+                        <Phone className="w-3 h-3 text-primary" />
+                        <span className="text-[9px] font-black text-zinc-900">{selectedUser.phone}</span>
                      </div>
-                     <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl border border-zinc-100">
-                        <MapPin className="w-3.5 h-3.5 text-primary" />
-                        <span className="text-[10px] font-black text-zinc-900 uppercase tracking-tight">{selectedUser.location}</span>
+                     <div className="flex items-center gap-2 px-2 py-1 bg-white rounded-lg border border-zinc-100">
+                        <MapPin className="w-3 h-3 text-primary" />
+                        <span className="text-[9px] font-black text-zinc-900 uppercase tracking-tight">{selectedUser.location}</span>
                      </div>
                   </div>
                </div>
 
-               <div className="flex flex-col gap-2 w-full md:w-auto shrink-0 relative z-10">
+               <div className="flex flex-col gap-1.5 w-full md:w-auto shrink-0 relative z-10">
                   <Button 
                     className={cn(
-                      "bg-primary text-black font-black uppercase tracking-widest text-[9px] h-9 rounded-lg shadow-md transition-all",
-                      isMessageSent ? "bg-emerald-500 text-white shadow-emerald-500/20" : "shadow-primary/20"
+                      "bg-primary text-black font-black uppercase tracking-widest text-[8px] h-8 px-4 rounded-lg shadow-sm transition-all",
+                      isMessageSent ? "bg-emerald-500 text-white shadow-emerald-500/10" : "shadow-primary/10"
                     )}
                     onClick={() => handleMessageUser(selectedUser)}
                   >
-                     {isMessageSent ? <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> : <UserCheck className="w-3.5 h-3.5 mr-1" />}
+                     {isMessageSent ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <UserCheck className="w-3 h-3 mr-1" />}
                      {isMessageSent ? 'Message Sent' : 'Message'}
                   </Button>
                   <Button 
                     variant="outline" 
                     className={cn(
-                      "font-black uppercase tracking-widest text-[9px] h-9 rounded-lg transition-colors",
+                      "font-black uppercase tracking-widest text-[8px] h-8 px-4 rounded-lg transition-colors",
                       selectedUser.status === 'Active' 
                         ? "border-rose-100 bg-rose-50 text-rose-500 hover:bg-rose-100" 
                         : "border-emerald-100 bg-emerald-50 text-emerald-500 hover:bg-emerald-100"
                     )}
                     onClick={() => handleToggleStatus(selectedUser.id)}
                   >
-                     <Ban className="w-3.5 h-3.5 mr-1" />
+                     <Ban className="w-3 h-3 mr-1" />
                      {selectedUser.status === 'Active' ? 'Suspend' : 'Activate'}
                   </Button>
                </div>
             </div>
 
             {/* Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {[
                 { label: "Lifetime Bookings", value: selectedUser.totalRequests || 0, color: "text-primary" },
                 { label: "Successful Hires", value: selectedUser.successfulHires || 0, color: "text-emerald-500" },
                 { label: "Revenue / Spent", value: `₹${(selectedUser.revenue || 0).toLocaleString('en-IN')}`, color: "text-zinc-900 dark:text-white" }
               ].map((stat, i) => (
-                <div key={i} className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-4 rounded-xl flex flex-col gap-0.5 items-center md:items-start group hover:border-zinc-200 dark:hover:border-zinc-700 transition-all shadow-sm">
-                  <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">{stat.label}</span>
+                <div key={i} className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-3 rounded-xl flex flex-col items-center md:items-start group hover:border-zinc-200 dark:hover:border-zinc-700 transition-all shadow-sm">
+                  <span className="text-[7px] font-black text-zinc-400 uppercase tracking-widest">{stat.label}</span>
                   {selectedUser.loadingDetails ? (
-                    <div className="w-12 h-5 bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded mt-1" />
+                    <div className="w-10 h-4 bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded mt-1" />
                   ) : (
-                    <span className={cn("text-xl font-black italic tracking-tighter", stat.color)}>{stat.value}</span>
+                    <span className={cn("text-lg font-black italic tracking-tighter", stat.color)}>{stat.value}</span>
                   )}
                 </div>
               ))}
             </div>
 
             {/* Recent Activity */}
-            <div className="space-y-3">
-               <h3 className="text-[10px] font-black text-zinc-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
-                  <Calendar className="w-3.5 h-3.5 text-primary" />
+            <div className="space-y-2.5">
+               <h3 className="text-[9px] font-black text-zinc-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                  <Calendar className="w-3 h-3 text-primary" />
                   Recent Activity
                </h3>
                
                {selectedUser.loadingDetails ? (
                  <div className="space-y-2">
                    {[1, 2].map((i) => (
-                     <div key={i} className="h-14 w-full bg-zinc-100 dark:bg-zinc-900/50 animate-pulse rounded-xl border border-zinc-200/50 dark:border-zinc-800/50" />
+                     <div key={i} className="h-12 w-full bg-zinc-100 dark:bg-zinc-900/50 animate-pulse rounded-lg border border-zinc-200/50 dark:border-zinc-800/50" />
                    ))}
                  </div>
                ) : selectedUser.recentActivity && selectedUser.recentActivity.length > 0 ? (
-                 <div className="space-y-2">
+                 <div className="space-y-1.5">
                     {selectedUser.recentActivity.map((item, i) => (
-                      <div key={item.id || i} className="flex flex-col md:flex-row md:items-center justify-between p-2.5 px-4 bg-white dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800/50 rounded-lg hover:border-primary/20 transition-all group/item shadow-sm">
+                      <div key={item.id || i} className="flex flex-col md:flex-row md:items-center justify-between p-2 px-3 bg-white dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800/50 rounded-lg hover:border-primary/20 transition-all group/item shadow-sm">
                          <div className="space-y-0.5">
-                            <h4 className="text-[11px] font-black text-zinc-900 dark:text-white uppercase tracking-tight">
+                            <h4 className="text-[10px] font-black text-zinc-900 dark:text-white uppercase tracking-tight">
                               {item.serviceType === 'goods' ? 'Goods Transport' : item.serviceType === 'house' ? 'House Shifting' : item.serviceType === 'emergency' ? 'Emergency Towing' : 'Construction Hauling'} ({item.pickup.split(',')[0]})
                             </h4>
-                            <p className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest italic">
+                            <p className="text-[7px] text-zinc-400 font-bold uppercase tracking-widest italic">
                               {new Date(item.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} • {item.amount > 0 ? `₹${item.amount.toLocaleString('en-IN')} Lead Price` : 'No accepted bid'} • <span className={cn("font-black uppercase", item.status === 'completed' ? "text-emerald-500" : item.status === 'accepted' ? "text-primary" : "text-zinc-500")}>{item.status}</span>
                             </p>
                          </div>
                          <Button 
                            variant="ghost" 
                            size="sm" 
-                           className="text-primary font-black uppercase text-[8px] tracking-widest mt-2 md:mt-0 h-6 px-3 hover:bg-primary/5 rounded-md"
+                           className="text-primary font-black uppercase text-[7px] tracking-widest mt-1 md:mt-0 h-5 px-2 hover:bg-primary/5 rounded-md"
                            onClick={() => alert(`Pickup: ${item.pickup}\nDropoff: ${item.drops}\nDate: ${new Date(item.date).toLocaleDateString()}\nStatus: ${item.status}`)}
                          >
                             View Details
@@ -344,8 +344,8 @@ const UserManagement = () => {
                     ))}
                  </div>
                ) : (
-                 <div className="flex flex-col items-center justify-center p-6 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl text-center">
-                   <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">No recent requirements or bookings found</p>
+                 <div className="flex flex-col items-center justify-center p-4 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl text-center">
+                   <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">No recent requirements or bookings found</p>
                  </div>
                )}
             </div>

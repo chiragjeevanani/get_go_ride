@@ -63,6 +63,13 @@ const AuthPage = () => {
       const otpString = otp.join("");
       const res = await authApi.verifyOtp(phoneNumber, otpString, 'user');
       
+      // Clear other module tokens to prevent cross-contamination
+      localStorage.removeItem('gtgl_driver_token');
+      localStorage.removeItem('gtgl_driver_refresh_token');
+      localStorage.removeItem('gtgl_driver');
+      localStorage.removeItem('gtgl_admin_token');
+      localStorage.removeItem('gtgl_admin_refresh_token');
+
       localStorage.setItem('gtgl_token', res.data.accessToken);
       localStorage.setItem('gtgl_refresh_token', res.data.refreshToken);
       localStorage.setItem('gtgl_user', JSON.stringify(res.data.user));

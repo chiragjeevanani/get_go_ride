@@ -11,7 +11,7 @@ export const Toast = ({ show, message, type = 'success', onClose }) => {
           initial={{ opacity: 0, y: 50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] min-w-[300px]"
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] min-w-[300px]"
         >
           <div className={cn(
             "p-4 rounded-2xl border shadow-2xl flex items-center gap-3",

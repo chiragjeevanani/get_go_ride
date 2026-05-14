@@ -9,6 +9,7 @@ import { useDriverState } from "../hooks/useDriverState";
 import { cn } from "@/lib/utils";
 import { planApi, settingsApi } from "@/lib/api";
 import { loadRazorpay } from "@/lib/loadRazorpay";
+import { storage } from "@/lib/storage";
 import { toast } from "sonner";
 
 const benefits = [
@@ -59,7 +60,7 @@ const SubscriptionGate = () => {
       // 1. If it's a free trial, directly subscribe
       if (plan.price === 0) {
         const res = await planApi.subscribe(planId);
-        localStorage.setItem('gtgl_driver', JSON.stringify(res.data.vendor));
+        storage.setDriver(res.data.vendor);
         setDriver(res.data.vendor);
         toast.success(`Plan "${res.data.plan.name}" activated successfully!`);
         navigate("/driver/dashboard");
@@ -107,7 +108,7 @@ const SubscriptionGate = () => {
             });
 
             if (verifyRes.success) {
-              localStorage.setItem('gtgl_driver', JSON.stringify(verifyRes.data.vendor));
+              storage.setDriver(verifyRes.data.vendor);
               setDriver(verifyRes.data.vendor);
               toast.success(`Plan "${verifyRes.data.plan.name}" activated successfully!`);
               navigate("/driver/dashboard");
@@ -121,8 +122,8 @@ const SubscriptionGate = () => {
           }
         },
         prefill: {
-          name: localStorage.getItem("gtgl_driver") ? JSON.parse(localStorage.getItem("gtgl_driver")).name : "",
-          phone: localStorage.getItem("gtgl_driver") ? JSON.parse(localStorage.getItem("gtgl_driver")).phone : "",
+          name: storage.getDriver()?.name || "",
+          phone: storage.getDriver()?.phone || "",
         },
         theme: {
           color: "#facc15",

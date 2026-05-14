@@ -9,7 +9,6 @@ const requirementSchema = new mongoose.Schema(
     },
     serviceType: {
       type: String,
-      enum: ['goods', 'house', 'emergency', 'construction', 'goods-transport', 'house-shifting'],
       required: true,
     },
     vehicleType: {

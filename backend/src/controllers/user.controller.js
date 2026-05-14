@@ -59,8 +59,25 @@ export const updateMyProfile = async (req, res, next) => {
  */
 export const getMyWallet = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select('wallet');
+    const user = await User.findById(req.user.id);
     if (!user) return error(res, 'User not found', 404, 'NOT_FOUND');
+    
+    // Auto-credit signup bonus if wallet is empty and no transactions exist (safety net for new/existing accounts)
+    if ((user.wallet.balance || 0) === 0 && user.wallet.transactions.length === 0) {
+      const bonusSetting = await SystemSetting.findOne({ key: 'walletSignupBonus' });
+      const signupBonus = bonusSetting ? Number(bonusSetting.value) : 50;
+      
+      if (signupBonus > 0) {
+        user.wallet.balance = signupBonus;
+        user.wallet.transactions.push({
+          type: 'credit',
+          amount: signupBonus,
+          description: 'Welcome Sign-up Bonus',
+          date: new Date()
+        });
+        await user.save();
+      }
+    }
     
     success(res, user.wallet, 'Wallet retrieved successfully');
   } catch (err) {

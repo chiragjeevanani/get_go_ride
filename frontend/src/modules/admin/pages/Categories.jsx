@@ -33,6 +33,7 @@ const Categories = () => {
   const [categoryFile, setCategoryFile] = useState(null);
   const [categoryImageUrl, setCategoryImageUrl] = useState("");
   const [categoryImagePreview, setCategoryImagePreview] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
@@ -108,6 +109,7 @@ const Categories = () => {
     const fData = new FormData(e.target);
 
     try {
+      setSaving(true);
       // Step 1: Upload image file first if a local file was selected
       let finalImageUrl = categoryImageUrl;
       if (categoryFile) {
@@ -136,6 +138,8 @@ const Categories = () => {
       setIsCategoryModalOpen(false);
     } catch (err) {
       showToast(err.message || 'Action failed', 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -203,11 +207,11 @@ const Categories = () => {
         subtitle="Manage available service categories and matching rules" 
         actions={
           <Button 
-            onClick={handleAddCategory}
+            onClick={activeTab === 'service' ? handleAddCategory : handleAddVehicle}
             className="bg-primary text-black font-black uppercase tracking-widest text-[10px] h-10 px-6 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
           >
              <Plus className="w-4 h-4 mr-2" />
-             Add New
+             {activeTab === 'service' ? 'Add New Category' : 'Add New Vehicle'}
           </Button>
         }
       />
@@ -584,14 +588,25 @@ const Categories = () => {
                </div>
             </div>
 
-            <div className="flex gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-900">
-               <Button type="submit" className="flex-1 bg-primary text-black font-black uppercase text-[10px] tracking-widest h-12 rounded-xl shadow-lg shadow-primary/20">
-                  {editingCategory ? "Save Changes" : "Create Category"}
-               </Button>
-               <Button type="button" variant="ghost" onClick={() => setIsCategoryModalOpen(false)} className="px-6 text-zinc-500 font-black uppercase text-[10px] tracking-widest">
-                  Cancel
-               </Button>
-            </div>
+             <div className="flex gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-900">
+                <Button 
+                  type="submit" 
+                  disabled={saving}
+                  className="flex-1 bg-primary text-black font-black uppercase text-[10px] tracking-widest h-12 rounded-xl shadow-lg shadow-primary/20 disabled:opacity-50"
+                >
+                   {saving ? (
+                      <div className="flex items-center gap-2">
+                         <Loader2 className="w-4 h-4 animate-spin" />
+                         <span>Syncing...</span>
+                      </div>
+                   ) : (
+                      editingCategory ? "Save Changes" : "Create Category"
+                   )}
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setIsCategoryModalOpen(false)} className="px-6 text-zinc-500 font-black uppercase text-[10px] tracking-widest">
+                   Cancel
+                </Button>
+             </div>
          </form>
       </Modal>
 

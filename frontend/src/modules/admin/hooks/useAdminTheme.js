@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 export const useAdminTheme = () => {
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("admin-theme") || "dark";
+    return localStorage.getItem("admin-theme") || "light";
   });
 
   useEffect(() => {

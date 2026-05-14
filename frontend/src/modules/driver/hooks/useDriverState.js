@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { leadApi, vendorApi } from '@/lib/api';
+import { storage } from '@/lib/storage';
 
 // Normalization helper to map MongoDB Requirement model to UI structure
 export const normalizeLead = (req) => {
@@ -41,8 +42,8 @@ export const useDriverState = (options = {}) => {
   const { loadProfile = true, loadLeads = false } = options;
 
   const [driver, setDriver] = useState(() => {
-    const saved = localStorage.getItem('safarsetto_driver');
-    return saved ? JSON.parse(saved) : {
+    const saved = storage.getDriver();
+    return saved || {
       name: "",
       phone: "",
       vehicleType: "",
@@ -112,7 +113,7 @@ export const useDriverState = (options = {}) => {
   }, [loadLeads]);
   
   useEffect(() => {
-    localStorage.setItem('safarsetto_driver', JSON.stringify(driver));
+    storage.setDriver(driver);
   }, [driver]);
 
   useEffect(() => {

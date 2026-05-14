@@ -36,7 +36,7 @@ const resolveBid = async (params, user) => {
         const uId = new mongoose.Types.ObjectId(user.id || user._id);
         const query = user.role === 'vendor'
           ? { requirement: bId, vendor: uId }
-          : { requirement: bId };
+          : (user.role === 'admin' ? { _id: bId } : { requirement: bId });
 
         bid = await Bid.findOne(query)
           .populate({
@@ -312,11 +312,13 @@ export const getMessages = async (req, res, next) => {
     const requirementUser = bid.requirement.user?._id?.toString() || bid.requirement.user?.toString();
     const vendorUser = bid.vendor?._id?.toString() || bid.vendor?.toString();
 
-    if (req.user.role === 'user' && requirementUser !== req.user.id) {
-      return error(res, 'Access denied', 403, 'FORBIDDEN');
-    }
-    if (req.user.role === 'vendor' && vendorUser !== req.user.id) {
-      return error(res, 'Access denied', 403, 'FORBIDDEN');
+    if (req.user.role !== 'admin') {
+      if (req.user.role === 'user' && requirementUser !== req.user.id) {
+        return error(res, 'Access denied', 403, 'FORBIDDEN');
+      }
+      if (req.user.role === 'vendor' && vendorUser !== req.user.id) {
+        return error(res, 'Access denied', 403, 'FORBIDDEN');
+      }
     }
 
     const messages = await Message.find({ bid: bid._id })

@@ -3,7 +3,7 @@ import {
   HelpCircle, MessageSquare, Phone, Mail, 
   ChevronLeft, ChevronRight, FileText, 
   LifeBuoy, ShieldAlert, Zap, Search,
-  ExternalLink
+  ExternalLink, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,19 +15,32 @@ import { cn } from "@/lib/utils";
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter 
 } from "@/components/ui/dialog";
+import { 
+  faqApi
+} from "@/lib/api";
 
 const HelpSupport = () => {
   const navigate = useNavigate();
   const [isTicketModalOpen, setIsTicketModalOpen] = React.useState(false);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [faqs, setFaqs] = React.useState([]);
+  const [loadingFaqs, setLoadingFaqs] = React.useState(true);
 
-  const faqs = [
-    { q: "How do I get more leads?", a: "Upgrade to Quarterly or Annual plans for priority matching and higher visibility in peak zones." },
-    { q: "Payment not reflecting?", a: "UPI payments can take up to 2 hours. If issue persists, share the UTR number in 'Report a Problem'." },
-    { q: "Can I change my service city?", a: "Yes, go to Profile > Pricing & Areas to update your operational routes and cities." },
-    { q: "WhatsApp alerts not working?", a: "Ensure your registered number is active on WhatsApp and 'WhatsApp Alerts' is ON in Notification Settings." },
-  ];
+  React.useEffect(() => {
+    const fetchFaqs = async () => {
+      try {
+        setLoadingFaqs(true);
+        const res = await faqApi.getAll();
+        setFaqs(res.data || []);
+      } catch (err) {
+        console.error("Failed to fetch FAQs:", err);
+      } finally {
+        setLoadingFaqs(false);
+      }
+    };
+    fetchFaqs();
+  }, []);
 
   const contactMethods = [
     { label: "WhatsApp Chat", icon: <MessageSquare className="w-5 h-5 text-emerald-500" />, desc: "Instant help from our team", action: "Chat Now" },
@@ -45,8 +58,8 @@ const HelpSupport = () => {
   };
 
   const filteredFaqs = faqs.filter(faq => 
-    faq.q.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    faq.a.toLowerCase().includes(searchQuery.toLowerCase())
+    faq.question.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -129,20 +142,24 @@ const HelpSupport = () => {
 
          <div className="space-y-0.5 border border-zinc-100 bg-white min-h-[100px]">
             <AnimatePresence mode="popLayout">
-               {filteredFaqs.length > 0 ? (
+               {loadingFaqs ? (
+                  <div className="py-10 flex flex-col items-center justify-center">
+                     <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                  </div>
+               ) : filteredFaqs.length > 0 ? (
                   filteredFaqs.map((faq, i) => (
                      <motion.div 
-                        key={faq.q}
+                        key={faq._id || i}
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.98 }}
                         className="p-4 border-b border-zinc-50 last:border-b-0 space-y-2 group cursor-pointer hover:bg-zinc-50 transition-all bg-white"
                      >
                         <div className="flex justify-between items-start gap-4">
-                           <p className="text-[10px] font-black text-zinc-900 uppercase tracking-tight leading-tight flex-1">{faq.q}</p>
+                           <p className="text-[10px] font-black text-zinc-900 uppercase tracking-tight leading-tight flex-1">{faq.question}</p>
                            <ChevronRight className="w-3 h-3 text-zinc-300 group-hover:translate-x-1 group-hover:text-zinc-900 transition-all" />
                         </div>
-                        <p className="text-[9px] font-bold text-zinc-500 leading-relaxed uppercase tracking-tighter">{faq.a}</p>
+                        <p className="text-[9px] font-bold text-zinc-500 leading-relaxed uppercase tracking-tighter">{faq.answer}</p>
                      </motion.div>
                   ))
                ) : (

@@ -43,6 +43,7 @@ const VendorManagement = () => {
         phone: v.phone,
         location: v.location || v.nativeCity || 'N/A',
         status: v.status,
+        subscriptionStatus: v.subscriptionStatus || 'Inactive',
         isVerified: v.isVerified,
         hasVerifiedBadge: v.hasVerifiedBadge,
         regNumber: v.vehicleRegNumber || 'N/A',
@@ -73,10 +74,25 @@ const VendorManagement = () => {
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
-  const handleViewDriver = (driver) => {
-    setSelectedDriver(driver);
+  const handleViewDriver = async (driver) => {
+    setSelectedDriver({ ...driver, loadingDetails: true });
     setIsDetailModalOpen(true);
     setActiveTab("overview");
+    
+    try {
+      const res = await vendorApi.getById(driver.id);
+      if (res.data) {
+        setSelectedDriver(prev => ({
+          ...prev,
+          ...res.data,
+          documents: res.data.documents || [],
+          loadingDetails: false
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch vendor details:", err);
+      setSelectedDriver(prev => ({ ...prev, loadingDetails: false }));
+    }
   };
 
   const handleApproveDriver = async (driverId) => {
@@ -105,22 +121,29 @@ const VendorManagement = () => {
     }
   };
 
-  const handleDocAction = (docId, action) => {
+  const handleDocAction = async (docId, action) => {
     const newStatus = action === 'approve' ? 'Verified' : 'Rejected';
-    setDrivers(prev => prev.map(v => {
-      if (v.id === selectedDriver.id) {
-        const newDocs = v.documents.map(d => d.id === docId ? { ...d, status: newStatus } : d);
-        return { ...v, documents: newDocs };
-      }
-      return v;
-    }));
-    
-    setSelectedDriver(prev => {
-      const newDocs = prev.documents.map(d => d.id === docId ? { ...d, status: newStatus } : d);
-      return { ...prev, documents: newDocs };
-    });
+    try {
+      await adminApi.verifyDocument(selectedDriver.id, docId, newStatus);
+      
+      setDrivers(prev => prev.map(v => {
+        if (v.id === selectedDriver.id) {
+          const newDocs = v.documents.map(d => d._id === docId ? { ...d, status: newStatus } : d);
+          return { ...v, documents: newDocs };
+        }
+        return v;
+      }));
+      
+      setSelectedDriver(prev => {
+        const newDocs = prev.documents.map(d => d._id === docId ? { ...d, status: newStatus } : d);
+        return { ...prev, documents: newDocs };
+      });
 
-    showToast(`Document ${action === 'approve' ? 'approved' : 'rejected'} successfully`, action === 'approve' ? 'success' : 'error');
+      showToast(`Document ${action === 'approve' ? 'approved' : 'rejected'} successfully`, action === 'approve' ? 'success' : 'error');
+    } catch (err) {
+      console.error("Failed to verify document:", err);
+      showToast('Failed to update document status', 'error');
+    }
   };
 
   const columns = [
@@ -138,6 +161,12 @@ const VendorManagement = () => {
               <span className="font-black text-zinc-900 dark:text-white text-xs uppercase tracking-tight">{val}</span>
               {row.hasVerifiedBadge && (
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" title="Verified Badge" />
+              )}
+              {row.status === 'Rejected' && (
+                <Badge variant="outline" className="bg-rose-50 text-rose-500 border-rose-100 text-[7px] font-black uppercase px-1.5 h-4">Rejected</Badge>
+              )}
+              {row.status === 'Pending' && (
+                <Badge variant="outline" className="bg-amber-50 text-amber-500 border-amber-100 text-[7px] font-black uppercase px-1.5 h-4">Pending</Badge>
               )}
             </div>
             <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{row.regNumber}</span>
@@ -251,100 +280,100 @@ const VendorManagement = () => {
         onClose={() => setIsDetailModalOpen(false)}
         title="Partner Profile"
         description="Comprehensive view of driver history and fleet"
-        size="lg"
+        size="md"
       >
         {selectedDriver && (
-          <div className="space-y-6 pb-6">
+          <div className="space-y-4 pb-4">
             {/* Driver Hero */}
-            <div className="flex flex-col md:flex-row items-center gap-6 bg-zinc-50 p-6 rounded-2xl border border-zinc-100 relative overflow-hidden group">
-               <div className="w-20 h-20 rounded-2xl bg-white border border-zinc-200 flex items-center justify-center text-2xl font-black text-primary shadow-lg relative z-10 shrink-0">
-                  <div className="w-full h-full rounded-2xl bg-zinc-50 flex items-center justify-center">
+            <div className="flex flex-col md:flex-row items-center gap-4 bg-zinc-50 p-4 rounded-xl border border-zinc-100 relative overflow-hidden group">
+               <div className="w-14 h-14 rounded-xl bg-white border border-zinc-200 flex items-center justify-center text-lg font-black text-primary shadow-md relative z-10 shrink-0">
+                  <div className="w-full h-full rounded-xl bg-zinc-50 flex items-center justify-center">
                     {selectedDriver.name.split(' ').map(n => n[0]).join('')}
                   </div>
                </div>
 
-               <div className="flex-1 space-y-3 text-center md:text-left relative z-10 text-zinc-900">
-                  <div className="space-y-1">
+               <div className="flex-1 space-y-2 text-center md:text-left relative z-10 text-zinc-900">
+                  <div className="space-y-0.5">
                      <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
-                        <h2 className="text-2xl font-black uppercase italic tracking-tighter">{selectedDriver.name}</h2>
+                        <h2 className="text-lg font-black uppercase italic tracking-tighter">{selectedDriver.name}</h2>
                         {selectedDriver.isVerified && (
-                           <div className="p-1 px-3 rounded-full bg-primary/10 border border-primary/20 flex items-center gap-1.5">
-                              <ShieldCheck className="w-3 h-3 text-primary" />
-                              <span className="text-[8px] font-black text-primary uppercase tracking-widest">Verified Partner</span>
+                           <div className="p-0.5 px-2 rounded-full bg-primary/10 border border-primary/20 flex items-center gap-1">
+                              <ShieldCheck className="w-2.5 h-2.5 text-primary" />
+                              <span className="text-[7px] font-black text-primary uppercase tracking-widest">Verified Partner</span>
                            </div>
                         )}
                      </div>
-                     <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Joined: {selectedDriver.joinDate}</p>
+                     <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Joined: {selectedDriver.joinDate}</p>
                   </div>
                   
                   <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                     <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl border border-zinc-100">
-                        <Phone className="w-3.5 h-3.5 text-primary" />
-                        <span className="text-[10px] font-black">{selectedDriver.phone}</span>
+                     <div className="flex items-center gap-2 px-2 py-1 bg-white rounded-lg border border-zinc-100">
+                        <Phone className="w-3 h-3 text-primary" />
+                        <span className="text-[9px] font-black">{selectedDriver.phone}</span>
                      </div>
-                     <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl border border-zinc-100">
-                        <CreditCard className={cn("w-3.5 h-3.5", selectedDriver.subscriptionStatus === 'Active' ? "text-emerald-500" : "text-rose-500")} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Plan: {selectedDriver.subscriptionStatus}</span>
+                     <div className="flex items-center gap-2 px-2 py-1 bg-white rounded-lg border border-zinc-100">
+                        <CreditCard className={cn("w-3 h-3", selectedDriver.subscriptionStatus === 'Active' ? "text-emerald-500" : "text-rose-500")} />
+                        <span className="text-[9px] font-black uppercase tracking-widest">Plan: {selectedDriver.subscriptionStatus}</span>
                      </div>
                   </div>
                </div>
 
-               <div className="flex flex-col gap-2 w-full md:w-auto shrink-0 relative z-10">
+               <div className="flex flex-col gap-1.5 w-full md:w-auto shrink-0 relative z-10">
                   <Button 
-                    className="bg-primary text-black font-black uppercase tracking-widest text-[9px] h-9 rounded-lg shadow-md shadow-primary/20"
+                    className="bg-primary text-black font-black uppercase tracking-widest text-[8px] h-8 px-4 rounded-lg shadow-sm shadow-primary/20"
                     onClick={() => handleApproveDriver(selectedDriver.id)}
                   >
-                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                     <CheckCircle2 className="w-3 h-3 mr-1" />
                      Approve
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="border-rose-100 bg-rose-50 text-rose-500 font-black uppercase tracking-widest text-[9px] h-9 rounded-lg hover:bg-rose-100"
+                    className="border-rose-100 bg-rose-50 text-rose-500 font-black uppercase tracking-widest text-[8px] h-8 px-4 rounded-lg hover:bg-rose-100"
                     onClick={() => handleRejectDriver(selectedDriver.id)}
                   >
-                     <ShieldAlert className="w-3.5 h-3.5 mr-1" />
+                     <ShieldAlert className="w-3 h-3 mr-1" />
                      Reject
                   </Button>
                </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-               <TabsList className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 rounded-2xl w-full max-w-sm">
-                  <TabsTrigger value="overview" className="rounded-xl font-black text-[10px] uppercase tracking-widest py-3 data-[state=active]:bg-primary data-[state=active]:text-black">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+               <TabsList className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 rounded-xl w-full max-w-xs">
+                  <TabsTrigger value="overview" className="rounded-lg font-black text-[9px] uppercase tracking-widest py-2 data-[state=active]:bg-primary data-[state=active]:text-black">
                      Dashboard Overview
                   </TabsTrigger>
-                  <TabsTrigger value="documents" className="rounded-xl font-black text-[10px] uppercase tracking-widest py-3 data-[state=active]:bg-primary data-[state=active]:text-black">
+                  <TabsTrigger value="documents" className="rounded-lg font-black text-[9px] uppercase tracking-widest py-2 data-[state=active]:bg-primary data-[state=active]:text-black">
                      Verification Docs
                   </TabsTrigger>
                </TabsList>
 
-               <TabsContent value="overview" className="space-y-4">
+               <TabsContent value="overview" className="space-y-3">
                   {/* Driver Grid Sections */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                      {/* Fleet Info */}
-                     <div className="admin-card p-4 bg-zinc-50">
-                        <h3 className="text-[10px] font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2 mb-4">
-                           <Truck className="w-3.5 h-3.5 text-primary" />
+                     <div className="admin-card p-3 bg-zinc-50">
+                        <h3 className="text-[9px] font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2 mb-3">
+                           <Truck className="w-3 h-3 text-primary" />
                            Fleet & Vehicle Info
                         </h3>
-                        <div className="space-y-4">
-                           <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900 font-bold">
-                              <span className="text-[10px] text-zinc-500 uppercase">Vehicle Model</span>
-                              <span className="text-xs text-zinc-900 dark:text-white uppercase tracking-widest">{selectedDriver.vehicleType}</span>
+                        <div className="space-y-2">
+                           <div className="flex justify-between items-center py-1.5 border-b border-zinc-200 dark:border-zinc-900 font-bold">
+                              <span className="text-[9px] text-zinc-500 uppercase">Vehicle Model</span>
+                              <span className="text-[10px] text-zinc-900 dark:text-white uppercase tracking-widest">{selectedDriver.vehicleType}</span>
                            </div>
-                           <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900 font-bold">
-                              <span className="text-[10px] text-zinc-500 uppercase">Reg Number</span>
-                              <span className="text-xs text-zinc-900 dark:text-white uppercase tracking-widest">{selectedDriver.regNumber}</span>
+                           <div className="flex justify-between items-center py-1.5 border-b border-zinc-200 dark:border-zinc-900 font-bold">
+                              <span className="text-[9px] text-zinc-500 uppercase">Reg Number</span>
+                              <span className="text-[10px] text-zinc-900 dark:text-white uppercase tracking-widest">{selectedDriver.regNumber}</span>
                            </div>
-                           <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900 font-bold">
-                              <span className="text-[10px] text-zinc-500 uppercase">Load Capacity</span>
-                              <span className="text-xs text-zinc-900 dark:text-white uppercase">{selectedDriver.capacity}</span>
+                           <div className="flex justify-between items-center py-1.5 border-b border-zinc-200 dark:border-zinc-900 font-bold">
+                              <span className="text-[9px] text-zinc-500 uppercase">Load Capacity</span>
+                              <span className="text-[10px] text-zinc-900 dark:text-white uppercase">{selectedDriver.capacity}</span>
                            </div>
-                           <div className="flex justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-900 font-bold">
-                              <span className="text-[10px] text-zinc-500 uppercase">Vehicle Types</span>
+                           <div className="flex justify-between items-center py-1.5 border-b border-zinc-200 dark:border-zinc-900 font-bold">
+                              <span className="text-[9px] text-zinc-500 uppercase">Vehicle Types</span>
                               <div className="flex gap-1">
                                  {selectedDriver.vehicleTypes.map(v => (
-                                    <Badge key={v} className="bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-[9px] font-black uppercase">{v}</Badge>
+                                    <Badge key={v} className="bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-[7px] font-black uppercase px-1.5">{v}</Badge>
                                  ))}
                               </div>
                            </div>
@@ -352,67 +381,71 @@ const VendorManagement = () => {
                      </div>
 
                      {/* Performance Metrics */}
-                     <div className="admin-card p-4 bg-zinc-50">
-                        <h3 className="text-[10px] font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2 mb-4">
-                           <BarChart3 className="w-3.5 h-3.5 text-primary" />
+                     <div className="admin-card p-3 bg-zinc-50">
+                        <h3 className="text-[9px] font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2 mb-3">
+                           <BarChart3 className="w-3 h-3 text-primary" />
                            Performance
                         </h3>
-                        <div className="grid grid-cols-2 gap-3">
-                           <div className="p-3 rounded-xl bg-white border border-zinc-100 flex flex-col gap-0.5 items-center">
-                              <span className="text-[8px] font-black text-zinc-400 uppercase">Avg Rating</span>
+                        <div className="grid grid-cols-2 gap-2.5">
+                           <div className="p-2 rounded-lg bg-white border border-zinc-100 flex flex-col items-center">
+                              <span className="text-[7px] font-black text-zinc-400 uppercase">Avg Rating</span>
                               <div className="flex items-center gap-1 text-primary">
-                                 <Star className="w-3 h-3 fill-primary" />
-                                 <span className="text-lg font-black italic">{selectedDriver.rating}</span>
+                                 <Star className="w-2.5 h-2.5 fill-primary" />
+                                 <span className="text-sm font-black italic">{selectedDriver.rating}</span>
                               </div>
                            </div>
-                           <div className="p-3 rounded-xl bg-white border border-zinc-100 flex flex-col gap-0.5 items-center">
-                              <span className="text-[8px] font-black text-zinc-400 uppercase">Leads Won</span>
-                              <span className="text-lg font-black text-zinc-900 italic">42</span>
+                           <div className="p-2 rounded-lg bg-white border border-zinc-100 flex flex-col items-center">
+                              <span className="text-[7px] font-black text-zinc-400 uppercase">Leads Won</span>
+                              <span className="text-sm font-black text-zinc-900 italic">42</span>
                            </div>
-                           <div className="p-4 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-1 items-center">
-                              <span className="text-[9px] font-black text-zinc-600 uppercase">Reliability</span>
-                              <span className="text-xl font-black text-emerald-500 italic">98%</span>
+                           <div className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col items-center">
+                              <span className="text-[8px] font-black text-zinc-600 uppercase">Reliability</span>
+                              <span className="text-base font-black text-emerald-500 italic">98%</span>
                            </div>
-                           <div className="p-4 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-1 items-center">
-                              <span className="text-[9px] font-black text-zinc-600 uppercase">Subscription</span>
-                              <span className="text-[10px] font-black text-zinc-900 dark:text-white uppercase italic">Premium</span>
+                           <div className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col items-center text-center">
+                              <span className="text-[8px] font-black text-zinc-600 uppercase">Subscription</span>
+                              <span className="text-[9px] font-black text-zinc-900 dark:text-white uppercase italic">Premium</span>
                            </div>
                         </div>
                      </div>
                   </div>
 
                   {/* Operating Routes */}
-                  <div className="admin-card p-6 bg-zinc-50 dark:bg-zinc-950/20">
-                     <h3 className="text-xs font-black text-zinc-900 dark:text-white uppercase tracking-widest flex items-center gap-2 mb-4">
-                        <MapPinned className="w-4 h-4 text-primary" />
+                  <div className="admin-card p-4 bg-zinc-50 dark:bg-zinc-950/20">
+                     <h3 className="text-[10px] font-black text-zinc-900 dark:text-white uppercase tracking-widest flex items-center gap-2 mb-3">
+                        <MapPinned className="w-3 h-3 text-primary" />
                         Primary Routes & Service Areas
                      </h3>
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                         {['Indore Local', 'Indore to Bhopal', 'Indore to Ujjain'].map((route) => (
-                           <div key={route} className="p-3 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center">
-                              <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{route}</span>
+                           <div key={route} className="p-2 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-lg flex items-center justify-center">
+                              <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">{route}</span>
                            </div>
                         ))}
                      </div>
                   </div>
                </TabsContent>
-
                 <TabsContent value="documents" className="space-y-6">
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {selectedDriver.documents?.map((doc) => (
-                         <div key={doc.id} className="admin-card p-6 border-zinc-200 hover:border-layers transition-all group">
-                            <div className="flex items-start justify-between mb-4">
-                               <div className="flex gap-4">
-                                  <div className="w-12 h-12 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center">
-                                     <FileText className="w-6 h-6 text-zinc-400 group-hover:text-primary transition-colors" />
+                      {selectedDriver.loadingDetails ? (
+                         [1, 2, 3, 4].map(i => (
+                            <div key={i} className="h-48 w-full bg-zinc-100 animate-pulse rounded-xl" />
+                         ))
+                      ) : selectedDriver.documents && selectedDriver.documents.length > 0 ? (
+                        selectedDriver.documents.map((doc) => (
+                         <div key={doc.id || doc._id} className="admin-card p-4 border-zinc-200 hover:border-layers transition-all group bg-white">
+                            <div className="flex items-start justify-between mb-3">
+                               <div className="flex gap-3">
+                                  <div className="w-10 h-10 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center">
+                                     <FileText className="w-5 h-5 text-zinc-400 group-hover:text-primary transition-colors" />
                                   </div>
-                                  <div className="space-y-1">
-                                     <h4 className="text-xs font-black text-zinc-900 uppercase tracking-widest">{doc.title}</h4>
-                                     <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">{doc.date}</p>
+                                  <div className="space-y-0.5">
+                                     <h4 className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">{doc.title || 'Document'}</h4>
+                                     <p className="text-[7px] font-bold text-zinc-500 uppercase tracking-widest">{doc.date || 'No Date'}</p>
                                   </div>
                                </div>
                                <Badge className={cn(
-                                  "text-[8px] font-black uppercase tracking-widest border-none px-2",
+                                  "text-[7px] font-black uppercase tracking-widest border-none px-2 py-0.5 h-5",
                                   doc.status === 'Verified' ? "bg-emerald-500/10 text-emerald-500" :
                                   doc.status === 'Pending' ? "bg-amber-500/10 text-amber-500" :
                                   "bg-rose-500/10 text-rose-500"
@@ -421,25 +454,29 @@ const VendorManagement = () => {
                                </Badge>
                             </div>
 
-                            <div className="h-32 w-full rounded-xl bg-zinc-50 border border-zinc-100 mb-4 flex items-center justify-center relative overflow-hidden">
+                            <div className="h-28 w-full rounded-xl bg-zinc-50 border border-zinc-100 mb-3 flex items-center justify-center relative overflow-hidden">
+                               {(doc.fileUrl || doc.url) ? (
+                                 <img src={doc.fileUrl || doc.url} alt={doc.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                               ) : (
+                                 <span className="text-[7px] font-black text-zinc-400 uppercase italic">No Preview Available</span>
+                               )}
                                <div className="absolute inset-0 bg-zinc-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                   <Button 
                                     variant="outline" 
-                                    className="h-8 border-white/20 bg-white/10 text-white text-[8px] font-black uppercase tracking-widest rounded-lg"
+                                    className="h-7 border-white/20 bg-white/10 text-white text-[7px] font-black uppercase tracking-widest rounded-lg"
                                     onClick={() => setPreviewDoc(doc)}
                                   >
-                                     <ExternalLink className="w-3 h-3 mr-1.5" />
+                                     <ExternalLink className="w-2.5 h-2.5 mr-1.5" />
                                      Review Large
                                   </Button>
                                </div>
-                               <span className="text-[8px] font-black text-zinc-400 uppercase italic">Preview Snapshot</span>
                             </div>
 
                             <div className="flex gap-2">
                                {doc.status !== 'Verified' && (
                                   <Button 
-                                    className="flex-1 bg-emerald-500 text-white font-black uppercase text-[8px] tracking-widest h-8 rounded-lg shadow-md shadow-emerald-500/10"
-                                    onClick={() => handleDocAction(doc.id, 'approve')}
+                                    className="flex-1 bg-emerald-500 text-white font-black uppercase text-[7px] tracking-widest h-7 rounded-lg shadow-md shadow-emerald-500/10"
+                                    onClick={() => handleDocAction(doc.id || doc._id, 'approve')}
                                   >
                                      Approve
                                   </Button>
@@ -447,33 +484,41 @@ const VendorManagement = () => {
                                {doc.status !== 'Rejected' && (
                                   <Button 
                                     variant="outline" 
-                                    className="flex-1 border-rose-100 bg-rose-50 text-rose-500 font-black uppercase text-[8px] tracking-widest h-8 rounded-lg"
-                                    onClick={() => handleDocAction(doc.id, 'reject')}
+                                    className="flex-1 border-rose-100 bg-rose-50 text-rose-500 font-black uppercase text-[7px] tracking-widest h-7 rounded-lg"
+                                    onClick={() => handleDocAction(doc.id || doc._id, 'reject')}
                                   >
                                      Reject
                                   </Button>
                                )}
                             </div>
                          </div>
-                      ))}
+                        ))
+                      ) : (
+                        <div className="col-span-full py-12 flex flex-col items-center justify-center bg-zinc-50 rounded-2xl border border-dashed border-zinc-200">
+                           <FileText className="w-8 h-8 text-zinc-300 mb-2" />
+                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">No verification documents uploaded yet</p>
+                        </div>
+                      )}
                    </div>
 
-                  <div className="p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-900 flex items-center justify-between">
+                  <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-900 flex items-center justify-between">
                      <div className="flex gap-3 items-center">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                           <ShieldQuestion className="w-5 h-5 text-primary" />
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                           <ShieldQuestion className="w-4 h-4 text-primary" />
                         </div>
                         <div className="space-y-0.5">
-                           <h4 className="text-[10px] font-black text-zinc-900 dark:text-white uppercase tracking-widest">Verification Status</h4>
-                           <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest italic">All documents must be verified for the "Verified Partner" badge.</p>
+                           <h4 className="text-[9px] font-black text-zinc-900 dark:text-white uppercase tracking-widest">Verification Status</h4>
+                           <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest italic">All documents must be verified for the "Verified Partner" badge.</p>
                         </div>
                      </div>
                      <div className="text-right">
-                        <p className="text-lg font-black text-primary italic">2 / 4</p>
-                        <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Docs Verified</p>
+                        <p className="text-lg font-black text-primary italic">
+                          {selectedDriver.documents?.filter(d => d.status === 'Verified').length || 0} / {selectedDriver.documents?.length || 0}
+                        </p>
+                        <p className="text-[7px] font-black text-zinc-600 uppercase tracking-widest">Docs Verified</p>
                      </div>
                   </div>
-               </TabsContent>
+               </TabsContent>t>
             </Tabs>
           </div>
         )}
@@ -486,53 +531,64 @@ const VendorManagement = () => {
         title={previewDoc?.title}
         description="High-resolution document verification view"
         size="lg"
+        compact={true}
       >
         {previewDoc && (
-          <div className="space-y-6">
-            <div className="aspect-[4/3] w-full rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center relative overflow-hidden">
+          <div className="space-y-3">
+            <div className="h-[320px] w-full rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center relative overflow-hidden group">
                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(252,211,77,0.05)_0%,transparent_100%)]" />
-               <div className="flex flex-col items-center gap-4 relative z-10">
-                  <div className="w-20 h-20 rounded-3xl bg-white border border-zinc-100 flex items-center justify-center shadow-xl">
-                     <FileText className="w-10 h-10 text-primary" />
-                  </div>
-                  <div className="text-center space-y-1">
-                     <p className="text-sm font-black text-zinc-900 uppercase italic tracking-tighter">Document Snapshot</p>
-                     <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Digital Copy ID: DOC-{previewDoc.id}{Math.floor(Math.random()*1000)}</p>
-                  </div>
-               </div>
+               {(previewDoc.fileUrl || previewDoc.url) ? (
+                 <img 
+                   src={previewDoc.fileUrl || previewDoc.url} 
+                   alt={previewDoc.title} 
+                   className="w-full h-full object-contain relative z-10 transition-transform duration-500 group-hover:scale-105" 
+                 />
+               ) : (
+                 <div className="flex flex-col items-center gap-2 relative z-10">
+                    <div className="w-12 h-12 rounded-xl bg-white border border-zinc-100 flex items-center justify-center shadow-lg">
+                       <FileText className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="text-center">
+                       <p className="text-[10px] font-black text-zinc-900 uppercase italic tracking-tighter">No Preview Available</p>
+                       <p className="text-[7px] text-zinc-500 font-bold uppercase tracking-widest">ID: {previewDoc.id || 'N/A'}</p>
+                    </div>
+                 </div>
+               )}
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-               <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                  <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Metadata</span>
-                  <p className="text-xs font-black text-zinc-900 uppercase">Uploaded on: {previewDoc.date}</p>
+            <div className="grid grid-cols-2 gap-2">
+               <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-100 flex flex-col justify-center">
+                  <span className="text-[7px] font-black text-zinc-400 uppercase tracking-widest leading-none mb-1">Metadata</span>
+                  <p className="text-[9px] font-black text-zinc-900 uppercase">Uploaded: {previewDoc.date}</p>
                </div>
-               <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
-                  <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Current Status</span>
-                  <Badge className={cn(
-                    "text-[9px] border-none font-black uppercase px-3",
-                    previewDoc.status === 'Verified' ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500"
-                  )}>
-                    {previewDoc.status}
-                  </Badge>
+               <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-100 flex flex-col justify-center">
+                  <span className="text-[7px] font-black text-zinc-400 uppercase tracking-widest leading-none mb-1">Status</span>
+                  <div className="flex items-center">
+                    <Badge className={cn(
+                      "text-[8px] border-none font-black uppercase px-2 h-4",
+                      previewDoc.status === 'Verified' ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500"
+                    )}>
+                      {previewDoc.status}
+                    </Badge>
+                  </div>
                </div>
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-2 pt-1">
                {previewDoc.status !== 'Verified' && (
                   <Button 
-                    className="flex-1 bg-emerald-500 text-white font-black h-11 rounded-xl uppercase tracking-widest text-[10px]"
-                    onClick={() => { handleDocAction(previewDoc.id, 'approve'); setPreviewDoc(null); }}
+                    className="flex-1 bg-emerald-500 text-white font-black h-9 rounded-lg uppercase tracking-widest text-[9px]"
+                    onClick={() => { handleDocAction(previewDoc._id || previewDoc.id, 'approve'); setPreviewDoc(null); }}
                   >
-                    Approve Document
+                    Approve
                   </Button>
                )}
                <Button 
                  variant="outline" 
-                 className="flex-1 border-rose-100 bg-rose-50 text-rose-500 font-black h-11 rounded-xl uppercase tracking-widest text-[10px]"
-                 onClick={() => { handleDocAction(previewDoc.id, 'reject'); setPreviewDoc(null); }}
+                 className="flex-1 border-rose-100 bg-rose-50 text-rose-500 font-black h-9 rounded-lg uppercase tracking-widest text-[9px]"
+                 onClick={() => { handleDocAction(previewDoc._id || previewDoc.id, 'reject'); setPreviewDoc(null); }}
                >
-                 Reject Document
+                 Reject
                </Button>
             </div>
           </div>

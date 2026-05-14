@@ -20,7 +20,6 @@ const Settings = () => {
 
   // Dynamic system configurations state
   const [signupBonus, setSignupBonus] = React.useState("50");
-  const [maxWalletUsage, setMaxWalletUsage] = React.useState("500");
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
 
@@ -45,7 +44,6 @@ const Settings = () => {
       const res = await settingsApi.get();
       if (res.success) {
         setSignupBonus(res.data.walletSignupBonus?.toString() || "50");
-        setMaxWalletUsage(res.data.maxWalletUsage?.toString() || "500");
       }
     } catch (err) {
       console.error(err);
@@ -57,11 +55,10 @@ const Settings = () => {
 
   const fetchRevenueModel = async () => {
     try {
-      const res = await fetch('/api/settings/revenue-model', { credentials: 'include' });
-      const data = await res.json();
-      if (data.success) {
-        setRevenueModel(data.data.revenueModel || 'subscription');
-        setCommissionRate(data.data.commissionRate || 10);
+      const res = await settingsApi.getRevenueModel();
+      if (res.success) {
+        setRevenueModel(res.data.revenueModel || 'subscription');
+        setCommissionRate(res.data.commissionRate || 10);
       }
     } catch (err) {
       console.error('Failed to fetch revenue model:', err);
@@ -71,17 +68,11 @@ const Settings = () => {
   const handleRevenueModelSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch('/api/settings/revenue-model', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ revenueModel, commissionRate }),
-      });
-      const data = await res.json();
-      if (data.success) {
+      const res = await settingsApi.updateRevenueModel({ revenueModel, commissionRate });
+      if (res.success) {
         showToast('Revenue model updated successfully', 'success');
       } else {
-        showToast(data.message || 'Failed to update revenue model', 'error');
+        showToast(res.message || 'Failed to update revenue model', 'error');
       }
     } catch (err) {
       console.error(err);
@@ -100,8 +91,7 @@ const Settings = () => {
     setSaving(true);
     try {
       const res = await settingsApi.update({
-        walletSignupBonus: Number(signupBonus),
-        maxWalletUsage: Number(maxWalletUsage)
+        walletSignupBonus: Number(signupBonus)
       });
       if (res.success) {
         showToast("All system configurations saved successfully!", "success");
@@ -117,9 +107,6 @@ const Settings = () => {
     { label: "Platform Info", icon: Globe },
     { label: "Wallet Settings", icon: IndianRupee },
     { label: "Commission & Fees", icon: TrendingUp },
-    { label: "Notifications", icon: Bell },
-    { label: "Security & Access", icon: Lock },
-    { label: "System health", icon: Database },
   ];
 
   if (loading) {
@@ -268,28 +255,13 @@ const Settings = () => {
                         </div>
                         <p className="text-[8px] text-zinc-400 font-bold uppercase block px-1 leading-normal">Free starting wallet balance awarded to users upon successful registration</p>
                       </div>
-
-                      <div className="space-y-2">
-                        <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest block px-1">Max Wallet Balance Usage Per Booking (INR)</label>
-                        <div className="relative">
-                          <input 
-                            type="number"
-                            value={maxWalletUsage} 
-                            onChange={(e) => setMaxWalletUsage(e.target.value)}
-                            className="w-full h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-xl px-4 text-sm font-black text-primary focus:outline-none focus:border-primary" 
-                          />
-                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-zinc-400 uppercase">₹ Max Limit</span>
-                        </div>
-                        <p className="text-[8px] text-zinc-400 font-bold uppercase block px-1 leading-normal">Sets the maximum wallet funds a user can apply toward a single logistics transaction</p>
-                      </div>
                   </div>
 
                   {/* Summary preview */}
                   <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 space-y-1 relative z-10">
                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Operational Summary:</h4>
                      <p className="text-[9px] text-zinc-500 font-extrabold uppercase leading-relaxed">
-                       Newly registered users will start with a free promotional balance of <span className="text-zinc-950 font-black">₹{signupBonus}</span>.
-                       When finalizing bookings, users are allowed to apply up to <span className="text-zinc-950 font-black">₹{maxWalletUsage}</span> directly from their wallet balance to subsidize their final bid payout.
+                       Newly registered users will start with a free promotional balance of <span className="text-zinc-950 font-black">₹{signupBonus}</span> directly in their wallet upon successful sign-up.
                      </p>
                   </div>
 

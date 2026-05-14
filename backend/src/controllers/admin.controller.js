@@ -65,6 +65,8 @@ export const getAdminDeals = async (req, res, next) => {
   }
 };
 
+import Message from '../models/Message.model.js';
+
 // ─── GET /api/admin/deals/:id/bids ─────────────────────────────────────────────
 
 export const getDealBids = async (req, res, next) => {
@@ -83,7 +85,19 @@ export const getDealBids = async (req, res, next) => {
     // Get all bids for this requirement
     const bids = await Bid.find({ requirement: req.params.id })
       .populate('vendor', 'name phone businessName rating vehicleType')
-      .sort({ amount: 1 });
+      .sort({ createdAt: -1 });
+
+    // Fetch last message for each bid
+    const bidsWithLastMessage = await Promise.all(bids.map(async (bid) => {
+      const lastMessage = await Message.findOne({ bid: bid._id })
+        .sort({ createdAt: -1 })
+        .select('text senderRole createdAt');
+      
+      return {
+        ...bid.toObject(),
+        lastMessage: lastMessage || null
+      };
+    }));
 
     return success(res, {
       requirement: {
@@ -98,7 +112,7 @@ export const getDealBids = async (req, res, next) => {
         createdAt: requirement.createdAt
       },
       acceptedBid: requirement.acceptedBid,
-      allBids: bids
+      allBids: bidsWithLastMessage
     }, 'Deal bids retrieved successfully');
   } catch (err) {
     next(err);

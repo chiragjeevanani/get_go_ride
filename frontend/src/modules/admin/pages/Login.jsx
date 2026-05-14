@@ -43,13 +43,10 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070708] text-white flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Absolute Decorative Glows */}
+    <div className="min-h-screen bg-white text-zinc-900 flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Subtle Background Decoration */}
       <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2"></div>
       <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2"></div>
-
-      {/* Cybernetic Tech Grid Overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f1f2e_1px,transparent_1px),linear-gradient(to_bottom,#1f1f2e_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-[0.05]"></div>
 
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
@@ -58,45 +55,50 @@ const AdminLogin = () => {
         className="w-full max-w-md relative z-10"
       >
         {/* Brand Header */}
-        <div className="text-center mb-8 space-y-3">
-          <div className="inline-flex w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 items-center justify-center text-primary shadow-xl shadow-primary/5">
-             <Shield className="w-7 h-7" strokeWidth={2} />
-          </div>
-          <div className="space-y-1">
-             <h1 className="text-2xl font-black tracking-tighter uppercase italic bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">GetGoLoad Admin</h1>
-             <p className="text-[10px] text-zinc-500 font-extrabold uppercase tracking-[0.3em]">Enterprise Management Portal</p>
+        <div className="text-center mb-6 space-y-2">
+          <motion.img 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            src="/getgoride_logo_no_bg.png" 
+            alt="GetGoLoad Logo" 
+            className="w-20 h-auto mx-auto"
+          />
+          <div className="space-y-0.5">
+             <h1 className="text-xl font-black tracking-tighter uppercase italic text-zinc-900">GetGoLoad Admin</h1>
+             <p className="text-[8px] text-zinc-400 font-extrabold uppercase tracking-[0.4em]">Enterprise Management Portal</p>
           </div>
         </div>
 
         {/* Login Form Card */}
-        <div className="bg-zinc-950/40 backdrop-blur-xl border border-zinc-900 rounded-3xl p-8 shadow-2xl relative">
+        <div className="bg-white border border-zinc-100 rounded-3xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.1)] relative">
           <form onSubmit={handleSubmit} className="space-y-6">
              <div className="space-y-1.5">
-                <label className="text-[9px] font-black uppercase text-zinc-500 tracking-widest px-1">Administrative Email</label>
+                <label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest px-1">Administrative Email</label>
                 <div className="relative">
-                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                    <input 
                      type="email"
                      required
                      value={email}
                      onChange={(e) => setEmail(e.target.value)}
                      placeholder="admin@gmail.com"
-                     className="w-full h-12 bg-[#0c0c0e] border border-zinc-900 rounded-xl pl-11 pr-4 text-xs font-bold text-white placeholder:text-zinc-700 focus:outline-none focus:border-primary/50 transition-all"
+                     className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl pl-11 pr-4 text-xs font-bold text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-primary transition-all"
                    />
                 </div>
              </div>
 
              <div className="space-y-1.5">
-                <label className="text-[9px] font-black uppercase text-zinc-500 tracking-widest px-1">Access Password</label>
+                <label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest px-1">Access Password</label>
                 <div className="relative">
-                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                    <input 
                      type="password"
                      required
                      value={password}
                      onChange={(e) => setPassword(e.target.value)}
                      placeholder="••••••••"
-                     className="w-full h-12 bg-[#0c0c0e] border border-zinc-900 rounded-xl pl-11 pr-4 text-xs font-bold text-white placeholder:text-zinc-700 focus:outline-none focus:border-primary/50 transition-all"
+                     className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl pl-11 pr-4 text-xs font-bold text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-primary transition-all"
                    />
                 </div>
              </div>
@@ -104,7 +106,7 @@ const AdminLogin = () => {
              <Button 
                disabled={loading}
                type="submit"
-               className="w-full h-12 bg-primary hover:bg-primary/90 text-zinc-950 font-black text-xs uppercase tracking-widest rounded-xl mt-2 transition-all shadow-xl shadow-primary/10 flex items-center justify-center gap-2"
+               className="w-full h-12 bg-primary hover:bg-primary/90 text-zinc-950 font-black text-xs uppercase tracking-widest rounded-xl mt-2 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
              >
                 {loading ? (
                   <>
@@ -121,15 +123,15 @@ const AdminLogin = () => {
           </form>
 
           {/* Security Notice */}
-          <div className="mt-6 border-t border-zinc-900/50 pt-4 text-center">
-             <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-wider leading-relaxed">
+          <div className="mt-6 border-t border-zinc-100 pt-4 text-center">
+             <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider leading-relaxed">
                 Authorized administrative users only. All connection attempts, access requests, and credential audits are encrypted and strictly monitored.
              </p>
           </div>
         </div>
 
         {/* Footer Brand Info */}
-        <p className="text-center text-[9px] text-zinc-700 font-extrabold uppercase tracking-widest mt-8">
+        <p className="text-center text-[9px] text-zinc-400 font-extrabold uppercase tracking-widest mt-8">
            Powered by Safarsetto Engine • Version 1.0.4
         </p>
       </motion.div>

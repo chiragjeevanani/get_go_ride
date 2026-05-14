@@ -30,6 +30,12 @@ const LeadManagement = () => {
   const [isFullChatOpen, setIsFullChatOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
+  const [bids, setBids] = useState([]);
+  const [selectedBid, setSelectedBid] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [fetchingBids, setFetchingBids] = useState(false);
+  const [fetchingMessages, setFetchingMessages] = useState(false);
+
   const fetchLeads = async () => {
     try {
       setLoading(true);
@@ -37,7 +43,7 @@ const LeadManagement = () => {
       setLeads((res.data || []).map(req => ({
         id: req._id,
         serviceType: req.serviceType,
-        userName: req.user?.name || 'Unknown User',
+        userName: req.user?.name || req.user?.phone || 'Guest Customer',
         location: `${req.pickup?.address} to ${req.drops?.[0]?.address || 'Local'}`,
         date: new Date(req.createdAt).toLocaleDateString(),
         status: req.status === 'accepted' ? 'Finalized' : req.status === 'completed' ? 'Completed' : (req.status === 'bidding' ? 'Responded' : 'Pending'),
@@ -63,9 +69,34 @@ const LeadManagement = () => {
     setIsDetailModalOpen(true);
   };
 
-  const handleViewChats = (lead) => {
+  const handleViewChats = async (lead) => {
     setSelectedLead(lead);
     setIsChatModalOpen(true);
+    setBids([]);
+    try {
+      setFetchingBids(true);
+      const res = await adminApi.getDealBids(lead.id);
+      setBids(res.data.allBids || []);
+    } catch (err) {
+      console.error('Failed to fetch bids:', err);
+    } finally {
+      setFetchingBids(false);
+    }
+  };
+
+  const handleOpenFullChat = async (bid) => {
+    setSelectedBid(bid);
+    setIsFullChatOpen(true);
+    setMessages([]);
+    try {
+      setFetchingMessages(true);
+      const res = await adminApi.getChatMessages(bid._id || bid.id);
+      setMessages(res.data.messages || []);
+    } catch (err) {
+      console.error('Failed to fetch messages:', err);
+    } finally {
+      setFetchingMessages(false);
+    }
   };
 
   const handleDeleteLead = (lead) => {
@@ -164,8 +195,8 @@ const LeadManagement = () => {
                 className="gap-2 p-3 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors"
                 onClick={() => handleViewChats(row)}
               >
-                <MessageSquare className="w-4 h-4 text-blue-500" />
-                <span className="text-[10px] font-black uppercase tracking-widest">View Chats</span>
+                <Layers className="w-4 h-4 text-blue-500" />
+                <span className="text-[10px] font-black uppercase tracking-widest">View Bids</span>
               </DropdownMenuItem>
               <DropdownMenuItem 
                 className="gap-2 p-3 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors"
@@ -310,8 +341,8 @@ const LeadManagement = () => {
       <Modal
         isOpen={isChatModalOpen}
         onClose={() => setIsChatModalOpen(false)}
-        title="Lead Communications"
-        description="Review negotiation history and vendor inquiries"
+        title="Vendor Bids & Response Hub"
+        description="Detailed breakdown of all quotes and live negotiation status"
         size="sm"
       >
         {selectedLead && (
@@ -326,27 +357,59 @@ const LeadManagement = () => {
               </Badge>
             </div>
 
-            <div className="space-y-4">
-              {[
-                { name: "Vijay Logistics", message: "We can handle this requirement. Sent a quote for ₹2,500.", time: "2h ago" },
-                { name: "Speedy Movers", message: "Available for tomorrow morning. Let me know if you are interested.", time: "4h ago" }
-              ].slice(0, selectedLead.responses > 0 ? 2 : 0).map((chat, i) => (
-                <div key={i} className="flex gap-3 group">
-                   <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center shrink-0 border border-zinc-200">
-                      <User className="w-4 h-4 text-zinc-400" />
-                   </div>
-                   <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                         <span className="text-[10px] font-black text-zinc-900 uppercase tracking-tight">{chat.name}</span>
-                         <span className="text-[8px] text-zinc-400 uppercase font-bold">{chat.time}</span>
-                      </div>
-                      <p className="text-[10px] text-zinc-500 leading-relaxed font-medium bg-zinc-50 p-2 rounded-lg border border-zinc-100 italic">
-                        "{chat.message}"
-                      </p>
-                   </div>
+            <div className="space-y-4 min-h-[200px] flex flex-col justify-center">
+              {fetchingBids ? (
+                <div className="flex flex-col items-center gap-2 animate-pulse">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Loading Communications...</p>
                 </div>
-              ))}
-              {selectedLead.responses === 0 && (
+              ) : bids.length > 0 ? (
+                <div className="space-y-3">
+                  {bids.map((bid, i) => (
+                    <div 
+                      key={i} 
+                      className="flex gap-3 group cursor-pointer hover:bg-zinc-50 p-2 rounded-xl transition-colors border border-transparent hover:border-zinc-100"
+                      onClick={() => handleOpenFullChat(bid)}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center shrink-0 border border-zinc-200">
+                          <User className="w-5 h-5 text-zinc-400" />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black text-zinc-900 uppercase tracking-tight line-clamp-1">{bid.vendor?.businessName || bid.vendor?.name}</span>
+                            <span className="text-sm font-black text-primary italic tracking-tighter">₹{bid.amount}</span>
+                          </div>
+                          
+                          <div className="flex items-center justify-between gap-4">
+                             <div className="flex-1">
+                                <p className="text-[9px] text-zinc-500 leading-tight font-medium line-clamp-1">
+                                  {bid.lastMessage?.text || "No messages yet"}
+                                </p>
+                             </div>
+                             <div className={cn(
+                               "px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest",
+                               bid.status === 'accepted' ? "bg-emerald-500 text-white" : "bg-zinc-100 text-zinc-400 border border-zinc-200"
+                             )}>
+                                {bid.status}
+                             </div>
+                          </div>
+
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-full text-[7px] font-black uppercase tracking-tighter bg-zinc-50 hover:bg-zinc-900 hover:text-white rounded-md mt-1"
+                            onClick={(e) => {
+                               e.stopPropagation();
+                               handleOpenFullChat(bid);
+                            }}
+                          >
+                             Inspect Conversation
+                          </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
                 <div className="py-6 text-center space-y-1.5">
                    <MessageSquare className="w-6 h-6 text-zinc-200 mx-auto" />
                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">No active chats for this lead</p>
@@ -354,15 +417,13 @@ const LeadManagement = () => {
               )}
             </div>
 
-            <Button 
-              className="w-full bg-zinc-900 text-white font-black uppercase text-[8px] tracking-widest h-9 rounded-lg hover:bg-zinc-800 transition-colors"
-              onClick={() => {
-                setIsChatModalOpen(false);
-                setIsFullChatOpen(true);
-              }}
-            >
-              Open Full Chat Thread
-            </Button>
+               <Button 
+                variant="ghost"
+                className="w-full text-zinc-400 font-black uppercase text-[8px] tracking-widest h-9 rounded-lg hover:bg-zinc-100 transition-colors"
+                onClick={() => setIsChatModalOpen(false)}
+              >
+                Close Panel
+              </Button>
           </div>
         )}
       </Modal>
@@ -418,7 +479,7 @@ const LeadManagement = () => {
         description="Review all messages exchanged between parties"
         size="lg"
       >
-        {selectedLead && (
+        {selectedBid && (
           <div className="flex flex-col h-[60vh]">
             {/* Thread Header */}
             <div className="p-3 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50 rounded-t-2xl">
@@ -427,45 +488,76 @@ const LeadManagement = () => {
                      <Package className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                     <h4 className="text-[11px] font-black text-zinc-900 uppercase tracking-tight">{selectedLead.serviceType}</h4>
-                     <p className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest italic">{selectedLead.userName} • {selectedLead.location}</p>
+                     <h4 className="text-[11px] font-black text-zinc-900 uppercase tracking-tight">{selectedLead?.serviceType}</h4>
+                     <p className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest italic">{selectedLead?.userName || 'Guest'} ↔ {selectedBid.vendor?.businessName || selectedBid.vendor?.name}</p>
                   </div>
                </div>
                <div className="text-right">
-                  <p className="text-[9px] font-black text-emerald-500 uppercase italic leading-none">Status: {selectedLead.status}</p>
-                  <p className="text-[7px] text-zinc-400 font-bold uppercase tracking-widest">ID: {selectedLead.id}</p>
+                  <p className="text-[9px] font-black text-emerald-500 uppercase italic leading-none">Status: {selectedBid.status}</p>
+                  <p className="text-[7px] text-zinc-400 font-bold uppercase tracking-widest">Bid ID: {selectedBid._id}</p>
                </div>
             </div>
 
             {/* Message Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 admin-scrollbar">
-               {[
-                 { sender: selectedLead.userName, role: "customer", message: "Hi, I need to move my 2BHK furniture to Bhopal. Looking for a safe and affordable option.", time: "10:00 AM" },
-                 { sender: "Vijay Logistics", role: "vendor", message: "Hello! We specialize in long-distance shifting. We can provide a dedicated truck and 2 packers for ₹2,500. All items will be bubble wrapped.", time: "10:15 AM" },
-                 { sender: selectedLead.userName, role: "customer", message: "That sounds good. Does the price include toll and fuel?", time: "10:30 AM" },
-                 { sender: "Vijay Logistics", role: "vendor", message: "Yes, it's an all-inclusive price. No hidden charges.", time: "10:45 AM" },
-                 { sender: "Speedy Movers", role: "vendor", message: "We can do it for ₹2,300, but loading/unloading will be extra.", time: "11:00 AM" },
-                 { sender: selectedLead.userName, role: "customer", message: "I'll go with Vijay Logistics as they include everything. Can we finalize for Sunday?", time: "11:30 AM" },
-                 { sender: "Vijay Logistics", role: "vendor", message: "Perfect. We've blocked the slot for Sunday. Please confirm the deal.", time: "11:45 AM" },
-               ].map((msg, i) => (
-                 <div key={i} className={cn(
-                   "flex flex-col gap-1 max-w-[85%]",
-                   msg.role === 'customer' ? "ml-auto items-end" : "mr-auto items-start"
-                 )}>
-                    <div className="flex items-center gap-2">
-                       <span className="text-[7px] font-black text-zinc-400 uppercase tracking-widest">{msg.sender}</span>
-                       <span className="text-[7px] text-zinc-300 font-bold">{msg.time}</span>
-                    </div>
-                    <div className={cn(
-                      "p-2 px-3 rounded-2xl text-[10px] font-medium leading-relaxed uppercase tracking-tight",
-                      msg.role === 'customer' 
-                        ? "bg-zinc-900 text-white rounded-tr-none shadow-lg shadow-zinc-900/10" 
-                        : "bg-zinc-50 text-zinc-600 border border-zinc-100 rounded-tl-none"
-                    )}>
-                       "{msg.message}"
-                    </div>
+               {fetchingMessages ? (
+                 <div className="h-full flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Decrypting Thread...</p>
                  </div>
-               ))}
+               ) : messages.length > 0 ? (
+                 messages.map((msg, i) => (
+                   <div key={i} className={cn(
+                     "flex flex-col gap-1 max-w-[85%]",
+                     msg.senderRole === 'user' ? "ml-auto items-end" : "mr-auto items-start"
+                   )}>
+                      <div className="flex items-center gap-2">
+                         <span className="text-[7px] font-black text-zinc-400 uppercase tracking-widest">
+                           {msg.senderRole === 'user' ? selectedLead?.userName : (selectedBid.vendor?.businessName || selectedBid.vendor?.name)}
+                         </span>
+                         <span className="text-[7px] text-zinc-300 font-bold">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <div className={cn(
+                        "p-2 px-3 rounded-2xl text-[10px] font-medium leading-relaxed uppercase tracking-tight relative overflow-hidden",
+                        msg.text.includes('DEAL ACCEPTED') 
+                          ? "bg-emerald-500 text-white border-2 border-emerald-400/50 shadow-lg shadow-emerald-500/20" 
+                          : msg.type === 'offer'
+                            ? "bg-primary text-zinc-900 border-2 border-primary/20 shadow-md"
+                            : msg.senderRole === 'user' 
+                              ? "bg-zinc-900 text-white rounded-tr-none shadow-lg shadow-zinc-900/10" 
+                              : "bg-zinc-50 text-zinc-600 border border-zinc-100 rounded-tl-none"
+                      )}>
+                         {msg.type === 'offer' && (
+                            <div className="flex items-center gap-1 mb-1 border-b border-black/10 pb-1">
+                               <CheckCircle2 className="w-3 h-3" />
+                               <span className="text-[7px] font-black uppercase tracking-tighter">Price Proposal</span>
+                            </div>
+                         )}
+                         {msg.text.includes('DEAL ACCEPTED') && (
+                            <div className="flex items-center gap-1 mb-1 border-b border-white/20 pb-1">
+                               <Package className="w-3 h-3" />
+                               <span className="text-[7px] font-black uppercase tracking-tighter">Finalized Contract</span>
+                            </div>
+                         )}
+                         "{msg.text}"
+                         
+                         {(msg.type === 'offer' || msg.text.includes('DEAL ACCEPTED')) && (
+                            <div className="absolute -right-2 -bottom-2 opacity-10">
+                               <Package className="w-8 h-8 rotate-12" />
+                            </div>
+                         )}
+                      </div>
+                   </div>
+                 ))
+               ) : (
+                 <div className="h-full flex flex-col items-center justify-center gap-2">
+                    <MessageSquare className="w-8 h-8 text-zinc-200" />
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">
+                      No message history found for this negotiation.<br/>
+                      Starting bid was ₹{selectedBid.amount}.
+                    </p>
+                 </div>
+               )}
             </div>
 
             {/* Moderation Footer */}
@@ -473,7 +565,7 @@ const LeadManagement = () => {
                <div className="flex items-center gap-3">
                   <div className="flex-1 p-2 bg-white border border-zinc-200 rounded-xl">
                      <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-0.5">Moderator Action Note</p>
-                     <p className="text-[9px] text-zinc-500 italic font-medium">Thread active. Deal finalized Feb 12.</p>
+                     <p className="text-[9px] text-zinc-500 italic font-medium">Thread active. Monitoring for compliance.</p>
                   </div>
                   <Button className="bg-rose-500 text-white font-black uppercase text-[8px] tracking-widest h-9 px-5 rounded-lg hover:bg-rose-600 shadow-lg shadow-rose-500/10">
                      Flag Thread

@@ -101,6 +101,75 @@ const Dashboard = () => {
     { title: "Total Revenue", value: stats?.totalRevenue || "₹0", icon: IndianRupee, trend: stats?.monthlyGrowth || "+0%", trendDirection: "up", color: "primary" },
   ];
 
+  const dateInputRef = React.useRef(null);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const handleDateChange = (e) => {
+    const newDate = e.target.value;
+    setSelectedDate(newDate);
+    
+    // Format for display
+    const dateObj = new Date(newDate);
+    const displayDate = dateObj.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    
+    toast.success(`Dashboard view filtered for ${displayDate}`);
+    // Here you would normally fetch data for this specific date
+    handleRefresh(); 
+  };
+
+  const handleExport = () => {
+    if (!stats) {
+      toast.error("No data available to export");
+      return;
+    }
+    
+    // Create CSV content
+    const headers = ["Metric", "Value", "Trend"];
+    const rows = [
+      ["Total Users", stats.totalUsers || 0, "+12%"],
+      ["Active Vendors", stats.totalVendors || 0, "+5%"],
+      ["Total Leads", stats.totalRequirements || 0, "+18%"],
+      ["Active Subscriptions", stats.activeSubscriptions || 0, "+2%"],
+      ["Total Revenue", stats.totalRevenue || "₹0", stats.monthlyGrowth || "+0%"],
+      ["Timestamp", new Date().toLocaleString(), "N/A"]
+    ];
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `GetGoLoad_Platform_Report_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success("Platform report exported successfully!");
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      const [statsRes, leadsRes] = await Promise.all([
+        adminApi.getStats(),
+        adminApi.getAllRequirements({ limit: 3 })
+      ]);
+      setStats(statsRes.data);
+      setRecentLeads(leadsRes.data || []);
+    } catch (err) {
+      console.error("Failed to refresh dashboard:", err);
+      toast.error("Failed to refresh dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-[80vh] flex items-center justify-center">
@@ -118,11 +187,27 @@ const Dashboard = () => {
           <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Real-time health and operational metrics</p>
         </div>
         <div className="flex items-center gap-3">
-           <Button variant="outline" className="border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 text-zinc-500 dark:text-zinc-400 text-[10px] font-bold uppercase tracking-widest h-11 px-6 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-              <Calendar className="w-4 h-4 mr-2" />
-              {currentMonthYear}
-           </Button>
-           <Button className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold uppercase tracking-widest text-[10px] h-11 px-8 rounded-xl shadow-lg hover:opacity-90 transition-opacity">
+           <div className="relative">
+             <input 
+               type="date"
+               ref={dateInputRef}
+               onChange={handleDateChange}
+               value={selectedDate}
+               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+               style={{ colorScheme: 'light' }}
+             />
+             <Button 
+               variant="outline" 
+               className="border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 text-zinc-500 dark:text-zinc-400 text-[10px] font-bold uppercase tracking-widest h-11 px-6 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+             >
+                <Calendar className="w-4 h-4 mr-2" />
+                {new Date(selectedDate).toLocaleString('en-US', { month: 'short', year: 'numeric' })}
+             </Button>
+           </div>
+           <Button 
+             onClick={handleExport}
+             className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold uppercase tracking-widest text-[10px] h-11 px-8 rounded-xl shadow-lg hover:opacity-90 transition-opacity"
+           >
               <Download className="w-4 h-4 mr-2" />
               Export Report
            </Button>

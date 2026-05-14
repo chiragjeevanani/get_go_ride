@@ -31,9 +31,13 @@ export const createRequirement = async (req, res, next) => {
       if (!time) {
         return error(res, 'Booking time is required', 400, 'MISSING_TIME');
       }
+      
       // If booking date is today, check if time has already passed
+      // Add a 5-minute grace period for network latency/clock skew
       const [reqHours, reqMinutes] = time.split(':').map(Number);
       const now = new Date();
+      now.setMinutes(now.getMinutes() - 5); // 5 min grace period
+      
       if (reqHours < now.getHours() || (reqHours === now.getHours() && reqMinutes < now.getMinutes())) {
         return error(res, 'Booking time cannot be in the past', 400, 'INVALID_TIME');
       }

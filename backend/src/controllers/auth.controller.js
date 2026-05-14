@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import OtpSession from '../models/OtpSession.model.js';
+import SystemSetting from '../models/SystemSetting.model.js';
 import User from '../models/User.model.js';
 import Vendor from '../models/Vendor.model.js';
 import Admin from '../models/Admin.model.js';
@@ -88,16 +89,40 @@ export const verifyOtpHandler = async (req, res, next) => {
     let account;
     let isNewUser = false;
 
+    // Fetch signup bonus from settings
+    const bonusSetting = await SystemSetting.findOne({ key: 'walletSignupBonus' });
+    const signupBonus = bonusSetting ? Number(bonusSetting.value) : 50;
+
     if (role === 'user') {
       account = await User.findOne({ phone });
       if (!account) {
-        account = await User.create({ phone });
+        account = await User.create({ 
+          phone, 
+          wallet: { 
+            balance: signupBonus,
+            transactions: [{
+              type: 'credit',
+              amount: signupBonus,
+              description: 'Sign-up Reward Bonus'
+            }]
+          }
+        });
         isNewUser = true;
       }
     } else if (role === 'vendor') {
       account = await Vendor.findOne({ phone });
       if (!account) {
-        account = await Vendor.create({ phone });
+        account = await Vendor.create({ 
+          phone,
+          wallet: { 
+            balance: signupBonus,
+            transactions: [{
+              type: 'credit',
+              amount: signupBonus,
+              description: 'Sign-up Reward Bonus'
+            }]
+          }
+        });
         isNewUser = true;
       }
     }

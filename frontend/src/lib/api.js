@@ -191,6 +191,8 @@ export const settingsApi = {
   get: () => api.get('/settings'),
   getRazorpayKey: () => api.get('/settings/razorpay-key'),
   update: (data) => api.put('/settings', data),
+  getRevenueModel: () => api.get('/settings/revenue-model'),
+  updateRevenueModel: (data) => api.put('/settings/revenue-model', data),
 };
 
 export const vehicleApi = {
@@ -255,10 +257,13 @@ export const adminApi = {
   updateUserStatus: (id, status) => api.patch(`/users/${id}/status`, { status }),
   getAllVendors: (params) => api.get('/vendors', { params }),
   verifyVendor: (id, status) => api.patch(`/vendors/${id}/verify`, { status }),
+  verifyDocument: (vendorId, docId, status) => api.patch(`/vendors/${vendorId}/document/${docId}`, { status }),
   getAllRequirements: (params) => api.get('/requirements', { params }),
   updateRequirementStatus: (id, status) => api.patch(`/requirements/${id}/status`, { status }),
   getRevenueStats: () => api.get('/admin/revenue'),
   getLeadsTrend: (params) => api.get('/admin/leads-trend', { params }),
+  getDealBids: (id) => api.get(`/admin/deals/${id}/bids`),
+  getChatMessages: (bidId) => api.get(`/chats/${bidId}/messages`),
 };
 
 export const planApi = {
