@@ -12,8 +12,15 @@ import {
   getVendorById,
   verifyVendor,
   verifyDocument,
-  getMyAnalytics
+  getMyAnalytics,
+  getMyWallet,
 } from '../controllers/vendor.controller.js';
+import {
+  saveBankDetails,
+  getBankDetails,
+  requestWithdrawal,
+  getMyWithdrawals,
+} from '../controllers/withdrawal.controller.js';
 
 const router = express.Router();
 
@@ -31,6 +38,18 @@ router.post('/me/documents', upload.single('document'), uploadDocument);
 router.route('/me/vehicle-images')
   .post(upload.single('image'), uploadVehicleImage)
   .delete(deleteVehicleImage);
+
+// Wallet
+router.get('/me/wallet', getMyWallet);
+
+// Bank Details
+router.route('/me/bank-details')
+  .get(getBankDetails)
+  .post(saveBankDetails);
+
+// Withdrawals
+router.post('/me/withdraw', requestWithdrawal);
+router.get('/me/withdrawals', getMyWithdrawals);
 
 // Publicly accessible but authenticated
 router.get('/:id', authenticate, getVendorById);

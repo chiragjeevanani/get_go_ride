@@ -215,6 +215,7 @@ export const vendorApi = {
   submitOnboarding: (data) => api.post('/vendors/me/onboarding', data),
   uploadDocument: (data) => api.post('/vendors/me/documents', data),
   getAnalytics: () => api.get('/vendors/me/analytics'),
+  getWallet: () => api.get('/vendors/me/wallet'),
   getById: (id) => api.get(`/vendors/${id}`),
   uploadVehicleImage: (formData) => api.post('/vendors/me/vehicle-images', formData, {
     headers: {
@@ -224,6 +225,33 @@ export const vendorApi = {
   deleteVehicleImage: (imageUrl) => api.delete('/vendors/me/vehicle-images', {
     data: { imageUrl }
   }),
+};
+
+export const paymentApi = {
+  // USER — Advance payment (50%)
+  createAdvanceOrder: (bidId) => api.post(`/payments/advance-order/${bidId}`),
+  verifyAdvancePayment: (bidId, data) => api.post(`/payments/advance-verify/${bidId}`, data),
+  verifyFinalPayment: (bidId) => api.get(`/payments/final-verify/${bidId}`),
+  // SHARED — Gig status & upcoming
+  getGigStatus: (bidId) => api.get(`/payments/gig-status/${bidId}`),
+  getUpcomingGigs: () => api.get('/payments/upcoming-gigs'),
+  getGigHistory: () => api.get('/payments/gig-history'),
+  // DRIVER — Gig lifecycle
+  markGigStarted: (bidId) => api.post(`/payments/gig-start/${bidId}`),
+  selectPaymentMethod: (bidId, method) => api.post(`/payments/payment-method/${bidId}`, { method }),
+  completeCashPayment: (bidId) => api.post(`/payments/cash-complete/${bidId}`),
+  createFinalPaymentLink: (bidId) => api.post(`/payments/final-order/${bidId}`),
+};
+
+export const withdrawalApi = {
+  // Driver
+  getBankDetails: () => api.get('/vendors/me/bank-details'),
+  saveBankDetails: (data) => api.post('/vendors/me/bank-details', data),
+  requestWithdrawal: (amount) => api.post('/vendors/me/withdraw', { amount }),
+  getMyWithdrawals: () => api.get('/vendors/me/withdrawals'),
+  // Admin
+  getAllWithdrawals: (params) => api.get('/admin/withdrawals', { params }),
+  processWithdrawal: (id, data) => api.patch(`/admin/withdrawals/${id}`, data),
 };
 
 export const chatApi = {

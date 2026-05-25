@@ -16,6 +16,7 @@ import SupportPage from "../pages/SupportPage";
 import LocationSearchPage from "../pages/LocationSearchPage";
 import NearbyVehicles from "../pages/NearbyVehicles";
 import Wallet from "../pages/Wallet";
+import UpcomingGigUser from "../pages/UpcomingGigUser";
 
 const UserRoutes = () => {
   return (
@@ -42,6 +43,7 @@ const UserRoutes = () => {
           <Route path="payments" element={<PaymentMethods />} />
           <Route path="addresses" element={<SavedAddresses />} />
           <Route path="wallet" element={<Wallet />} />
+          <Route path="gig/:bidId" element={<UpcomingGigUser />} />
           <Route path="support" element={<SupportPage />} />
         </Route>
       </Routes>

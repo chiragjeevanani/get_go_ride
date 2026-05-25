@@ -72,15 +72,25 @@ const vendorSchema = new mongoose.Schema(
     hasVerifiedBadge: { type: Boolean, default: false },
 
     wallet: {
-      balance: { type: Number, default: 0 },
+      activeBalance: { type: Number, default: 0 },   // withdrawable / spendable
+      pendingBalance: { type: Number, default: 0 },  // advance held until gig complete
       transactions: [
         {
-          type: { type: String, enum: ['credit', 'debit'] },
+          type: { type: String, enum: ['credit', 'debit', 'advance_hold', 'advance_release', 'withdrawal'] },
           amount: Number,
           description: String,
+          gigId: { type: String, default: '' },     // bid/requirement reference
           date: { type: Date, default: Date.now },
         },
       ],
+    },
+    // Bank / UPI details for withdrawal (one-time setup)
+    bankDetails: {
+      accountHolderName: { type: String, default: '' },
+      accountNumber: { type: String, default: '' },
+      ifscCode: { type: String, default: '' },
+      bankName: { type: String, default: '' },
+      upiId: { type: String, default: '' },
     },
     // Earnings tracking (for commission-based revenue model)
     totalEarnings: { type: Number, default: 0 },

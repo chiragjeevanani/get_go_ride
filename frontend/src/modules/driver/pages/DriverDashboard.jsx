@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Bolt, Flame, CheckCircle, Shield, Package, ChevronRight, User } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Bolt, Flame, CheckCircle, Shield, Package, ChevronRight, User, Truck, MapPin, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,10 +11,22 @@ import { useDriverState } from "../hooks/useDriverState";
 import { cn } from "@/lib/utils";
 import profileImg from "@/assets/profile.jpg";
 import { toast } from "sonner";
+import { paymentApi } from "@/lib/api";
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { driver, leads, toggleOnline, acceptLead, rejectLead, loading } = useDriverState({ loadLeads: true });
+  const [activeGig, setActiveGig] = useState(null);
+
+  useEffect(() => {
+    const fetchActiveGig = async () => {
+      try {
+        const res = await paymentApi.getUpcomingGigs();
+        if (res.success && res.data?.length > 0) setActiveGig(res.data[0]);
+      } catch {}
+    };
+    fetchActiveGig();
+  }, []);
 
   const getSubExpiryStr = () => {
     if (!driver.subscriptionExpiresAt) return "None";
@@ -100,6 +112,35 @@ const DriverDashboard = () => {
           trendColor={driver.subscriptionStatus === 'Active' ? 'bg-emerald-50 text-emerald-500 shadow-sm' : 'bg-red-50 text-red-500 shadow-sm'}
         />
       </section>
+
+      {/* Active Gig Card */}
+      {activeGig && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <Card
+            className="border-none bg-zinc-900 text-white rounded-none cursor-pointer active:scale-[0.99] transition-all border-l-4 border-primary"
+            onClick={() => navigate(`/driver/gig/${activeGig._id}`)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-primary" />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Active Gig</span>
+                </div>
+                <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2 py-0.5">
+                  {activeGig.gigStatus?.replace('_', ' ') || 'Scheduled'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-black">{activeGig.requirement?.pickup?.address?.split(',')[0] || 'View Gig'}</p>
+                  <p className="text-[10px] text-zinc-500 font-bold mt-0.5">₹{(activeGig.advanceAmount || Math.round(activeGig.amount * 0.5)).toLocaleString('en-IN')} advance received</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-zinc-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Subscription Alert (if not subscribed) */}
       {!driver.isSubscribed && (

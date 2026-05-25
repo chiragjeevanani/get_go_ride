@@ -38,6 +38,29 @@ const bidSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // ─── Payment Lifecycle (50% advance + 50% final) ─────────────────────────
+    paymentStatus: {
+      type: String,
+      enum: ['unpaid', 'advance_paid', 'completed'],
+      default: 'unpaid',
+    },
+    gigStatus: {
+      type: String,
+      enum: ['scheduled', 'in_progress', 'completed'],
+      default: 'scheduled',
+    },
+    advanceAmount: { type: Number, default: 0 },   // 50% of bid amount
+    finalAmount: { type: Number, default: 0 },     // 50% of bid amount
+    advancePaymentId: { type: String, default: '' },   // Razorpay payment ID
+    advanceOrderId: { type: String, default: '' },     // Razorpay order ID
+    finalPaymentId: { type: String, default: '' },     // Razorpay payment ID or 'cash'
+    finalOrderId: { type: String, default: '' },       // Razorpay order ID for final payment link
+    finalPaymentMethod: {
+      type: String,
+      enum: ['cash', 'online', null],
+      default: null,
+    },
+    finalPaymentLinkUrl: { type: String, default: '' }, // Razorpay payment link short_url
   },
   { timestamps: true }
 );

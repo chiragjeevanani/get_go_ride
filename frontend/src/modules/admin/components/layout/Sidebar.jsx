@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Truck, MessageSquare, 
   CreditCard, PieChart, Layers, ShieldCheck, 
   Settings, Bell, ChevronLeft, ChevronRight,
-  LogOut, Shield, Activity
+  LogOut, Shield, Activity, Banknote
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +30,7 @@ const navGroups = [
     items: [
       { path: "/admin/subscriptions", icon: CreditCard, label: "Subscriptions" },
       { path: "/admin/revenue", icon: PieChart, label: "Revenue" },
+      { path: "/admin/withdrawals", icon: Banknote, label: "Withdrawals" },
     ]
   },
   {

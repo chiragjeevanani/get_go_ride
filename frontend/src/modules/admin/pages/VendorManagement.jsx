@@ -518,7 +518,7 @@ const VendorManagement = () => {
                         <p className="text-[7px] font-black text-zinc-600 uppercase tracking-widest">Docs Verified</p>
                      </div>
                   </div>
-               </TabsContent>t>
+               </TabsContent>
             </Tabs>
           </div>
         )}

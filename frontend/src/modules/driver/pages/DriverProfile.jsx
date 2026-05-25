@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { 
   User, Car, MapPin, IndianRupee, Camera, FileText,
   ChevronRight, CheckCircle, ShieldCheck, LogOut, Edit3, Settings,
-  BarChart2, Star, Zap, Bell, Shield, HelpCircle, X, Loader2, Plus, Check
+  BarChart2, Star, Zap, Bell, Shield, HelpCircle, X, Loader2, Plus, Check, History
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDriverState } from "../hooks/useDriverState";
 import { cn } from "@/lib/utils";
-import { categoryApi, vehicleApi, vendorApi } from "@/lib/api";
+import { categoryApi, vehicleApi, vendorApi, paymentApi } from "@/lib/api";
 import { storage } from "@/lib/storage";
 import { toast } from "sonner";
 import profileImg from "@/assets/profile.jpg";
@@ -137,6 +137,24 @@ const DriverProfile = () => {
   const menuItems = [
     { icon: <Car className="w-4 h-4" />, label: "Vehicle Details", desc: `${driver.vehicleType || "Not configured"} • ${driver.vehicleRegNumber || "No Reg"}`, path: "/driver/profile/vehicle" },
     { icon: <IndianRupee className="w-4 h-4" />, label: "Pricing & Service Areas", desc: driver.operatingAreas || "Set operating cities", path: "#", onClick: openEditModal },
+    { 
+      icon: <IndianRupee className="w-4 h-4" />, 
+      label: "My Wallet & Earnings", 
+      desc: `Active Balance: ₹${(driver.wallet?.activeBalance || 0).toLocaleString('en-IN')}`, 
+      path: "/driver/earnings" 
+    },
+    { 
+      icon: <Zap className="w-4 h-4" />, 
+      label: "Upcoming Gigs", 
+      desc: "View active gig work orders", 
+      path: "/driver/gigs"
+    },
+    { 
+      icon: <History className="w-4 h-4" />, 
+      label: "Gig History", 
+      desc: "Completed fleet jobs record", 
+      path: "/driver/history" 
+    },
     { 
       icon: <ShieldCheck className="w-4 h-4" />, 
       label: "Subscription", 

@@ -437,24 +437,32 @@ export const getMyWallet = async (req, res, next) => {
     const vendor = await Vendor.findById(req.user.id);
     if (!vendor) return error(res, 'Vendor not found', 404, 'NOT_FOUND');
     
-    // Auto-credit signup bonus if wallet is empty and no transactions exist
-    if ((vendor.wallet.balance || 0) === 0 && vendor.wallet.transactions.length === 0) {
+    // Auto-credit signup bonus if wallet is completely fresh
+    const activeBalance = vendor.wallet.activeBalance || 0;
+    const pendingBalance = vendor.wallet.pendingBalance || 0;
+    const hasNoTransactions = vendor.wallet.transactions.length === 0;
+
+    if (activeBalance === 0 && pendingBalance === 0 && hasNoTransactions) {
       const bonusSetting = await SystemSetting.findOne({ key: 'walletSignupBonus' });
       const signupBonus = bonusSetting ? Number(bonusSetting.value) : 50;
       
       if (signupBonus > 0) {
-        vendor.wallet.balance = signupBonus;
+        vendor.wallet.activeBalance = signupBonus;
         vendor.wallet.transactions.push({
           type: 'credit',
           amount: signupBonus,
           description: 'Welcome Sign-up Bonus',
-          date: new Date()
+          date: new Date(),
         });
         await vendor.save();
       }
     }
     
-    success(res, vendor.wallet, 'Wallet retrieved successfully');
+    success(res, {
+      activeBalance: vendor.wallet.activeBalance || 0,
+      pendingBalance: vendor.wallet.pendingBalance || 0,
+      transactions: vendor.wallet.transactions || [],
+    }, 'Wallet retrieved successfully');
   } catch (err) {
     next(err);
   }

@@ -17,6 +17,11 @@ import AccountSecurity from "../pages/AccountSecurity";
 import HelpSupport from "../pages/HelpSupport";
 import CheckoutPage from "../pages/CheckoutPage";
 import EarningsWallet from "../pages/EarningsWallet";
+import UpcomingGigDriver from "../pages/UpcomingGigDriver";
+import BankDetailsPage from "../pages/BankDetailsPage";
+import WithdrawalPage from "../pages/WithdrawalPage";
+import UpcomingGigsList from "../pages/UpcomingGigsList";
+import GigHistory from "../pages/GigHistory";
 
 const DriverRoutes = () => {
   return (
@@ -42,6 +47,11 @@ const DriverRoutes = () => {
           <Route path="profile/support" element={<HelpSupport />} />
           <Route path="checkout/:id" element={<CheckoutPage />} />
           <Route path="earnings" element={<EarningsWallet />} />
+          <Route path="gigs" element={<UpcomingGigsList />} />
+          <Route path="gig/:bidId" element={<UpcomingGigDriver />} />
+          <Route path="history" element={<GigHistory />} />
+          <Route path="bank-details" element={<BankDetailsPage />} />
+          <Route path="withdraw" element={<WithdrawalPage />} />
         </Route>
       </Routes>
     </div>

@@ -2,7 +2,7 @@ import React from "react";
 import { 
   User, Settings, Package, Heart, CreditCard, 
   HelpCircle, LogOut, ChevronRight, Edit3, 
-  ShieldCheck, Bell, MapPin, Wallet 
+  ShieldCheck, Bell, MapPin, Wallet, Truck
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { userApi } from "@/lib/api";
+import { userApi, paymentApi } from "@/lib/api";
 import { toast } from "sonner";
 import { 
   Dialog, DialogContent, DialogHeader, 
@@ -98,6 +98,26 @@ const ProfilePage = () => {
 
   const menuItems = [
     { icon: <Package className="w-4 h-4" />, label: "Order History", desc: "View past and active requests", path: "/user/requests" },
+    { 
+      icon: <Truck className="w-4 h-4" />, 
+      label: "Upcoming Gigs", 
+      desc: "Track scheduled or active bookings", 
+      path: "#",
+      onClick: async () => {
+        try {
+          toast.loading("Checking upcoming gigs...", { id: "check-gigs" });
+          const res = await paymentApi.getUpcomingGigs();
+          if (res.success && res.data?.length > 0) {
+            toast.success("Gig found! Redirecting...", { id: "check-gigs" });
+            navigate(`/user/gig/${res.data[0]._id}`);
+          } else {
+            toast.info("No upcoming gigs scheduled currently.", { id: "check-gigs" });
+          }
+        } catch (err) {
+          toast.error("Failed to fetch upcoming gigs.", { id: "check-gigs" });
+        }
+      }
+    },
     { icon: <CreditCard className="w-4 h-4" />, label: "Payments", desc: "Manage cards and methods", path: "/user/payments" },
     { icon: <MapPin className="w-4 h-4" />, label: "Addresses", desc: "Select frequent locations", path: "/user/addresses" },
     { icon: <Wallet className="w-4 h-4" />, label: "Wallet", desc: "Manage coins & balance", path: "/user/wallet" },
@@ -245,7 +265,7 @@ const ProfilePage = () => {
                <Card 
                  key={idx} 
                  className="border border-zinc-100 shadow-sm hover:shadow-md transition-all cursor-pointer group rounded-xl bg-white"
-                 onClick={() => navigate(item.path)}
+                 onClick={item.onClick ? item.onClick : () => navigate(item.path)}
                >
                   <CardContent className="p-2.5 flex items-center justify-between">
                      <div className="flex items-center gap-3">

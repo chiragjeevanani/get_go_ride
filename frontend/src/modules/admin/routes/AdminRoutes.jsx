@@ -16,6 +16,7 @@ const Notifications = lazy(() => import('../pages/Notifications'));
 const ActivityFeed = lazy(() => import('../pages/ActivityFeed'));
 const Faqs = lazy(() => import('../pages/Faqs'));
 const Login = lazy(() => import('../pages/Login'));
+const WithdrawalManagement = lazy(() => import('../pages/WithdrawalManagement'));
 
 // Placeholder Loading Component
 const PageLoading = () => (
@@ -50,6 +51,7 @@ const AdminRoutes = () => {
           <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
           <Route path="faqs" element={<Faqs />} />
+          <Route path="withdrawals" element={<WithdrawalManagement />} />
           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Route>
       </Routes>
