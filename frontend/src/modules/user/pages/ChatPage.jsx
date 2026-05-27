@@ -211,9 +211,9 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen -m-4 bg-zinc-50 relative overflow-hidden">
+    <div className="flex flex-col h-screen bg-zinc-50 relative overflow-hidden">
       {/* Header */}
-      <header className="bg-white border-b border-zinc-100 p-4 pt-8 sticky top-0 z-40 safe-area-top shadow-sm flex items-center justify-between">
+      <header className="bg-white border-b border-zinc-100 px-4 py-2 pt-4 sticky top-0 z-40 safe-area-top shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => navigate(-1)}>
             <ChevronLeft className="w-6 h-6" />
@@ -270,15 +270,11 @@ const ChatPage = () => {
                       }
                       setShowMenu(false);
                     }},
-                    { label: "Block Vendor", icon: X, color: "text-red-500", onClick: () => {
-                      alert("Vendor blocked successfully");
-                      setShowMenu(false);
-                    }},
                   ].map((item, i) => (
                     <button 
                       key={i}
                       className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-black uppercase tracking-tighter hover:bg-zinc-50 transition-colors",
+                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-tighter hover:bg-zinc-50 transition-colors",
                         item.color || "text-zinc-600"
                       )}
                       onClick={() => {
@@ -321,10 +317,8 @@ const ChatPage = () => {
         >
           Counter Offer
         </Button>
-        <div className="w-px h-6 bg-zinc-100 self-center mx-1 shrink-0"></div>
         <Button 
-          variant="ghost"
-          className="text-zinc-400 font-bold text-[9px] uppercase tracking-wider shrink-0 h-9 px-3"
+          className="bg-zinc-100 text-zinc-700 hover:bg-zinc-200 rounded-xl h-9 px-4 text-[10px] font-black uppercase tracking-widest shrink-0 border-none"
         >
           Request Fleet Photos
         </Button>
@@ -504,38 +498,38 @@ const ChatPage = () => {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="relative w-full max-w-md bg-white rounded-t-[2.5rem] p-6 pb-10 shadow-2xl"
+              className="relative w-full max-w-md bg-white rounded-t-3xl p-5 pb-6 shadow-2xl"
             >
-              <div className="w-12 h-1.5 bg-zinc-100 rounded-full mx-auto mb-6"></div>
-              <div className="space-y-6">
+              <div className="w-10 h-1 bg-zinc-200 rounded-full mx-auto mb-4"></div>
+              <div className="space-y-4">
                 <div className="text-center space-y-1">
-                  <h3 className="text-lg font-black text-zinc-900 uppercase italic">Make a Counter Offer</h3>
+                  <h3 className="text-base font-bold text-zinc-900 uppercase italic">Make a Counter Offer</h3>
                   <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Vendor Quote: {vendor.quote}</p>
                 </div>
 
                 <div className="relative">
-                  <span className="absolute left-6 top-1/2 -translate-y-1/2 text-3xl font-black text-zinc-300 italic">₹</span>
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xl font-bold text-zinc-300 italic">₹</span>
                   <input 
                     type="number"
                     placeholder="0"
                     value={counterPrice}
                     onChange={(e) => setCounterPrice(e.target.value)}
-                    className="w-full h-20 bg-zinc-50 rounded-[1.5rem] border-none text-center text-4xl font-black focus:ring-2 focus:ring-primary/20 outline-none tabular-nums"
+                    className="w-full h-14 bg-zinc-50 rounded-xl border border-zinc-100 text-center text-2xl font-bold focus:ring-2 focus:ring-primary/20 outline-none tabular-nums"
                   />
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-2.5">
                   <Button 
                     variant="ghost"
                     onClick={() => setShowCounterModal(false)}
-                    className="flex-1 h-14 rounded-2xl font-black text-xs uppercase tracking-widest border border-zinc-100"
+                    className="flex-1 h-12 rounded-xl font-bold text-[10px] uppercase tracking-widest border border-zinc-200"
                   >
                     Cancel
                   </Button>
                   <Button 
                     onClick={handleCounterOffer}
                     disabled={!counterPrice}
-                    className="flex-[2] h-14 rounded-2xl bg-zinc-900 text-primary font-black text-xs uppercase tracking-widest shadow-xl shadow-zinc-900/20"
+                    className="flex-[2] h-12 rounded-xl bg-zinc-900 text-primary font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-zinc-900/20"
                   >
                     Send Offer
                   </Button>

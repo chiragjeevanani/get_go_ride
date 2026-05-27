@@ -203,7 +203,7 @@ const VehicleDetails = () => {
       initial={{ opacity: 0, x: 10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6 pb-24 pt-4 px-1"
+      className="space-y-6 pb-24 pt-4 px-4"
     >
       {/* Hidden Doc File Input */}
       <input 
@@ -215,7 +215,7 @@ const VehicleDetails = () => {
       />
 
       {/* Header */}
-      <header className="flex items-center gap-4 -mx-5 px-5 py-3 border-b-2 border-yellow-400 sticky top-0 bg-white/90 backdrop-blur-md z-30 mb-5">
+      <header className="flex items-center gap-4 -mx-4 px-4 py-3 border-b-2 border-yellow-400 sticky top-0 bg-white/90 backdrop-blur-md z-30 mb-5">
         <Button variant="ghost" size="icon" className="w-9 h-9 rounded-xl bg-zinc-50 border border-zinc-100" onClick={() => navigate(-1)}>
           <ChevronLeft className="w-5 h-5 text-zinc-600" />
         </Button>

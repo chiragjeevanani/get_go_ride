@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { 
   User, Car, MapPin, IndianRupee, Camera, FileText,
-  ChevronRight, CheckCircle, ShieldCheck, LogOut, Edit3, Settings,
+  ChevronRight, ChevronLeft, CheckCircle, ShieldCheck, LogOut, Edit3, Settings,
   BarChart2, Star, Zap, Bell, Shield, HelpCircle, X, Loader2, Plus, Check, History
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -171,12 +171,21 @@ const DriverProfile = () => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="space-y-3 pb-8"
+      className="space-y-3 pb-8 px-4"
     >
       {/* Profile Header */}
-      <header className="flex justify-between items-center py-4 -mx-4 px-4 sticky top-0 bg-white/95 backdrop-blur-md z-30 w-full mb-2">
-        <div className="w-10"></div>
-        <div className="w-10"></div>
+      <header className="flex justify-between items-center px-2 py-3 border-b-2 border-yellow-400 sticky top-0 bg-white/95 backdrop-blur-md z-30 mb-2 -mx-4">
+        <div className="flex items-center gap-3 px-2">
+           <Button variant="ghost" size="icon" className="w-8 h-8 rounded-xl bg-zinc-50 border border-zinc-100" onClick={() => navigate(-1)}>
+              <ChevronLeft className="w-4 h-4 text-zinc-600" />
+           </Button>
+           <div>
+              <h1 className="text-base font-semibold text-zinc-900 tracking-tighter uppercase leading-none">Profile</h1>
+              <div className="flex items-center gap-1.5 mt-1">
+                 <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Driver Settings</span>
+              </div>
+           </div>
+        </div>
       </header>
 
       <div className="flex flex-col items-center gap-2.5 pt-1.5">

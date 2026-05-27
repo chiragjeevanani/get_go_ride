@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { 
   CheckCircle2, Package, Truck, Calendar, MapPin, 
   ArrowRight, ShieldCheck, Star, Loader2,
-  ArrowLeft, Home, MessageSquare, Clock, Wallet, CreditCard, AlertCircle
+  ArrowLeft, Home, MessageSquare, Clock, Wallet, CreditCard, AlertCircle, ChevronLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -83,7 +83,7 @@ const FinalizationFlow = () => {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
-        <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Compiling Deal Summary...</p>
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">Compiling Deal Summary...</p>
       </div>
     );
   }
@@ -232,21 +232,21 @@ const FinalizationFlow = () => {
               <CheckCircle2 className="w-12 h-12" />
             </motion.div>
             <div className="space-y-2">
-              <h1 className="text-3xl font-black text-black tracking-tighter">Gig Confirmed!</h1>
+              <h1 className="text-3xl font-semibold text-black tracking-tighter">Gig Confirmed!</h1>
               <p className="text-sm text-zinc-500 font-bold uppercase tracking-widest px-8">Advance of ₹{advanceAmount.toLocaleString('en-IN')} paid</p>
             </div>
           </header>
 
-          <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
+          <Card className="border-none shadow-xl rounded-xl overflow-hidden bg-white">
             <div className="bg-emerald-500 p-6 text-white">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Advance Paid</p>
-                  <p className="text-3xl font-black">₹{advanceAmount.toLocaleString('en-IN')}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest opacity-80">Advance Paid</p>
+                  <p className="text-3xl font-semibold">₹{advanceAmount.toLocaleString('en-IN')}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Remaining (after gig)</p>
-                  <p className="text-xl font-black">₹{finalAmount.toLocaleString('en-IN')}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest opacity-80">Remaining (after gig)</p>
+                  <p className="text-xl font-semibold">₹{finalAmount.toLocaleString('en-IN')}</p>
                 </div>
               </div>
             </div>
@@ -263,7 +263,7 @@ const FinalizationFlow = () => {
           <div className="space-y-3 pt-2">
             {bidId && (
               <Button
-                className="w-full h-14 rounded-3xl bg-primary text-black text-base font-black shadow-lg"
+                className="w-full h-14 rounded-xl bg-primary text-black text-base font-semibold shadow-lg"
                 onClick={() => navigate(`/user/gig/${bidId}`)}
               >
                 <Clock className="w-5 h-5 mr-2" /> Track Upcoming Gig
@@ -284,8 +284,24 @@ const FinalizationFlow = () => {
 
   return (
     <div className="min-h-screen bg-white pb-10">
-      <div className="max-w-md mx-auto p-4 space-y-6">
-        {/* Header */}
+      <div className="max-w-md mx-auto">
+        <header className="flex items-center gap-3 py-3 border-b-2 border-primary/20 px-4 sticky top-0 bg-white/90 backdrop-blur-lg z-[200]">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="w-8 h-8 rounded-full bg-white shadow-sm border border-zinc-100 shrink-0"
+            onClick={() => navigate(-1)}
+          >
+            <ChevronLeft className="w-4 h-4 text-black" />
+          </Button>
+          <div className="flex flex-col">
+            <h1 className="text-base font-bold text-black leading-tight">Confirm & Pay</h1>
+            <p className="text-[10px] text-zinc-500 font-medium">Finalize your booking</p>
+          </div>
+        </header>
+
+        <div className="p-4 space-y-6">
+          {/* Header */}
         <header className="text-center space-y-4 py-6">
           <motion.div
             initial={{ scale: 0 }}
@@ -296,13 +312,13 @@ const FinalizationFlow = () => {
             <Truck className="w-10 h-10" />
           </motion.div>
           <div>
-            <h1 className="text-2xl font-black text-black tracking-tight">Confirm & Pay Advance</h1>
+            <h1 className="text-2xl font-semibold text-black tracking-tight">Confirm & Pay Advance</h1>
             <p className="text-sm text-zinc-500 font-bold">Pay 50% now to lock this gig with {vendor.name}</p>
           </div>
         </header>
 
         {/* Vendor + Gig Details */}
-        <Card className="border-none shadow-lg overflow-hidden bg-white rounded-3xl">
+        <Card className="border-none shadow-lg overflow-hidden bg-white rounded-xl">
           <CardContent className="p-0">
             <div className="bg-zinc-50 p-5 flex items-center justify-between border-b border-zinc-100">
               <div className="flex items-center gap-3">
@@ -323,7 +339,7 @@ const FinalizationFlow = () => {
               </div>
               <div className="text-right">
                 <span className="text-[9px] uppercase font-bold text-zinc-400">Total Quote</span>
-                <p className="text-xl font-black text-zinc-900">₹{totalAmount.toLocaleString('en-IN')}</p>
+                <p className="text-xl font-semibold text-zinc-900">₹{totalAmount.toLocaleString('en-IN')}</p>
               </div>
             </div>
 
@@ -350,23 +366,23 @@ const FinalizationFlow = () => {
         </Card>
 
         {/* Payment Breakdown */}
-        <Card className="border-2 border-zinc-100 rounded-3xl p-5 bg-zinc-50/50 space-y-4">
+        <Card className="border-2 border-zinc-100 rounded-xl p-5 bg-zinc-50/50 space-y-4">
           <div className="flex justify-between items-center">
-            <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Payment Breakdown</span>
-            <span className="text-[9px] font-black text-zinc-500 bg-white px-2.5 py-1 rounded-full border border-zinc-100 uppercase">50% Advance</span>
+            <span className="text-[10px] font-semibold uppercase text-zinc-400 tracking-widest">Payment Breakdown</span>
+            <span className="text-[9px] font-semibold text-zinc-500 bg-white px-2.5 py-1 rounded-full border border-zinc-100 uppercase">50% Advance</span>
           </div>
 
           <div className="space-y-3">
             {/* Total */}
             <div className="flex justify-between text-xs font-bold text-zinc-700">
               <span>Total Gig Amount</span>
-              <span className="font-black">₹{totalAmount.toLocaleString('en-IN')}</span>
+              <span className="font-semibold">₹{totalAmount.toLocaleString('en-IN')}</span>
             </div>
             <Separator />
             {/* Advance */}
             <div className="flex justify-between text-sm font-bold text-zinc-900">
               <span className="flex items-center gap-1.5"><CreditCard className="w-3.5 h-3.5 text-primary" /> Pay Now (50%)</span>
-              <span className="font-black text-primary">₹{advanceAmount.toLocaleString('en-IN')}</span>
+              <span className="font-semibold text-primary">₹{advanceAmount.toLocaleString('en-IN')}</span>
             </div>
             {/* Final */}
             <div className="flex justify-between text-xs font-bold text-zinc-500">
@@ -390,13 +406,13 @@ const FinalizationFlow = () => {
             {razorpayAmount > 0 && (
               <div className="flex justify-between text-xs font-bold text-zinc-800">
                 <span>Pay via Razorpay</span>
-                <span className="font-black">₹{razorpayAmount.toLocaleString('en-IN')}</span>
+                <span className="font-semibold">₹{razorpayAmount.toLocaleString('en-IN')}</span>
               </div>
             )}
             {razorpayAmount === 0 && (
               <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                <p className="text-[10px] font-black text-emerald-700 uppercase">Fully covered by wallet balance!</p>
+                <p className="text-[10px] font-semibold text-emerald-700 uppercase">Fully covered by wallet balance!</p>
               </div>
             )}
           </div>
@@ -414,7 +430,7 @@ const FinalizationFlow = () => {
         <div className="space-y-3">
           <Button
             disabled={confirming}
-            className="w-full h-16 rounded-3xl bg-primary text-black text-base font-black shadow-2xl shadow-primary/30 transition-all hover:brightness-95 active:scale-[0.98] disabled:opacity-50"
+            className="w-full h-16 rounded-xl bg-primary text-black text-base font-semibold shadow-2xl shadow-primary/30 transition-all hover:brightness-95 active:scale-[0.98] disabled:opacity-50"
             onClick={handlePayAdvance}
           >
             {confirming ? (
@@ -432,6 +448,7 @@ const FinalizationFlow = () => {
           >
             Cancel & Return to Chat
           </Button>
+        </div>
         </div>
       </div>
     </div>

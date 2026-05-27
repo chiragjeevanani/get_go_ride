@@ -29,6 +29,9 @@ const DriverRoutes = () => {
       <Routes>
         <Route path="auth" element={<DriverAuthPage />} />
         <Route path="subscribe" element={<SubscriptionGate />} />
+        <Route path="profile" element={<DriverProfile />} />
+        <Route path="earnings" element={<EarningsWallet />} />
+        <Route path="history" element={<GigHistory />} />
 
         <Route element={<DriverMainLayout />}>
           <Route index element={<DriverDashboard />} />
@@ -37,7 +40,6 @@ const DriverRoutes = () => {
           <Route path="leads/:id" element={<LeadDetails />} />
           <Route path="chats" element={<ChatListPage />} />
           <Route path="chat/:id" element={<DriverChatPage />} />
-          <Route path="profile" element={<DriverProfile />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="subscription" element={<SubscriptionManagement />} />
           <Route path="profile/vehicle" element={<VehicleDetails />} />
@@ -46,10 +48,8 @@ const DriverRoutes = () => {
           <Route path="profile/security" element={<AccountSecurity />} />
           <Route path="profile/support" element={<HelpSupport />} />
           <Route path="checkout/:id" element={<CheckoutPage />} />
-          <Route path="earnings" element={<EarningsWallet />} />
           <Route path="gigs" element={<UpcomingGigsList />} />
           <Route path="gig/:bidId" element={<UpcomingGigDriver />} />
-          <Route path="history" element={<GigHistory />} />
           <Route path="bank-details" element={<BankDetailsPage />} />
           <Route path="withdraw" element={<WithdrawalPage />} />
         </Route>

@@ -71,7 +71,7 @@ const RequestList = () => {
   return (
     <div className="space-y-4 pb-20 pt-4 px-4">
       <header className="flex justify-between items-center py-2 border-b-2 border-primary/20 -mx-4 px-4 sticky top-0 bg-white/80 backdrop-blur-lg z-30">
-        <h1 className="text-sm font-black text-black uppercase tracking-widest">My Requests</h1>
+        <h1 className="text-lg font-semibold text-black uppercase tracking-widest">My Requests</h1>
         <Button 
           variant="ghost" 
           size="icon" 
@@ -96,7 +96,7 @@ const RequestList = () => {
          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
          <Input 
           placeholder="Search request ID or service" 
-          className="pl-10 bg-white border-zinc-100 shadow-sm h-10 text-xs focus-visible:ring-primary/30" 
+          className="pl-10 bg-white border-zinc-100 shadow-sm h-10 text-xs focus-visible:ring-primary/30 rounded-lg" 
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
          />
@@ -138,11 +138,11 @@ const RequestList = () => {
             transition={{ delay: index * 0.1 }}
             onClick={() => navigate(`/user/request/${req._id}`)}
           >
-            <Card className="border-none shadow-premium hover:shadow-lg transition-all cursor-pointer overflow-visible">
+            <Card className="border-none shadow-premium hover:shadow-lg transition-all cursor-pointer overflow-visible rounded-xl">
               <CardContent className="p-0">
-                <div className="p-4 flex items-start justify-between border-b border-zinc-50">
+                <div className="p-3 flex items-start justify-between border-b border-zinc-50">
                   <div className="flex items-center gap-3">
-                    <div className="p-3 bg-primary text-black rounded-2xl">
+                    <div className="p-2.5 bg-primary text-black rounded-xl">
                        <Package className="w-5 h-5" />
                     </div>
                     <div>
@@ -161,7 +161,7 @@ const RequestList = () => {
                   </Badge>
                 </div>
                 
-                <div className="p-4 space-y-3">
+                <div className="p-3 space-y-2">
                   <div className="flex items-start gap-2">
                     <div className="flex flex-col items-center mt-1">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>

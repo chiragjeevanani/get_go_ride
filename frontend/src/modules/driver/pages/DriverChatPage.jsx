@@ -3,12 +3,27 @@ import { useParams, useNavigate } from "react-router-dom";
 import { 
   ChevronLeft, Send, Phone, MoreVertical, 
   Package, CheckCircle2, ChevronDown, ChevronUp, Loader2,
-  Mail, User, Truck, Calendar, Clock
+  Mail, User, Truck, Calendar, Clock, Flag, XOctagon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -201,6 +216,16 @@ const DriverChatPage = () => {
     }
   };
 
+  const handleAcceptCounterOffer = async (price) => {
+    try {
+      await chatApi.sendOffer(id, Number(price));
+      toast.success("Offer accepted! Formal proposal sent to customer.");
+    } catch (err) {
+      console.error("Failed to accept offer:", err);
+      toast.error(err.response?.data?.message || "Failed to accept offer.");
+    }
+  };
+
   const handleFinalize = () => {
     if (activeBid?.status === "accepted") {
       toast.success("Deal agreed! Proceeding to secure checkout...", { icon: "🤝" });
@@ -231,17 +256,21 @@ const DriverChatPage = () => {
 
   const lead = localLead || {};
 
+  const lastOffer = [...messages].reverse().find(m => m.type === "offer");
+  const isDriverTurnToAccept = lastOffer && lastOffer.sender === "user" && activeBid?.status !== "accepted";
+  const userCounterPrice = lastOffer ? (lastOffer.price || lastOffer.text) : 0;
+
   return (
     <div className="flex flex-col h-screen bg-white max-w-md mx-auto relative overflow-hidden">
       {/* Header */}
       <header className="bg-white border-b-2 border-yellow-400 p-4 sticky top-0 z-40 backdrop-blur-md bg-white/95 shadow-sm">
         <div className="flex items-center justify-between">
            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="w-8 h-8 rounded-none bg-zinc-50 border border-zinc-100" onClick={() => navigate(-1)}>
+              <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg bg-zinc-50 border border-zinc-100" onClick={() => navigate(-1)}>
                  <ChevronLeft className="w-4 h-4 text-zinc-600" />
               </Button>
               <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 rounded-none bg-primary/10 flex items-center justify-center font-black text-primary text-xs border-2 border-primary/20">
+                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center font-black text-primary text-xs border-2 border-primary/20">
                     {lead.customerName ? lead.customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : "JD"}
                  </div>
                  <div className="flex flex-col">
@@ -249,7 +278,7 @@ const DriverChatPage = () => {
                        {lead.customerName}
                     </h2>
                     <div className="flex items-center gap-1.5 mt-1.5">
-                       <span className={cn("w-1.5 h-1.5 rounded-none", activeBid?.status === "accepted" ? "bg-emerald-500" : "bg-amber-500")}></span>
+                       <span className={cn("w-1.5 h-1.5 rounded-lg", activeBid?.status === "accepted" ? "bg-emerald-500" : "bg-amber-500")}></span>
                        <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest leading-none">
                           {activeBid?.status === "accepted" ? "Contract Finalized" : "Negotiation Active"}
                        </span>
@@ -261,14 +290,12 @@ const DriverChatPage = () => {
               <Button 
                  variant="ghost" 
                  size="icon" 
-                 className="w-8 h-8 rounded-none border-2 border-zinc-50 hover:border-yellow-400 text-yellow-500 transition-all"
+                 className="w-8 h-8 rounded-lg border-2 border-zinc-50 hover:border-yellow-400 text-yellow-500 transition-all"
                  onClick={() => lead.customerPhone && (window.location.href = `tel:${lead.customerPhone}`)}
               >
                  <Phone className="w-3.5 h-3.5 fill-current" />
               </Button>
-              <Button variant="ghost" size="icon" className="w-8 h-8 rounded-none border-2 border-zinc-50 hover:border-yellow-400 text-yellow-500 transition-all">
-                 <MoreVertical className="w-3.5 h-3.5" />
-              </Button>
+
            </div>
         </div>
       </header>
@@ -276,30 +303,52 @@ const DriverChatPage = () => {
       {/* Action Strip */}
       <div className="bg-zinc-900 p-2.5 px-4 flex gap-3 overflow-x-auto no-scrollbar relative z-30 border-b-4 border-primary">
          <Button 
-            onClick={handleFinalize}
+            onClick={activeBid?.status === "accepted" ? handleFinalize : (isDriverTurnToAccept ? () => handleAcceptCounterOffer(userCounterPrice) : handleFinalize)}
             className={cn(
-              "rounded-none h-9 px-4 text-[9px] font-black uppercase tracking-[0.2em] shrink-0 border-none shadow-lg",
+              "rounded-lg h-9 px-4 text-[9px] font-black uppercase tracking-[0.2em] shrink-0 border-none shadow-lg",
               activeBid?.status === "accepted" 
                 ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20" 
-                : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
+                : isDriverTurnToAccept
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
+                  : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
             )}
          >
-            {activeBid?.status === "accepted" ? "Go to Checkout" : "Awaiting Customer"}
+            {activeBid?.status === "accepted" 
+              ? "Go to Checkout" 
+              : isDriverTurnToAccept 
+                ? `Accept ₹${userCounterPrice}` 
+                : "Awaiting Customer"
+            }
          </Button>
          <Button 
             onClick={() => setShowCounterModal(true)}
             disabled={activeBid?.status === "accepted"}
-            className="bg-white text-black hover:bg-zinc-100 rounded-none h-9 px-4 text-[9px] font-black uppercase tracking-[0.2em] shrink-0 border-none"
+            className="bg-white text-black hover:bg-zinc-100 rounded-lg h-9 px-4 text-[9px] font-black uppercase tracking-[0.2em] shrink-0 border-none"
          >
             New Proposal
          </Button>
          <div className="w-[1px] h-6 bg-white/20 self-center shrink-0"></div>
-         <Button 
-            variant="ghost"
-            className="text-white/40 font-black text-[8px] uppercase tracking-widest shrink-0 h-9 px-3 hover:text-white"
-         >
-            Terms & Policy
-         </Button>
+         <Dialog>
+           <DialogTrigger asChild>
+             <Button 
+                variant="ghost"
+                className="text-white/40 font-black text-[8px] uppercase tracking-widest shrink-0 h-9 px-3 hover:text-white"
+             >
+                Terms & Policy
+             </Button>
+           </DialogTrigger>
+           <DialogContent className="sm:max-w-[425px] bg-white w-[90vw] rounded-2xl p-6 border-zinc-100 shadow-xl z-[100]">
+             <DialogHeader>
+               <DialogTitle className="text-sm font-black uppercase tracking-widest text-zinc-900">Platform Terms</DialogTitle>
+             </DialogHeader>
+             <div className="text-sm font-semibold text-zinc-600 space-y-4 max-h-[60vh] overflow-y-auto mt-2">
+                <p>By using the negotiation platform, you agree to the following terms:</p>
+                <p><span className="text-primary font-bold">1. Binding Offers:</span> All proposals submitted via the platform are considered formal binding offers.</p>
+                <p><span className="text-primary font-bold">2. Payments:</span> All finalized contracts must be fulfilled through the platform.</p>
+                <p><span className="text-primary font-bold">3. Conduct:</span> Drivers are expected to maintain professional communication.</p>
+             </div>
+           </DialogContent>
+         </Dialog>
       </div>
 
       {/* Message Stream */}
@@ -308,7 +357,7 @@ const DriverChatPage = () => {
         className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar bg-zinc-50/30"
         style={{ paddingBottom: '160px' }}
       >
-         <Card className="rounded-none border-2 border-zinc-100 shadow-none bg-white mb-6 overflow-hidden">
+         <Card className="rounded-lg border-2 border-zinc-100 shadow-none bg-white mb-6 overflow-hidden">
             <div 
                className="p-3 flex justify-between items-center cursor-pointer hover:bg-zinc-50 transition-colors"
                onClick={() => setShowSummary(!showSummary)}
@@ -320,7 +369,7 @@ const DriverChatPage = () => {
                   <span className="text-[9px] font-black text-black uppercase tracking-widest">{lead.service}</span>
                </div>
                <div className="flex items-center gap-3">
-                  <Badge className="rounded-none bg-primary/20 text-primary border-none text-[8px] font-black uppercase tracking-tighter h-5">
+                  <Badge className="rounded-lg bg-primary/20 text-primary border-none text-[8px] font-black uppercase tracking-tighter h-5">
                      {activeBid?.status === "accepted" ? "Finalized" : "Negotiating"}
                   </Badge>
                   {showSummary ? <ChevronUp className="w-3.5 h-3.5 text-zinc-400" /> : <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />}
@@ -385,10 +434,10 @@ const DriverChatPage = () => {
             >
                <div className={cn(
                   "max-w-[85%] border-2 shadow-sm relative overflow-hidden",
-                  msg.type === "offer" ? "bg-zinc-900 border-primary border-4 p-4" :
+                  msg.type === "offer" ? "bg-zinc-900 border-primary border-4 p-4 rounded-xl" :
                   msg.sender === "driver" 
-                    ? "bg-white border-primary/40 text-zinc-900 p-3.5 rounded-none shadow-primary/5" 
-                    : "bg-white border-zinc-100 text-zinc-600 p-3.5 rounded-none"
+                    ? "bg-white border-primary/40 text-zinc-900 p-3.5 rounded-lg shadow-primary/5" 
+                    : "bg-white border-zinc-100 text-zinc-600 p-3.5 rounded-lg"
                )}>
                   {msg.type === "contact" ? (
                      <div className="space-y-3 min-w-[200px]">
@@ -402,11 +451,11 @@ const DriverChatPage = () => {
                            </div>
                         </div>
                         <div className="flex flex-col gap-2">
-                           <a href={`tel:${msg.metadata?.phone}`} className="flex items-center gap-3 bg-emerald-500 text-white p-3 rounded-none font-black text-xs uppercase tracking-widest justify-center shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">
+                           <a href={`tel:${msg.metadata?.phone}`} className="flex items-center gap-3 bg-emerald-500 text-white p-3 rounded-lg font-black text-xs uppercase tracking-widest justify-center shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">
                               <Phone className="w-4 h-4" /> Call Customer
                            </a>
                            {msg.metadata?.email && (
-                              <a href={`mailto:${msg.metadata?.email}`} className="flex items-center gap-3 border border-zinc-100 p-3 rounded-none font-black text-[10px] text-zinc-600 uppercase tracking-widest justify-center">
+                              <a href={`mailto:${msg.metadata?.email}`} className="flex items-center gap-3 border border-zinc-100 p-3 rounded-lg font-black text-[10px] text-zinc-600 uppercase tracking-widest justify-center">
                                  <Mail className="w-4 h-4" /> Email
                               </a>
                            )}
@@ -437,7 +486,7 @@ const DriverChatPage = () => {
                               </div>
                            </div>
                         </div>
-                        <div className="bg-zinc-50 p-2.5 rounded-none flex justify-between items-center">
+                        <div className="bg-zinc-50 p-2.5 rounded-lg flex justify-between items-center">
                            <div className="flex items-center gap-2">
                               <Calendar className="w-3 h-3 text-zinc-400" />
                               <span className="text-[9px] font-black text-zinc-600 uppercase">{msg.metadata?.date ? new Date(msg.metadata.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'N/A'}</span>
@@ -451,7 +500,7 @@ const DriverChatPage = () => {
                   ) : msg.type === "offer" ? (
                      <div className="space-y-3 min-w-[160px]">
                         <div className="flex items-center justify-between">
-                           <Badge className="bg-primary text-black rounded-none text-[8px] font-black uppercase">
+                           <Badge className="bg-primary text-black rounded-lg text-[8px] font-black uppercase">
                               {msg.sender === "driver" ? "My Proposal" : "Counter Offer"}
                            </Badge>
                            <span className="text-[10px] font-black text-white italic">
@@ -494,7 +543,7 @@ const DriverChatPage = () => {
                  variant="outline"
                  disabled={activeBid?.status === "accepted"}
                  onClick={() => setMessage(reply.text)}
-                 className="h-7 rounded-none border border-zinc-200 bg-white px-3 text-[8px] font-black uppercase tracking-widest text-zinc-500 hover:border-yellow-400 hover:text-yellow-600 transition-all shrink-0 shadow-sm"
+                 className="h-7 rounded-lg border border-zinc-200 bg-white px-3 text-[8px] font-black uppercase tracking-widest text-zinc-500 hover:border-yellow-400 hover:text-yellow-600 transition-all shrink-0 shadow-sm"
                >
                   {reply.text}
                </Button>
@@ -506,7 +555,7 @@ const DriverChatPage = () => {
                <Input 
                   placeholder={activeBid?.status === "accepted" ? "Contract Locked" : "Type secure message..."}
                   disabled={activeBid?.status === "accepted"}
-                  className="h-12 bg-white border-2 border-zinc-100 rounded-none font-bold text-[11px] uppercase tracking-tight focus:border-yellow-400 focus:ring-0 pr-12 transition-all shadow-sm"
+                  className="h-12 bg-white border-2 border-zinc-100 rounded-lg font-bold text-[11px] uppercase tracking-tight focus:border-yellow-400 focus:ring-0 pr-12 transition-all shadow-sm"
                   value={message}
                   onChange={(e) => handleMessageChange(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
@@ -542,13 +591,13 @@ const DriverChatPage = () => {
                      </div>
 
                      <div className="relative">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-zinc-200">₹</div>
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-zinc-400">₹</div>
                         <input 
                            type="number"
-                           placeholder="Enter Amount"
+                           placeholder="0"
                            value={counterPrice}
                            onChange={(e) => setCounterPrice(e.target.value)}
-                           className="w-full h-16 bg-zinc-50 border-2 border-zinc-100 text-center text-3xl font-black focus:border-primary outline-none tabular-nums uppercase"
+                           className="w-full h-16 bg-zinc-50 border-2 border-zinc-100 text-center text-2xl font-black focus:border-primary outline-none tabular-nums uppercase"
                         />
                       </div>
 
@@ -556,14 +605,14 @@ const DriverChatPage = () => {
                         <Button 
                            onClick={handleCounterOffer}
                            disabled={!counterPrice}
-                           className="w-full h-12 bg-zinc-900 text-primary font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all rounded-none"
+                           className="w-full h-12 bg-zinc-900 text-primary font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all rounded-lg"
                         >
                            Transmit Offer
                         </Button>
                         <Button 
                            variant="ghost"
                            onClick={() => setShowCounterModal(false)}
-                           className="w-full h-10 font-black text-zinc-400 text-[9px] uppercase tracking-widest hover:text-black rounded-none"
+                           className="w-full h-10 font-black text-zinc-400 text-[9px] uppercase tracking-widest hover:text-black rounded-lg"
                         >
                            Dismiss
                         </Button>

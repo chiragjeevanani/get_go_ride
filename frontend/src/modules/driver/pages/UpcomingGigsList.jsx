@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { paymentApi } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 const UpcomingGigsList = () => {
   const navigate = useNavigate();

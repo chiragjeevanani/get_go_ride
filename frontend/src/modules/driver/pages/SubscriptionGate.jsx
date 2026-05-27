@@ -172,7 +172,7 @@ const SubscriptionGate = () => {
   const selectedPlan = dbPlans.find(p => p._id === selectedPlanId);
 
   return (
-    <div className="min-h-screen bg-white max-w-md mx-auto relative overflow-hidden flex flex-col pt-8 pb-6 px-5">
+    <div className="min-h-screen bg-white max-w-md mx-auto relative overflow-x-hidden overflow-y-auto flex flex-col pt-4 pb-32 px-4">
       {/* Background patterns */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
       
@@ -187,7 +187,7 @@ const SubscriptionGate = () => {
            >
               <ChevronLeft className="w-5 h-5 text-zinc-600" />
            </Button>
-           <h2 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Subscription Plans</h2>
+           <h2 className="text-[10px] font-black uppercase text-zinc-900 tracking-widest">Subscription Plans</h2>
            <div className="w-9"></div>
         </div>
 
@@ -296,7 +296,7 @@ const SubscriptionGate = () => {
         )}
 
         {/* Sticky CTA Button */}
-        <div className="mt-auto pt-4 text-center space-y-2">
+        <div className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white/95 backdrop-blur-md border-t border-zinc-100 p-4 pt-3 pb-6 text-center space-y-2 z-50">
            <p className="text-[9px] text-zinc-400 font-bold tracking-tight">Secure payment via Upi or Cards</p>
            <Button 
              disabled={!selectedPlanId || submitting}

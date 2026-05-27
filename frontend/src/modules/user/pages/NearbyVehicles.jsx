@@ -94,12 +94,12 @@ const NearbyVehicles = () => {
              >
                 <ChevronLeft className="w-4 h-4 text-zinc-900" />
              </button>
-             <div className="max-w-[160px]">
+             <div className="max-w-[200px]">
                 <div className="flex items-center gap-1">
-                   <MapPin className="w-2.5 h-2.5 text-primary" strokeWidth={3} />
-                   <span className="text-[8px] font-black uppercase tracking-wider text-zinc-400">Location</span>
+                   <MapPin className="w-3 h-3 text-primary" strokeWidth={3} />
+                   <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Location</span>
                 </div>
-                <h1 className="text-xs font-black text-zinc-900 truncate leading-tight">{location}</h1>
+                <h1 className="text-sm font-black text-zinc-900 truncate leading-tight">{location}</h1>
              </div>
           </div>
           
@@ -157,7 +157,7 @@ const NearbyVehicles = () => {
         {/* Nearby Vehicles List Section */}
         <section className="space-y-3">
            <div className="flex justify-between items-center px-1">
-              <h2 className="text-sm font-black tracking-tight text-zinc-900 border-l-3 border-primary pl-2 uppercase italic">Nearby</h2>
+              <h2 className="text-base font-black tracking-tight text-zinc-900 border-l-4 border-primary pl-2 uppercase italic">Nearby</h2>
               <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[8px] font-black tracking-widest">{filteredVehicles.length} VEHICLES</Badge>
            </div>
 
@@ -273,7 +273,7 @@ const NearbyVehicles = () => {
               <div className="w-10 h-1 bg-zinc-200 rounded-full mx-auto mb-4"></div>
               
               <div className="flex justify-between items-center mb-4">
-                 <h2 className="text-lg font-black text-zinc-900 uppercase italic leading-none">Location</h2>
+                 <h2 className="text-lg font-semibold text-zinc-900 uppercase italic leading-none">Location</h2>
                  <button 
                   onClick={() => setShowLocationModal(false)}
                   className="p-1.5 bg-zinc-50 rounded-lg"

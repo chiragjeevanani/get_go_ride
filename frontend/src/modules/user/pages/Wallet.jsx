@@ -136,7 +136,7 @@ const Wallet = () => {
     return (
       <div className="min-h-screen bg-white flex flex-col justify-center items-center gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <span className="text-[10px] font-black tracking-widest uppercase text-zinc-400">Loading Wallet...</span>
+        <span className="text-[10px] font-semibold tracking-widest uppercase text-zinc-400">Loading Wallet...</span>
       </div>
     );
   }
@@ -144,12 +144,12 @@ const Wallet = () => {
   return (
     <div className="min-h-screen bg-white pb-24">
       {/* Premium Header */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-zinc-100 px-4 py-3 flex items-center gap-4">
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b-2 border-primary/50 px-4 py-3 flex items-center gap-4">
         <Button variant="ghost" size="icon" className="w-9 h-9 rounded-xl bg-zinc-50 border border-zinc-100" onClick={() => navigate(-1)}>
           <ChevronLeft className="w-5 h-5 text-zinc-600" />
         </Button>
         <div>
-          <h1 className="text-lg font-black text-zinc-900 tracking-tight leading-none italic uppercase">My Wallet</h1>
+          <h1 className="text-lg font-semibold text-zinc-900 tracking-tight leading-none italic uppercase">My Wallet</h1>
           <p className="text-[10px] font-bold text-zinc-400 tracking-tight mt-1 uppercase">Payments & Top-Up</p>
         </div>
       </header>
@@ -161,8 +161,8 @@ const Wallet = () => {
               <CardContent className="p-6 relative z-10 flex flex-col justify-between min-h-[140px]">
                  <div className="flex justify-between items-start">
                     <div className="space-y-1">
-                       <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">Available Balance</span>
-                       <h2 className="text-4xl font-black tracking-tighter tabular-nums">₹{balance.toLocaleString('en-IN')}</h2>
+                       <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest leading-none">Available Balance</span>
+                       <h2 className="text-4xl font-semibold tracking-tighter tabular-nums">₹{balance.toLocaleString('en-IN')}</h2>
                     </div>
                     <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/5">
                        <WalletIcon className="w-6 h-6 text-primary" />
@@ -172,7 +172,7 @@ const Wallet = () => {
                  <div className="pt-4 flex">
                     <Button 
                       onClick={() => setAddMoneyModal(true)}
-                      className="w-full h-11 bg-primary text-zinc-900 font-black text-[11px] uppercase tracking-widest rounded-2xl hover:bg-yellow-400 transition-all shadow-xl shadow-primary/20"
+                      className="w-full h-11 bg-primary text-zinc-900 font-semibold text-[11px] uppercase tracking-widest rounded-2xl hover:bg-yellow-400 transition-all shadow-xl shadow-primary/20"
                     >
                        Add Money to Wallet
                     </Button>
@@ -183,34 +183,10 @@ const Wallet = () => {
            </Card>
         </section>
 
-        {/* Quick Actions */}
-        <section className="grid grid-cols-2 gap-3">
-           <Card 
-             onClick={() => setAddMoneyModal(true)}
-             className="border-2 border-zinc-50 rounded-2xl p-4 bg-white hover:border-primary/20 transition-all group cursor-pointer"
-           >
-              <div className="w-10 h-10 rounded-xl bg-zinc-50 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
-                 <Plus className="w-5 h-5 text-zinc-400 group-hover:text-primary" />
-              </div>
-              <h4 className="text-xs font-black text-zinc-900 uppercase tracking-widest">Top Up Now</h4>
-              <p className="text-[9px] font-bold text-zinc-400 mt-1">Instant digital deposit</p>
-           </Card>
-           <Card 
-             onClick={() => toast.info("Payment methods management is currently fully integrated under the booking flow.")}
-             className="border-2 border-zinc-50 rounded-2xl p-4 bg-white hover:border-primary/20 transition-all group cursor-pointer"
-           >
-              <div className="w-10 h-10 rounded-xl bg-zinc-50 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
-                 <CreditCard className="w-5 h-5 text-zinc-400 group-hover:text-primary" />
-              </div>
-              <h4 className="text-xs font-black text-zinc-900 uppercase tracking-widest">Cards</h4>
-              <p className="text-[9px] font-bold text-zinc-400 mt-1">Manage saved cards</p>
-           </Card>
-        </section>
-
         {/* Transaction History */}
         <section className="space-y-4">
            <div className="flex items-center justify-between px-1">
-              <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2 italic">
+              <h3 className="text-xs font-semibold text-zinc-900 uppercase tracking-widest flex items-center gap-2 italic">
                  <History className="w-4 h-4" /> History
               </h3>
               <TabsList className="bg-zinc-100 p-1 rounded-xl h-8">
@@ -219,7 +195,7 @@ const Wallet = () => {
                       key={tab}
                       onClick={() => setActiveTab(tab)}
                       className={cn(
-                        "px-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                        "px-3 rounded-lg text-[9px] font-semibold uppercase tracking-widest transition-all",
                         activeTab === tab ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-400"
                       )}
                     >
@@ -244,7 +220,7 @@ const Wallet = () => {
                                {item.type === "credit" ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                             </div>
                             <div>
-                               <h4 className="text-xs font-black text-zinc-900 tracking-tight">{item.description}</h4>
+                               <h4 className="text-xs font-semibold text-zinc-900 tracking-tight">{item.description}</h4>
                                <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
                                  {item.type === "credit" ? "Deposit" : "Payment"}
                                </p>
@@ -252,7 +228,7 @@ const Wallet = () => {
                          </div>
                          <div className="text-right space-y-0.5">
                             <span className={cn(
-                               "text-sm font-black tabular-nums",
+                               "text-sm font-semibold tabular-nums",
                                item.type === "credit" ? "text-emerald-500" : "text-zinc-900"
                             )}>
                                {item.type === "credit" ? "+" : "-"}₹{item.amount.toLocaleString('en-IN')}
@@ -277,8 +253,8 @@ const Wallet = () => {
       <section className="px-4 mt-6">
          <Card className="bg-emerald-500/5 border-2 border-dashed border-emerald-500/20 p-4 rounded-3xl relative overflow-hidden group">
             <div className="relative z-10 space-y-2">
-               <Badge className="bg-emerald-500 text-white border-none font-black text-[8px] tracking-widest">SECURED SYSTEM</Badge>
-               <h4 className="text-sm font-black text-zinc-900 leading-tight">Your digital wallet is highly secured.</h4>
+               <Badge className="bg-emerald-500 text-white border-none font-semibold text-[8px] tracking-widest">SECURED SYSTEM</Badge>
+               <h4 className="text-sm font-semibold text-zinc-900 leading-tight">Your digital wallet is highly secured.</h4>
                <p className="text-[10px] font-bold text-zinc-400 uppercase leading-normal tracking-tight">Funds are held in compliance with PCI-DSS safety standards.</p>
             </div>
             <ShieldCheck className="absolute -right-4 -bottom-4 w-20 h-20 text-emerald-500 opacity-20 rotate-[-15deg] group-hover:rotate-0 transition-transform" />
@@ -291,7 +267,7 @@ const Wallet = () => {
           <div className="bg-white rounded-t-[2.5rem] w-full max-w-md p-6 pb-8 space-y-6 animate-in slide-in-from-bottom-12 duration-300 shadow-2xl relative">
             <header className="flex justify-between items-center">
               <div className="flex flex-col">
-                <h2 className="text-base font-black text-black uppercase tracking-tight">Top Up Wallet</h2>
+                <h2 className="text-base font-semibold text-black uppercase tracking-tight">Top Up Wallet</h2>
                 <p className="text-[10px] text-zinc-400 font-bold uppercase">Add money instantly</p>
               </div>
               <Button 
@@ -306,7 +282,7 @@ const Wallet = () => {
 
             <form onSubmit={handleAddMoney} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block ml-1">Amount to Add (INR)</label>
+                <label className="text-[9px] font-semibold text-zinc-400 uppercase tracking-widest block ml-1">Amount to Add (INR)</label>
                 <input
                   type="number"
                   required
@@ -337,7 +313,7 @@ const Wallet = () => {
                 <Button 
                   type="submit" 
                   disabled={submitting}
-                  className="flex-1 h-12 bg-primary text-black font-black uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-primary/20"
+                  className="flex-1 h-12 bg-primary text-black font-semibold uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-primary/20"
                 >
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Top Up"}
                 </Button>
@@ -345,7 +321,7 @@ const Wallet = () => {
                   type="button" 
                   variant="ghost" 
                   onClick={() => setAddMoneyModal(false)}
-                  className="px-6 text-zinc-500 font-black uppercase text-[10px] tracking-widest"
+                  className="px-6 text-zinc-500 font-semibold uppercase text-[10px] tracking-widest"
                 >
                   Cancel
                 </Button>

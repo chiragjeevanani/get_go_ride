@@ -21,6 +21,7 @@ import {
 import { useDriverState } from "../hooks/useDriverState";
 import { cn } from "@/lib/utils";
 import { chatApi } from "@/lib/api";
+import { toast } from "sonner";
 
 const ChatListPage = () => {
   const navigate = useNavigate();
@@ -108,20 +109,21 @@ const ChatListPage = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 shadow-xl border-zinc-100">
               <DropdownMenuLabel className="text-xs font-black uppercase tracking-widest text-zinc-400 px-3 py-2">Chat Options</DropdownMenuLabel>
-              <DropdownMenuItem className="rounded-xl focus:bg-primary/10 focus:text-primary py-2.5 px-3 cursor-pointer">
+              <DropdownMenuItem 
+                onClick={() => {
+                  setChats(chats.map(c => ({ ...c, unread: 0 })));
+                  toast.success("All messages marked as read");
+                }}
+                className="rounded-xl focus:bg-primary/10 focus:text-primary py-2.5 px-3 cursor-pointer"
+              >
                 <CheckCheck className="w-4 h-4 mr-2" />
                 <span className="font-bold text-xs">Mark all as read</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-xl focus:bg-primary/10 focus:text-primary py-2.5 px-3 cursor-pointer">
-                <Archive className="w-4 h-4 mr-2" />
-                <span className="font-bold text-xs">Archived Messages</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="my-1 bg-zinc-50" />
-              <DropdownMenuItem className="rounded-xl focus:bg-primary/10 focus:text-primary py-2.5 px-3 cursor-pointer">
-                <Settings className="w-4 h-4 mr-2" />
-                <span className="font-bold text-xs">Message Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-xl focus:bg-primary/10 focus:text-primary py-2.5 px-3 cursor-pointer">
+
+              <DropdownMenuItem 
+                onClick={() => navigate("/driver/profile/support")}
+                className="rounded-xl focus:bg-primary/10 focus:text-primary py-2.5 px-3 cursor-pointer"
+              >
                 <HelpCircle className="w-4 h-4 mr-2" />
                 <span className="font-bold text-xs">Help & Support</span>
               </DropdownMenuItem>

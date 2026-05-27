@@ -94,6 +94,13 @@ const CreateRequirement = () => {
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
 
   useEffect(() => {
+    if (!localStorage.getItem('gtgl_token')) {
+      toast.error("Please login to post a requirement");
+      navigate("/user/auth", { replace: true });
+    }
+  }, [navigate]);
+
+  useEffect(() => {
     if (!formData.serviceType) {
       setVehicles([]);
       return;
@@ -273,7 +280,7 @@ const CreateRequirement = () => {
             <Card className="border-none shadow-premium rounded-[1.5rem] bg-white relative z-[50] overflow-visible">
                <CardContent className="p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                     <h3 className="text-[10px] font-black uppercase tracking-widest text-black/40">Route Details</h3>
+                     <h3 className="text-[10px] font-semibold uppercase tracking-widest text-black/40">Route Details</h3>
                      <div className="h-px flex-1 bg-zinc-50"></div>
                   </div>
                   
@@ -320,7 +327,7 @@ const CreateRequirement = () => {
                      {formData.drops.length < 5 && (
                         <button 
                           onClick={addDrop}
-                          className="flex items-center gap-2 px-3 py-2 text-[10px] font-black text-primary uppercase tracking-widest hover:bg-primary/5 rounded-lg transition-all w-fit"
+                          className="flex items-center gap-2 px-3 py-2 text-[10px] font-semibold text-primary uppercase tracking-widest hover:bg-primary/5 rounded-lg transition-all w-fit"
                         >
                            <Plus className="w-3.5 h-3.5" /> Add another stop
                         </button>
@@ -356,7 +363,7 @@ const CreateRequirement = () => {
                   <Button 
                      onClick={() => { setActiveLocField(null); nextStep(); }}
                      disabled={!formData.pickup || !formData.drops[0]}
-                     className="w-full h-11 rounded-xl bg-zinc-500 text-white font-black text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all mt-1"
+                     className="w-full h-11 rounded-xl bg-zinc-500 text-white font-semibold text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all mt-1"
                   >
                      Confirm Route
                   </Button>
@@ -365,7 +372,7 @@ const CreateRequirement = () => {
 
             <div className="flex flex-col items-center gap-4 py-4 text-center">
                <div className="space-y-1">
-                  <h3 className="text-xl font-black text-black leading-tight">Enter your route details</h3>
+                  <h3 className="text-xl font-semibold text-black leading-tight">Enter your route details</h3>
                   <p className="text-xs text-zinc-500 font-medium">Type to search pickup and drop points</p>
                </div>
                <img src="/delivery_boxes_isometric_1775805816799.png" alt="route" className="w-48 h-48 object-contain opacity-90 drop-shadow-2xl" />
@@ -378,7 +385,7 @@ const CreateRequirement = () => {
             {categoriesLoading ? (
                <div className="flex flex-col items-center justify-center py-10 gap-3">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Loading Services...</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400">Loading Services...</p>
                </div>
             ) : (
                <>
@@ -400,7 +407,7 @@ const CreateRequirement = () => {
                        />
                      </div>
                      <div className="flex flex-col">
-                       <span className="text-xs font-black text-black">{s.title}</span>
+                       <span className="text-[15px] font-semibold text-black">{s.title}</span>
                        <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">{s.desc}</span>
                      </div>
                      {formData.serviceType === s.id && <Check className="ml-auto w-4 h-4 text-primary" />}
@@ -416,7 +423,7 @@ const CreateRequirement = () => {
           return (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-               <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Loading Fleet Options...</span>
+               <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400">Loading Fleet Options...</span>
             </div>
           );
         }
@@ -425,7 +432,7 @@ const CreateRequirement = () => {
           return (
             <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
                <AlertTriangle className="w-8 h-8 text-amber-500" />
-               <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">No vehicles available for this category.</span>
+               <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">No vehicles available for this category.</span>
             </div>
           );
         }
@@ -437,7 +444,7 @@ const CreateRequirement = () => {
         return (
           <div className="space-y-3">
             <div className="flex items-center gap-2 px-1">
-               <h3 className="text-[10px] font-black uppercase tracking-widest text-black/40">Vehicle Options</h3>
+               <h3 className="text-[10px] font-semibold uppercase tracking-widest text-black/40">Vehicle Options</h3>
                <div className="h-px flex-1 bg-zinc-50"></div>
             </div>
             <div className="grid grid-cols-1 gap-2.5">
@@ -453,7 +460,7 @@ const CreateRequirement = () => {
                     onClick={() => updateData("vehicleType", vehicleId)}
                   >
                     {v.isMostBooked && (
-                       <div className="absolute top-0 left-0 bg-emerald-500 text-white text-[7px] font-black uppercase px-2 py-0.5 rounded-br-lg shadow-sm z-20 tracking-widest">
+                       <div className="absolute top-0 left-0 bg-emerald-500 text-white text-[7px] font-semibold uppercase px-2 py-0.5 rounded-br-lg shadow-sm z-20 tracking-widest">
                           Best Option
                        </div>
                     )}
@@ -469,15 +476,15 @@ const CreateRequirement = () => {
                         />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="font-black text-black text-xs leading-none">{v.name}</span>
+                        <span className="font-semibold text-black text-[15px] leading-none">{v.name}</span>
                         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                           {v.capacity && (
-                             <span className="text-[8px] bg-zinc-100 text-zinc-500 dark:text-zinc-400 px-2 py-0.5 rounded-md font-black uppercase tracking-wider">
+                             <span className="text-[8px] bg-zinc-100 text-zinc-500 dark:text-zinc-400 px-2 py-0.5 rounded-md font-semibold uppercase tracking-wider">
                                 {v.capacity}
                              </span>
                           )}
                           {v.details && (
-                             <span className="text-[8px] bg-primary/10 text-primary px-2 py-0.5 rounded-md font-black uppercase tracking-wider border border-primary/10">
+                             <span className="text-[8px] bg-primary/10 text-primary px-2 py-0.5 rounded-md font-semibold uppercase tracking-wider border border-primary/10">
                                 {v.details}
                              </span>
                           )}
@@ -502,7 +509,7 @@ const CreateRequirement = () => {
           return (
             <div className="space-y-4">
                <div className="flex items-center gap-2 px-1">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-black/40">Home Size</h3>
+                  <h3 className="text-[10px] font-semibold uppercase tracking-widest text-black/40">Home Size</h3>
                   <div className="h-px flex-1 bg-zinc-50"></div>
                </div>
                <div className="grid grid-cols-2 gap-3">
@@ -523,7 +530,7 @@ const CreateRequirement = () => {
                              <size.icon className="w-5 h-5" />
                           </div>
                           <div className="space-y-0.5">
-                             <h4 className="text-sm font-black text-black">{size.title}</h4>
+                             <h4 className="text-sm font-semibold text-black">{size.title}</h4>
                              <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-tighter">{size.desc}</p>
                           </div>
                        </CardContent>
@@ -532,7 +539,7 @@ const CreateRequirement = () => {
                </div>
                
                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Additional Items</label>
+                  <label className="text-[10px] font-semibold uppercase text-zinc-400 tracking-wider">Additional Items</label>
                   <textarea 
                     placeholder="List specific items like Fridge, Sofa, etc." 
                     className="w-full min-h-[80px] p-3 rounded-xl border border-input bg-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -554,12 +561,12 @@ const CreateRequirement = () => {
                       <AlertTriangle className="w-3.5 h-3.5 text-white" />
                    </div>
                    <div className="flex-1">
-                      <h4 className="text-[9px] font-black text-red-900 uppercase tracking-wider mb-0.5">Alert Details</h4>
+                      <h4 className="text-[9px] font-semibold text-red-900 uppercase tracking-wider mb-0.5">Alert Details</h4>
                       <p className="text-[8px] text-red-600 font-bold leading-tight uppercase">Emergency situation info</p>
                    </div>
                 </div>
                 <div className="space-y-1.5">
-                   <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Situation</label>
+                   <label className="text-[10px] font-semibold uppercase text-zinc-400 tracking-wider">Situation</label>
                    <textarea 
                       placeholder="e.g. Critical patient, road accident..." 
                       className="w-full min-h-[100px] p-3 rounded-xl border border-input bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 font-bold text-xs"
@@ -576,7 +583,7 @@ const CreateRequirement = () => {
             <div className="space-y-4">
               <div className="space-y-3">
                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Item Details</label>
+                    <label className="text-[10px] font-semibold uppercase text-zinc-400 tracking-wider">Item Details</label>
                     <div className="relative">
                       <Package className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                       <Input 
@@ -590,17 +597,17 @@ const CreateRequirement = () => {
 
                  <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Weight</label>
+                      <label className="text-[10px] font-semibold uppercase text-zinc-400 tracking-wider">Weight</label>
                       <div className="flex bg-zinc-50 rounded-xl overflow-hidden border border-zinc-100">
                         <input 
                           type="number"
                           placeholder="0"
-                          className="w-full bg-transparent px-3 py-2 text-xs font-black text-black outline-none"
+                          className="w-full bg-transparent px-3 py-2 text-xs font-semibold text-black outline-none"
                           value={formData.loadValue}
                           onChange={(e) => updateData("loadValue", e.target.value)}
                         />
                         <select 
-                          className="bg-zinc-100 px-2 text-[8px] font-black uppercase text-zinc-500 outline-none border-l border-zinc-200"
+                          className="bg-zinc-100 px-2 text-[8px] font-semibold uppercase text-zinc-500 outline-none border-l border-zinc-200"
                           value={formData.loadType}
                           onChange={(e) => updateData("loadType", e.target.value)}
                         >
@@ -611,12 +618,12 @@ const CreateRequirement = () => {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Estimate Price</label>
+                      <label className="text-[10px] font-semibold uppercase text-zinc-400 tracking-wider">Estimate Price</label>
                       <div className="flex items-center bg-zinc-50 rounded-xl px-3 py-2 border border-zinc-100">
-                        <span className="text-[10px] font-black text-primary mr-1">₹</span>
+                        <span className="text-[10px] font-semibold text-primary mr-1">₹</span>
                         <input 
                           type="number"
-                          className="w-full bg-transparent text-xs font-black text-black outline-none"
+                          className="w-full bg-transparent text-xs font-semibold text-black outline-none"
                           value={formData.price}
                           onChange={(e) => updateData("price", e.target.value)}
                         />
@@ -632,13 +639,13 @@ const CreateRequirement = () => {
           <div className="space-y-5">
             <div className="flex p-0.5 bg-zinc-50 rounded-xl border border-zinc-100">
               <button 
-                className={cn("flex-1 py-2 px-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", formData.loadType === "kg" ? "bg-white text-black shadow-sm" : "text-zinc-400")}
+                className={cn("flex-1 py-2 px-2 rounded-lg text-[10px] font-semibold uppercase tracking-widest transition-all", formData.loadType === "kg" ? "bg-white text-black shadow-sm" : "text-zinc-400")}
                 onClick={() => updateData("loadType", "kg")}
               >
                 Weight (KG)
               </button>
               <button 
-                className={cn("flex-1 py-2 px-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", formData.loadType === "items" ? "bg-white text-black shadow-sm" : "text-zinc-400")}
+                className={cn("flex-1 py-2 px-2 rounded-lg text-[10px] font-semibold uppercase tracking-widest transition-all", formData.loadType === "items" ? "bg-white text-black shadow-sm" : "text-zinc-400")}
                 onClick={() => updateData("loadType", "items")}
               >
                 Total Items
@@ -646,7 +653,7 @@ const CreateRequirement = () => {
             </div>
             
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Enter {formData.loadType === "kg" ? "Weight" : "Count"}</label>
+              <label className="text-[10px] font-semibold uppercase text-zinc-400 tracking-wider">Enter {formData.loadType === "kg" ? "Weight" : "Count"}</label>
               <div className="relative">
                 <Weight className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <Input 
@@ -666,7 +673,7 @@ const CreateRequirement = () => {
         return (
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Date</label>
+              <label className="text-[10px] font-semibold uppercase text-zinc-400 tracking-wider">Date <span className="text-red-500">*</span></label>
               <div className="relative">
                 <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <Input 
@@ -679,7 +686,7 @@ const CreateRequirement = () => {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Time</label>
+              <label className="text-[10px] font-semibold uppercase text-zinc-400 tracking-wider">Time <span className="text-red-500">*</span></label>
               <div className="relative">
                 <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <Input 
@@ -692,7 +699,7 @@ const CreateRequirement = () => {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Special Notes</label>
+              <label className="text-[10px] font-semibold uppercase text-zinc-400 tracking-wider">Special Notes</label>
               <div className="relative">
                 <FileText className="absolute left-3.5 top-3 w-4 h-4 text-zinc-400" />
                 <textarea 
@@ -712,14 +719,14 @@ const CreateRequirement = () => {
             <Card className="border-none shadow-premium rounded-[1.5rem] bg-white overflow-hidden animate-in fade-in zoom-in-95 duration-500">
                <CardContent className="p-5 flex flex-col items-center gap-4">
                   <div className="text-center space-y-1 w-full">
-                     <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-300">Your price</h3>
+                     <h3 className="text-[9px] font-semibold uppercase tracking-[0.2em] text-zinc-300">Your price</h3>
                      <div className="flex items-center justify-center gap-1 w-full overflow-hidden">
-                        <span className="text-xl font-black text-black">₹</span>
+                        <span className="text-xl font-semibold text-black">₹</span>
                         <input 
                            type="number" 
                            value={formData.price}
                            onChange={(e) => updateData("price", Number(e.target.value))}
-                           className="text-3xl font-black w-32 border-none bg-transparent focus:outline-none focus:ring-0 text-center text-black selection:bg-primary/20"
+                           className="text-3xl font-semibold w-32 border-none bg-transparent focus:outline-none focus:ring-0 text-center text-black selection:bg-primary/20"
                            style={{ fontVariantNumeric: "tabular-nums" }}
                         />
                      </div>
@@ -741,18 +748,18 @@ const CreateRequirement = () => {
                      className="w-full bg-primary/10 border border-primary/20 rounded-xl py-2 px-3 flex items-center justify-center gap-2 relative overflow-hidden"
                   >
                      <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center shadow-sm relative z-10">
-                        <span className="text-[8px] font-black">₹</span>
+                        <span className="text-[8px] font-semibold">₹</span>
                      </div>
                      <span className="text-[10px] font-bold text-black tracking-tight relative z-10">
                         Coin Discount: <span className="line-through text-zinc-400">₹{formData.price || 1733}</span>
-                        <span className="ml-1 text-black font-black">₹{Math.round((formData.price || 1733) * 0.96)}</span>
+                        <span className="ml-1 text-black font-semibold">₹{Math.round((formData.price || 1733) * 0.96)}</span>
                      </span>
                   </motion.div>
 
                   {/* Fair Price Meter */}
                   <div className="w-full bg-zinc-50 rounded-xl p-3 flex items-center justify-between gap-3 border border-zinc-100">
                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[8px] font-black uppercase tracking-widest leading-none text-zinc-400">Pricing Policy</span>
+                        <span className="text-[8px] font-semibold uppercase tracking-widest leading-none text-zinc-400">Pricing Policy</span>
                         <p className="text-[10px] font-bold text-black leading-tight">Fastest match price</p>
                      </div>
                      <div className="relative pt-1 scale-75 origin-right">
@@ -775,8 +782,8 @@ const CreateRequirement = () => {
                   {/* Advance Card */}
                   <div className="w-full border border-zinc-100 rounded-xl p-3 flex flex-col gap-2 bg-white/50">
                      <div className="flex justify-between items-center px-1">
-                        <span className="text-[10px] font-black text-black">50% Advance</span>
-                        <span className="text-sm font-black text-black tabular-nums">₹{Math.round((formData.price || 1733) * 0.5)}</span>
+                        <span className="text-[10px] font-semibold text-black">50% Advance</span>
+                        <span className="text-sm font-semibold text-black tabular-nums">₹{Math.round((formData.price || 1733) * 0.5)}</span>
                      </div>
                      <div className="h-px bg-zinc-50"></div>
                      <div className="flex justify-between items-center text-[9px] font-bold text-zinc-400 uppercase tracking-widest px-1">
@@ -789,14 +796,14 @@ const CreateRequirement = () => {
 
             <div className="flex flex-col gap-4">
                <div className="flex items-center gap-2 px-1">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300">Requirement Summary</h3>
+                  <h3 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-300">Requirement Summary</h3>
                   <div className="h-px flex-1 bg-zinc-50"></div>
                </div>
                
                <div className="grid grid-cols-2 gap-2 pb-6">
                   <div className="p-2.5 bg-zinc-50 rounded-xl border border-zinc-100/50 flex flex-col justify-between">
                      <div>
-                        <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-0.5">Vehicle</p>
+                        <p className="text-[8px] font-semibold text-zinc-400 uppercase tracking-widest mb-0.5">Vehicle</p>
                         <p className="text-[11px] font-bold text-black leading-tight">
                             {(() => {
                                const selectedVehicle = vehicles.find(v => (v._id || v.id) === formData.vehicleType);
@@ -808,7 +815,7 @@ const CreateRequirement = () => {
                         const selectedVehicle = vehicles.find(v => (v._id || v.id) === formData.vehicleType);
                         if (selectedVehicle) {
                            return (
-                              <p className="text-[8px] text-zinc-400 font-black uppercase tracking-wider mt-1.5">
+                              <p className="text-[8px] text-zinc-400 font-semibold uppercase tracking-wider mt-1.5">
                                  {selectedVehicle.capacity} • {selectedVehicle.details}
                               </p>
                            );
@@ -817,7 +824,7 @@ const CreateRequirement = () => {
                      })()}
                   </div>
                   <div className="p-2.5 bg-zinc-50 rounded-xl border border-zinc-100/50">
-                     <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-0.5">Service</p>
+                     <p className="text-[8px] font-semibold text-zinc-400 uppercase tracking-widest mb-0.5">Service</p>
                      <p className="text-[11px] font-bold text-black">{formData.serviceType || "Goods"}</p>
                   </div>
                </div>
@@ -875,7 +882,7 @@ const CreateRequirement = () => {
 
   return (
     <div className="space-y-4 pb-20 pt-2">
-      <header className="flex items-center gap-3 py-2 border-b-2 border-primary/20 -mx-4 px-4 sticky top-0 bg-white/80 backdrop-blur-lg z-[200]">
+      <header className="flex items-center gap-3 py-2 border-b-2 border-primary/20 px-4 sticky top-0 bg-white/80 backdrop-blur-lg z-[200]">
         <Button 
           variant="ghost" 
           size="icon" 
@@ -885,20 +892,20 @@ const CreateRequirement = () => {
           <ChevronLeft className="w-4 h-4" />
         </Button>
         <div className="flex flex-col">
-          <h1 className="text-sm font-bold text-black leading-tight">{steps[step-1].title}</h1>
+          <h1 className="text-lg font-bold text-black leading-tight">{steps[step-1].title}</h1>
           <p className="text-[10px] text-zinc-500 font-medium">{steps[step-1].description}</p>
         </div>
       </header>
 
-      <div className="space-y-1">
-        <div className="flex justify-between text-[9px] uppercase font-black text-zinc-400 tracking-tighter px-1">
+      <div className="space-y-1 px-4">
+        <div className="flex justify-between text-[9px] uppercase font-semibold text-zinc-400 tracking-tighter px-1">
           <span>Progress</span>
           <span>Step {step} of {totalSteps}</span>
         </div>
         <Progress value={(step / totalSteps) * 100} className="h-1" />
       </div>
 
-      <div className="min-h-[400px] relative">
+      <div className="min-h-[400px] relative px-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
@@ -923,12 +930,13 @@ const CreateRequirement = () => {
             Back
           </Button>
           <Button 
-            className="rounded-xl h-11 px-6 shadow-lg shadow-primary/20 text-xs font-black uppercase tracking-widest"
+            className="rounded-xl h-11 px-6 shadow-lg shadow-primary/20 text-xs font-semibold uppercase tracking-widest"
             onClick={nextStep}
             disabled={
               (step === 1 && (!formData.pickup || !formData.drops[0])) ||
               (step === 2 && !formData.serviceType) ||
-              (step === 3 && !formData.vehicleType)
+              (step === 3 && !formData.vehicleType) ||
+              (step === 5 && (!formData.date || !formData.time))
             }
           >
             <span>Continue</span>
@@ -940,7 +948,7 @@ const CreateRequirement = () => {
       {step === totalSteps && (
         <div className="fixed bottom-0 left-0 right-0 p-3 bg-white border-t border-zinc-100 safe-area-bottom z-50 max-w-md mx-auto">
           <Button 
-            className="w-full rounded-xl h-11 shadow-lg shadow-primary/20 font-black text-sm uppercase tracking-widest"
+            className="w-full rounded-xl h-11 shadow-lg shadow-primary/20 font-semibold text-sm uppercase tracking-widest"
             onClick={handleFinalSubmit}
             disabled={submitting}
           >

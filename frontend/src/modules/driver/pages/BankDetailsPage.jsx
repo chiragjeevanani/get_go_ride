@@ -83,12 +83,12 @@ const BankDetailsPage = () => {
   return (
     <div className="min-h-screen bg-zinc-50 pb-24 max-w-md mx-auto">
       <header className="sticky top-0 z-40 bg-white border-b-2 border-yellow-400 px-4 py-4 flex items-center gap-3 shadow-sm">
-        <Button variant="ghost" size="icon" className="w-9 h-9 rounded-none bg-zinc-50 border border-zinc-100" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="icon" className="w-9 h-9 rounded-xl bg-zinc-50 border border-zinc-100" onClick={() => navigate(-1)}>
           <ChevronLeft className="w-5 h-5 text-zinc-600" />
         </Button>
         <div>
-          <h1 className="text-sm font-black text-zinc-900 tracking-widest uppercase italic">Bank Details</h1>
-          <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mt-0.5">Withdrawal Setup</p>
+          <h1 className="text-sm font-bold text-zinc-900 tracking-widest uppercase italic">Bank Details</h1>
+          <p className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest mt-0.5">Withdrawal Setup</p>
         </div>
       </header>
 
@@ -102,21 +102,21 @@ const BankDetailsPage = () => {
         </div>
 
         {/* Form */}
-        <Card className="border-2 border-zinc-100 rounded-none bg-white">
+        <Card className="border-2 border-zinc-100 rounded-xl bg-white">
           <CardContent className="p-5 space-y-5">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Account Holder Name *</Label>
+              <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Account Holder Name *</Label>
               <Input
                 id="accountHolderName"
                 placeholder="As per bank records"
                 value={form.accountHolderName}
                 onChange={handleChange("accountHolderName")}
-                className="rounded-none border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary"
+                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Account Number *</Label>
+              <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Account Number *</Label>
               <Input
                 id="accountNumber"
                 placeholder="9-18 digit account number"
@@ -124,42 +124,42 @@ const BankDetailsPage = () => {
                 onChange={handleChange("accountNumber")}
                 type="tel"
                 inputMode="numeric"
-                className="rounded-none border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary font-mono"
+                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary font-mono"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">IFSC Code *</Label>
+              <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">IFSC Code *</Label>
               <Input
                 id="ifscCode"
                 placeholder="e.g. SBIN0001234"
                 value={form.ifscCode}
                 onChange={(e) => setForm(prev => ({ ...prev, ifscCode: e.target.value.toUpperCase() }))}
-                className="rounded-none border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary font-mono uppercase"
+                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary font-mono uppercase"
                 maxLength={11}
               />
               <p className="text-[9px] text-zinc-400 font-bold">Format: 4 letters + 0 + 6 digits/letters</p>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Bank Name *</Label>
+              <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Bank Name *</Label>
               <Input
                 id="bankName"
                 placeholder="e.g. State Bank of India"
                 value={form.bankName}
                 onChange={handleChange("bankName")}
-                className="rounded-none border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary"
+                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">UPI ID <span className="text-zinc-300">(Optional)</span></Label>
+              <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">UPI ID <span className="text-zinc-300">(Optional)</span></Label>
               <Input
                 id="upiId"
                 placeholder="yourname@upi"
                 value={form.upiId}
                 onChange={handleChange("upiId")}
-                className="rounded-none border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary"
+                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary"
               />
             </div>
           </CardContent>
@@ -167,7 +167,7 @@ const BankDetailsPage = () => {
 
         <Button
           disabled={saving || saved}
-          className="w-full h-14 rounded-none bg-primary text-black font-black text-sm uppercase tracking-widest hover:bg-yellow-400 transition-all disabled:opacity-50"
+          className="w-full h-14 rounded-xl bg-primary text-black font-bold text-sm uppercase tracking-widest hover:bg-yellow-400 transition-all disabled:opacity-50"
           onClick={handleSave}
         >
           {saving ? (

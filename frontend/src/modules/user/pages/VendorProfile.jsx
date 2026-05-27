@@ -83,7 +83,7 @@ const VendorProfile = () => {
   ];
 
   return (
-    <div className="space-y-6 pb-24 animate-in fade-in slide-in-from-right-4 duration-500">
+    <div className="space-y-4 pb-24 px-4 animate-in fade-in slide-in-from-right-4 duration-500">
       <header className="sticky top-0 bg-white/80 backdrop-blur-md z-40 py-2.5 -mx-4 px-4 overflow-hidden flex items-center justify-between border-b border-zinc-100 shadow-sm">
          <Button 
             variant="ghost" 
@@ -93,7 +93,7 @@ const VendorProfile = () => {
          >
             <ChevronLeft className="w-5 h-5 text-black" />
          </Button>
-         <h1 className="text-[11px] font-black text-black tracking-[0.2em] uppercase">Vendor Profile</h1>
+         <h1 className="text-lg font-semibold text-black tracking-widest uppercase">Vendor Profile</h1>
          <Button 
             variant="ghost" 
             size="icon" 
@@ -105,7 +105,7 @@ const VendorProfile = () => {
       </header>
 
       <Card className="border-none shadow-premium bg-white overflow-visible relative mt-2 rounded-[2rem]">
-         <CardContent className="p-4 px-6 pt-6">
+         <CardContent className="p-4 pt-4">
             <div className="flex flex-col items-center gap-3 text-center">
                <div className="relative">
                   <div className="h-20 w-20 rounded-full border-4 border-white shadow-xl ring-1 ring-zinc-50 overflow-hidden bg-zinc-100">
@@ -285,23 +285,7 @@ const VendorProfile = () => {
          </TabsContent>
       </Tabs>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-lg border-t border-zinc-100 z-50 safe-area-bottom flex gap-3 max-w-md mx-auto rounded-t-[2.5rem] shadow-2xl">
-         <Button 
-            variant="ghost" 
-            size="icon"
-            className="flex-none w-14 h-14 rounded-2xl bg-white border border-zinc-200 text-zinc-600"
-            onClick={() => window.open(`tel:${vendor.phone}`)}
-         >
-            <Phone className="w-5 h-5" />
-         </Button>
-         <Button 
-            className="flex-1 h-14 rounded-2xl bg-primary text-black text-lg font-black shadow-xl shadow-primary/30"
-            onClick={() => navigate(`/user/chat/${requestId}/${vendor._id}`)}
-         >
-            <MessageSquare className="w-5 h-5 mr-3" />
-            Start Chat
-         </Button>
-      </div>
+
     </div>
   );
 };

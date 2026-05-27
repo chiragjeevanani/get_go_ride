@@ -14,7 +14,7 @@ const UserMainLayout = () => {
     { icon: <User className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Profile", path: "/user/profile" },
   ];
 
-  const hideNavPaths = ["post-requirement", "chat/", "finalize", "vendor", "request/", "payments", "addresses", "support"];
+  const hideNavPaths = ["post-requirement", "chat/", "finalize", "vendor", "request/", "payments", "addresses", "support", "profile", "wallet"];
   const shouldHideNav = hideNavPaths.some(path => location.pathname.includes(path));
 
   return (
@@ -55,7 +55,7 @@ const UserMainLayout = () => {
                   {isActive && (
                     <motion.div
                       layoutId="activeTabPill"
-                      className="absolute inset-x-0.5 inset-y-0.5 bg-primary rounded-xl z-0 shadow-[0_4px_12px_rgba(255,214,0,0.4)]"
+                      className="absolute -inset-x-1 inset-y-0 bg-primary rounded-lg z-0 shadow-[0_4px_12px_rgba(255,214,0,0.4)]"
                       initial={false}
                       transition={{ 
                          type: "spring", 

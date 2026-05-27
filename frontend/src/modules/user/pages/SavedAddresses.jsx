@@ -123,7 +123,7 @@ const SavedAddresses = () => {
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 min-h-screen pb-24 relative">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 min-h-screen pb-24 px-4 relative">
       <header className="flex items-center gap-4 pt-6 pb-4 border-b-2 border-primary">
         <Button 
           variant="ghost" 
@@ -134,7 +134,7 @@ const SavedAddresses = () => {
           <ChevronLeft className="w-5 h-5" />
         </Button>
         <div className="flex flex-col">
-          <h1 className="text-xl font-black text-black tracking-tight">Saved Addresses</h1>
+          <h1 className="text-xl font-semibold text-black tracking-tight">Saved Addresses</h1>
           <p className="text-[11px] text-zinc-500 font-medium">Quickly book from frequent locations</p>
         </div>
       </header>
@@ -147,21 +147,21 @@ const SavedAddresses = () => {
       ) : (
         <div className="space-y-3">
           {addresses.length === 0 ? (
-            <div className="text-center py-12 px-6 border-2 border-dashed border-zinc-100 rounded-3xl space-y-2">
+            <div className="text-center py-12 px-6 border-2 border-dashed border-zinc-100 rounded-xl space-y-2">
               <MapPinned className="w-10 h-10 mx-auto text-zinc-300" />
-              <h3 className="text-xs font-black text-zinc-500 uppercase">No Saved Addresses</h3>
+              <h3 className="text-xs font-semibold text-zinc-500 uppercase">No Saved Addresses</h3>
               <p className="text-[10px] text-zinc-400 font-bold leading-tight">Add your home or office address to make booking lightning fast.</p>
             </div>
           ) : (
             addresses.map((addr) => (
-              <Card key={addr._id} className="border-none shadow-premium bg-white group hover:shadow-md transition-all">
+              <Card key={addr._id} className="border-none shadow-premium bg-white rounded-xl group hover:shadow-md transition-all">
                 <CardContent className="p-3 flex items-start gap-3">
-                  <div className="p-2 bg-zinc-50 rounded-2xl text-zinc-400 group-hover:bg-primary group-hover:text-black transition-all">
+                  <div className="p-2 bg-zinc-50 rounded-lg text-zinc-400 group-hover:bg-primary group-hover:text-black transition-all">
                     {getIcon(addr.label)}
                   </div>
                   <div className="flex-1 flex flex-col gap-1">
                     <div className="flex justify-between items-center">
-                       <span className="font-black text-black text-xs uppercase tracking-widest">{addr.label}</span>
+                       <span className="font-semibold text-black text-xs uppercase tracking-widest">{addr.label}</span>
                        <Button 
                          variant="ghost" 
                          size="icon" 
@@ -180,7 +180,7 @@ const SavedAddresses = () => {
 
           <Button 
             onClick={() => setModalOpen(true)}
-            className="w-full h-12 rounded-2xl bg-primary text-black font-black shadow-lg shadow-primary/20 mt-2"
+            className="w-full h-12 rounded-xl bg-primary text-black font-semibold shadow-lg shadow-primary/20 mt-2"
           >
             <Plus className="w-5 h-5 mr-2" />
             Add New Address
@@ -194,7 +194,7 @@ const SavedAddresses = () => {
           <div className="bg-white rounded-t-[2.5rem] w-full max-w-md p-6 pb-8 space-y-6 animate-in slide-in-from-bottom-12 duration-300 shadow-2xl relative">
             <header className="flex justify-between items-center">
               <div className="flex flex-col">
-                <h2 className="text-base font-black text-black uppercase tracking-tight">Add New Address</h2>
+                <h2 className="text-base font-semibold text-black uppercase tracking-tight">Add New Address</h2>
                 <p className="text-[10px] text-zinc-400 font-bold uppercase">Fast checkout location</p>
               </div>
               <Button 
@@ -210,7 +210,7 @@ const SavedAddresses = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Type selector */}
               <div className="space-y-1">
-                <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block ml-1">Location Label</label>
+                <label className="text-[9px] font-semibold text-zinc-400 uppercase tracking-widest block ml-1">Location Label</label>
                 <div className="grid grid-cols-3 gap-2">
                   {["Home", "Office", "Other"].map((item) => (
                     <Button
@@ -232,7 +232,7 @@ const SavedAddresses = () => {
               {/* Custom Label if Other */}
               {label === "Other" && (
                 <div className="space-y-1 animate-in slide-in-from-top-2 duration-200">
-                  <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block ml-1">Custom Label Name</label>
+                  <label className="text-[9px] font-semibold text-zinc-400 uppercase tracking-widest block ml-1">Custom Label Name</label>
                   <input
                     type="text"
                     required
@@ -246,7 +246,7 @@ const SavedAddresses = () => {
 
               {/* Address Autocomplete search */}
               <div className="space-y-1 relative">
-                <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block ml-1">Full Address</label>
+                <label className="text-[9px] font-semibold text-zinc-400 uppercase tracking-widest block ml-1">Full Address</label>
                 <div className="relative">
                   <input
                     type="text"
@@ -285,7 +285,7 @@ const SavedAddresses = () => {
                 <Button 
                   type="submit" 
                   disabled={submitting}
-                  className="flex-1 h-12 bg-primary text-black font-black uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-primary/20"
+                  className="flex-1 h-12 bg-primary text-black font-semibold uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-primary/20"
                 >
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Location"}
                 </Button>
@@ -293,7 +293,7 @@ const SavedAddresses = () => {
                   type="button" 
                   variant="ghost" 
                   onClick={() => setModalOpen(false)}
-                  className="px-6 text-zinc-500 font-black uppercase text-[10px] tracking-widest"
+                  className="px-6 text-zinc-500 font-semibold uppercase text-[10px] tracking-widest"
                 >
                   Cancel
                 </Button>
@@ -304,7 +304,7 @@ const SavedAddresses = () => {
       )}
 
       {/* Visual tip */}
-      <div className="bg-zinc-50/50 rounded-3xl p-4 text-center space-y-2">
+      <div className="bg-zinc-50/50 rounded-xl p-4 text-center space-y-2">
          <div className="w-10 h-10 bg-white rounded-full mx-auto flex items-center justify-center text-primary shadow-sm">
             <MapPin className="w-5 h-5" />
          </div>

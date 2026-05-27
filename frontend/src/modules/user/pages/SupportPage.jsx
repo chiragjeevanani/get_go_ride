@@ -46,7 +46,7 @@ const SupportPage = () => {
           <ChevronLeft className="w-5 h-5 text-zinc-600" />
         </Button>
         <div className="flex flex-col">
-          <h1 className="text-base font-black text-zinc-900 tracking-tight leading-none uppercase italic">Support Centre</h1>
+          <h1 className="text-base font-semibold text-zinc-900 tracking-tight leading-none uppercase italic">Support Centre</h1>
           <p className="text-[10px] text-zinc-400 font-bold uppercase mt-1">We're here to help you 24/7</p>
         </div>
       </header>
@@ -58,11 +58,11 @@ const SupportPage = () => {
       >
         <div className="relative z-10 flex items-center justify-between">
           <div className="space-y-1.5 max-w-[250px]">
-             <span className="text-[9px] font-black uppercase text-primary bg-primary/10 px-2.5 py-1 rounded-md tracking-wider leading-none">RECOMMENDED SUPPORT</span>
-             <h3 className="text-base font-black text-zinc-900 leading-tight uppercase italic mt-1">Email Support Team</h3>
+             <span className="text-[9px] font-semibold uppercase text-primary bg-primary/10 px-2.5 py-1 rounded-md tracking-wider leading-none">RECOMMENDED SUPPORT</span>
+             <h3 className="text-base font-semibold text-zinc-900 leading-tight uppercase italic mt-1">Email Support Team</h3>
              <p className="text-[10px] text-zinc-400 font-bold uppercase leading-relaxed">Direct communication with our 24/7 dedicated customer resolution desk.</p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-zinc-900 shadow-lg shadow-primary/25 group-hover:scale-110 transition-transform">
+          <div className="w-12 h-12 shrink-0 rounded-2xl bg-primary flex items-center justify-center text-zinc-900 shadow-lg shadow-primary/25 group-hover:scale-110 transition-transform">
              <Mail className="w-6 h-6" strokeWidth={2.5} />
           </div>
         </div>
@@ -71,12 +71,12 @@ const SupportPage = () => {
 
       {/* Dynamic FAQs Section */}
       <div className="space-y-4">
-         <h3 className="text-[10px] font-black uppercase text-zinc-400 tracking-[0.15em] px-1">Frequent Questions</h3>
+         <h3 className="text-[10px] font-semibold uppercase text-zinc-400 tracking-[0.15em] px-1">Frequent Questions</h3>
          
          {loading ? (
            <div className="py-12 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
-              <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Loading FAQs...</span>
+              <span className="text-[9px] font-semibold text-zinc-400 uppercase tracking-widest">Loading FAQs...</span>
            </div>
          ) : faqs.length > 0 ? (
            <div className="space-y-3">
@@ -84,7 +84,7 @@ const SupportPage = () => {
                  <Card key={faq._id || idx} className="border border-zinc-100 shadow-sm rounded-2.5xl overflow-hidden hover:border-primary/20 transition-all bg-white group">
                     <CardContent className="p-5 space-y-2">
                        <div className="flex justify-between gap-4 items-start">
-                          <span className="text-xs font-black text-zinc-900 leading-snug uppercase tracking-tight group-hover:text-primary transition-colors">{faq.question}</span>
+                          <span className="text-xs font-semibold text-zinc-900 leading-snug uppercase tracking-tight group-hover:text-primary transition-colors">{faq.question}</span>
                           <ChevronRight className="w-4 h-4 text-zinc-200 shrink-0 mt-0.5 group-hover:text-black transition-colors" />
                        </div>
                        <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-tight leading-relaxed">{faq.answer}</p>
@@ -101,9 +101,9 @@ const SupportPage = () => {
 
       <Card className="border-none bg-zinc-900 p-6 rounded-3xl overflow-hidden relative shadow-xl">
          <div className="relative z-10 space-y-2">
-            <h3 className="text-white font-black italic text-base leading-none uppercase tracking-tighter">Safety & Trust</h3>
+            <h3 className="text-white font-semibold italic text-base leading-none uppercase tracking-tighter">Safety & Trust</h3>
             <p className="text-zinc-500 text-[9px] font-bold uppercase leading-relaxed max-w-[170px]">Learn how we protect your goods and verify vendors.</p>
-            <Button variant="outline" className="h-9 px-4 rounded-xl bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:border-zinc-600 text-white text-[9px] font-black uppercase tracking-widest mt-1">
+            <Button variant="outline" className="h-9 px-4 rounded-xl bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:border-zinc-600 text-white text-[9px] font-semibold uppercase tracking-widest mt-1">
                Read Policies
             </Button>
          </div>

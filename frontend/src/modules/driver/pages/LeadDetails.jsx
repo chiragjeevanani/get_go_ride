@@ -283,13 +283,13 @@ const LeadDetails = () => {
                      </div>
 
                      <div className="relative">
-                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-2xl font-black text-zinc-300">₹</div>
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-zinc-400">₹</div>
                         <input 
                            type="number"
-                           placeholder="Enter Amount"
+                           placeholder="0"
                            value={bidPrice}
                            onChange={(e) => setBidPrice(e.target.value)}
-                           className="w-full h-16 bg-zinc-50 border-2 border-zinc-100 text-center text-3xl font-black focus:border-primary outline-none rounded-2xl tabular-nums uppercase"
+                           className="w-full h-16 bg-zinc-50 border-2 border-zinc-100 text-center text-2xl font-black focus:border-primary outline-none rounded-2xl tabular-nums uppercase"
                         />
                      </div>
 

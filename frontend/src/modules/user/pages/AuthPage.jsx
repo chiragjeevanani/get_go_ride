@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import Lottie from "lottie-react";
 import loginAnimation from "@/assets/Lottie/LoginPage.json";
@@ -87,9 +94,9 @@ const AuthPage = () => {
     switch (step) {
       case 1: // Onboarding
         return (
-          <div className="flex flex-col items-center justify-between h-[80vh] py-8 px-6">
-            <div className="space-y-8">
-               <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center justify-center gap-6 h-[80vh] py-8 px-6">
+            <div className="space-y-4 w-full">
+               <div className="flex flex-col items-center gap-2">
                   <div className="w-40 h-40 bg-white rounded-full flex items-center justify-center relative overflow-hidden">
                      <Lottie 
                         animationData={loginAnimation} 
@@ -127,7 +134,7 @@ const AuthPage = () => {
                   <ChevronLeft className="w-6 h-6 text-zinc-600" />
                </Button>
                 <div className="space-y-1 pt-4">
-                   <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">Enter Phone Number</h1>
+                   <h1 className="text-2xl font-medium text-primary tracking-tight">Enter Phone Number</h1>
                    <p className="text-sm text-zinc-500 font-medium">We'll send an OTP to verify your account</p>
                 </div>
             </div>
@@ -140,27 +147,62 @@ const AuthPage = () => {
                   <Input 
                     type="tel"
                     placeholder="Mobile Number"
-                    className="pl-16 h-14 text-lg font-bold tracking-widest bg-white border-2 border-zinc-50 rounded-2xl focus:border-primary shadow-sm"
+                    maxLength={10}
+                    className="pl-16 h-14 text-lg font-bold tracking-widest bg-white border-2 border-zinc-50 rounded-lg focus:border-primary shadow-sm"
                     value={phoneNumber}
                     onChange={(e) => {
                       let val = e.target.value.replace(/\D/g, "");
                       if (val.length > 10) {
-                        val = val.slice(-10);
+                        val = val.slice(0, 10);
                       }
                       setPhoneNumber(val);
                     }}
                   />
                </div>
                
-               <p className="text-[10px] text-zinc-400 text-center px-8 leading-relaxed font-medium">
-                  By clicking Continue, you agree to our <span className="text-primary font-bold">Terms of Service</span> and <span className="text-primary font-bold">Privacy Policy</span>.
-               </p>
+               <div className="text-[10px] text-zinc-400 text-center px-8 leading-relaxed font-medium">
+                  By clicking Continue, you agree to our{" "}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="text-primary font-bold hover:underline">Terms of Service</button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px] bg-white w-[90vw] rounded-2xl p-6 border-zinc-100 shadow-xl">
+                      <DialogHeader>
+                        <DialogTitle>Terms of Service</DialogTitle>
+                      </DialogHeader>
+                      <div className="text-sm text-zinc-600 space-y-4 max-h-[60vh] overflow-y-auto">
+                         <p>Welcome to GetGoLoad. By continuing to use our services, you agree to comply with all applicable policies and terms.</p>
+                         <p><span className="text-primary font-bold">1. User Responsibilities:</span> You must provide accurate information during registration and booking.</p>
+                         <p><span className="text-primary font-bold">2. Service Usage:</span> You agree not to misuse the platform or engage in any unlawful activities.</p>
+                         <p><span className="text-primary font-bold">3. Payments:</span> All transactions are processed securely and subject to our payment terms.</p>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  {" "}and{" "}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="text-primary font-bold hover:underline">Privacy Policy</button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px] bg-white w-[90vw] rounded-2xl p-6 border-zinc-100 shadow-xl">
+                      <DialogHeader>
+                        <DialogTitle>Privacy Policy</DialogTitle>
+                      </DialogHeader>
+                      <div className="text-sm text-zinc-600 space-y-4 max-h-[60vh] overflow-y-auto">
+                         <p>Your privacy is critically important to us. This policy outlines how we handle your personal data.</p>
+                         <p><span className="text-primary font-bold">1. Data Collection:</span> We collect necessary information such as phone numbers, location, and device details to provide our services effectively.</p>
+                         <p><span className="text-primary font-bold">2. Data Usage:</span> Your data is used exclusively to facilitate vehicle bookings, driver communication, and service improvements.</p>
+                         <p><span className="text-primary font-bold">3. Security:</span> We implement standard security measures to protect your personal information against unauthorized access.</p>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  .
+               </div>
             </div>
 
             <div className="pt-6">
                 <Button 
                   disabled={phoneNumber.length !== 10 || loading}
-                  className="w-full h-12 rounded-xl bg-primary text-white text-base font-bold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none"
+                  className="w-full h-12 rounded-xl bg-primary text-white text-sm font-bold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none"
                   onClick={handleSendOtp}
                 >
                    {loading ? "Sending..." : "Send Otp"}
