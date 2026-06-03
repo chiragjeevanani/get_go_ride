@@ -232,12 +232,16 @@ export const paymentApi = {
   createAdvanceOrder: (bidId) => api.post(`/payments/advance-order/${bidId}`),
   verifyAdvancePayment: (bidId, data) => api.post(`/payments/advance-verify/${bidId}`, data),
   verifyFinalPayment: (bidId) => api.get(`/payments/final-verify/${bidId}`),
+  submitFeedback: (bidId, data) => api.post(`/payments/feedback/${bidId}`, data),
   // SHARED — Gig status & upcoming
   getGigStatus: (bidId) => api.get(`/payments/gig-status/${bidId}`),
   getUpcomingGigs: () => api.get('/payments/upcoming-gigs'),
   getGigHistory: () => api.get('/payments/gig-history'),
+  regenerateOtp: (bidId) => api.post(`/payments/regenerate-otp/${bidId}`),
   // DRIVER — Gig lifecycle
   markGigStarted: (bidId) => api.post(`/payments/gig-start/${bidId}`),
+  markGigArrived: (bidId) => api.post(`/payments/gig-arrived/${bidId}`),
+  verifyGigOtp: (bidId, otp, proofUrl) => api.post(`/payments/verify-otp/${bidId}`, { otp, proofUrl }),
   selectPaymentMethod: (bidId, method) => api.post(`/payments/payment-method/${bidId}`, { method }),
   completeCashPayment: (bidId) => api.post(`/payments/cash-complete/${bidId}`),
   createFinalPaymentLink: (bidId) => api.post(`/payments/final-order/${bidId}`),

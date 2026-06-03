@@ -661,20 +661,28 @@ const DriverAuthPage = () => {
                   )}
                   
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1">Registration Plate Number</label>
+                    <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1">Registration Plate Number <span className="text-red-500">*</span></label>
                     <Input 
                       placeholder="e.g. MP-09-AB-1234" 
-                      className="h-11 rounded-xl bg-white border-2 border-zinc-100 font-bold text-zinc-900 text-xs focus:border-primary"
+                      maxLength={13}
+                      className={cn("h-11 rounded-xl bg-white border-2 font-bold text-zinc-900 text-xs", formData.regNumber && !/^[A-Z]{2}[-\s]?[0-9]{2}[-\s]?[A-Z]{1,2}[-\s]?[0-9]{4}$/.test(formData.regNumber) ? "border-red-500 focus:border-red-500" : "border-zinc-100 focus:border-primary")}
                       value={formData.regNumber}
-                      onChange={(e) => setFormData(prev => ({ ...prev, regNumber: e.target.value.toUpperCase() }))}
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase();
+                        if (/\d{5}/.test(val)) return;
+                        setFormData(prev => ({ ...prev, regNumber: val }));
+                      }}
                     />
+                    {formData.regNumber && !/^[A-Z]{2}[-\s]?[0-9]{2}[-\s]?[A-Z]{1,2}[-\s]?[0-9]{4}$/.test(formData.regNumber) && (
+                      <p className="text-[10px] font-bold text-red-500 tracking-tight ml-1">Please enter a valid Registration Plate Number (e.g. MP-09-AB-1234)</p>
+                    )}
                   </div>
                </div>
             </div>
 
             <div className="pt-2">
                <Button 
-                 disabled={!formData.vehicleType || !formData.regNumber || !formData.capacity || !formData.categories || formData.categories.length === 0}
+                 disabled={!formData.vehicleType || !formData.regNumber || !/^[A-Z]{2}[-\s]?[0-9]{2}[-\s]?[A-Z]{1,2}[-\s]?[0-9]{4}$/.test(formData.regNumber) || !formData.capacity || !formData.categories || formData.categories.length === 0}
                  className="w-full h-11 rounded-xl bg-primary text-zinc-900 text-sm font-bold shadow-lg shadow-primary/20 transition-all"
                  onClick={handleNext}
                >
@@ -842,7 +850,7 @@ const DriverAuthPage = () => {
                  { id: 'aadhar', label: 'Aadhar Card', field: 'aadharDoc' }
                ].map((doc) => (
                  <div key={doc.id} className="space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1 uppercase">{doc.label}</label>
+                    <label className="text-[10px] font-bold text-zinc-500 tracking-tight ml-1 uppercase">{doc.label} <span className="text-red-500">*</span></label>
                     <div 
                       onClick={() => document.getElementById(`${doc.id}-upload`).click()}
                       className={cn(
@@ -886,7 +894,7 @@ const DriverAuthPage = () => {
 
             <div className="pt-2">
                <Button 
-                 disabled={loading}
+                 disabled={loading || !formData.licenseDoc || !formData.rcDoc || !formData.aadharDoc}
                  className="w-full h-11 rounded-xl bg-primary text-zinc-900 text-sm font-bold shadow-lg shadow-primary/20 transition-all"
                  onClick={handleSubmitOnboarding}
                >

@@ -87,7 +87,7 @@ const DriverChatPage = () => {
         customerName: userInfo.name || "Customer",
         customerPhone: userInfo.phone || "",
         items: reqInfo.vehicleType || "General Goods",
-        price: reqInfo.price || 1733,
+        price: reqInfo.price || 1500,
       });
 
       const dbMessages = (data.messages || []).map((m) => ({

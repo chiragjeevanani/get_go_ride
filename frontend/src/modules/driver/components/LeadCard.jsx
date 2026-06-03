@@ -31,7 +31,7 @@ export const LeadCard = ({ lead, onAccept, onReject, onView, className }) => {
               </div>
             </div>
             <div className="flex flex-col items-end gap-1">
-              <span className="text-sm font-black text-zinc-900 tracking-tight">₹{lead.price || 1733}</span>
+              <span className="text-sm font-black text-zinc-900 tracking-tight">₹{lead.price || 1500}</span>
               {isNew && (
                 <Badge className="bg-emerald-100 text-emerald-600 border-emerald-200 text-[8px] font-black uppercase px-1.5 py-0.5 animate-pulse">
                   New

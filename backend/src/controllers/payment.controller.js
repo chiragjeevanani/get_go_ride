@@ -232,7 +232,7 @@ export const getUpcomingGigs = async (req, res, next) => {
       bids = await Bid.find({
         vendor: req.user.id,
         status: 'accepted',
-        gigStatus: { $in: ['scheduled', 'in_progress'] },
+        gigStatus: { $in: ['scheduled', 'in_progress', 'arrived'] },
       })
         .populate('requirement')
         .sort({ updatedAt: -1 });
@@ -247,7 +247,7 @@ export const getUpcomingGigs = async (req, res, next) => {
       bids = await Bid.find({
         _id: { $in: bidIds },
         status: 'accepted',
-        gigStatus: { $in: ['scheduled', 'in_progress'] },
+        gigStatus: { $in: ['scheduled', 'in_progress', 'arrived'] },
       })
         .populate('requirement')
         .populate('vendor', 'name phone profileImage rating vehicleType vehicleRegNumber')
@@ -504,7 +504,7 @@ export const verifyFinalPayment = async (req, res, next) => {
     }
 
     if (bid.finalPaymentMethod !== 'online' || !bid.finalOrderId) {
-      return error(res, 'No active online payment link found for this gig', 400, 'INVALID_METHOD');
+      return success(res, bid, 'No active online payment link found for this gig');
     }
 
     // Fetch payment link status from Razorpay API
@@ -524,7 +524,8 @@ export const verifyFinalPayment = async (req, res, next) => {
       return success(res, bid, 'Gig completed successfully via verified online payment!');
     }
 
-    return error(res, 'Payment link is not paid yet', 400, 'NOT_PAID');
+    // Return 200 OK with the current bid state so the frontend doesn't throw 400 errors during polling
+    return success(res, bid, 'Payment link is not paid yet');
   } catch (err) {
     next(err);
   }
@@ -577,6 +578,135 @@ export const handlePaymentWebhook = async (req, res, next) => {
     }
 
     return res.status(200).json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DRIVER: Mark gig as arrived and generate OTP
+// POST /api/payments/gig-arrived/:bidId
+// ─────────────────────────────────────────────────────────────────────────────
+export const markGigArrived = async (req, res, next) => {
+  try {
+    const bid = await Bid.findById(req.params.bidId);
+    if (!bid) return error(res, 'Bid not found', 404, 'NOT_FOUND');
+
+    if (bid.vendor.toString() !== req.user.id) {
+      return error(res, 'Access denied', 403, 'FORBIDDEN');
+    }
+
+    if (bid.gigStatus !== 'in_progress' && bid.gigStatus !== 'arrived') {
+      return error(res, 'Gig must be in progress or arrived to mark as arrived', 400, 'INVALID_STATE');
+    }
+
+    // Generate 4-digit OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    bid.gigStatus = 'arrived';
+    bid.completionOtp = otp;
+    await bid.save();
+
+    success(res, { bid, otp }, 'Gig marked as arrived. OTP generated.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// DRIVER/USER: Regenerate OTP for delivery
+// POST /api/payments/regenerate-otp/:bidId
+export const regenerateGigOtp = async (req, res, next) => {
+  try {
+    const bid = await Bid.findById(req.params.bidId).populate('requirement');
+    if (!bid) return error(res, 'Bid not found', 404, 'NOT_FOUND');
+
+    const requirement = bid.requirement;
+    const role = req.user.role;
+    const reqUserId = req.user.id || req.user._id;
+
+    if (role === 'vendor' && bid.vendor.toString() !== req.user.id) {
+      return error(res, 'Access denied', 403, 'FORBIDDEN');
+    }
+    if (role === 'user' && requirement.user.toString() !== reqUserId?.toString()) {
+      return error(res, 'Access denied', 403, 'FORBIDDEN');
+    }
+
+    if (bid.gigStatus !== 'arrived') {
+      return error(res, 'Gig must be in arrived status to regenerate OTP', 400, 'INVALID_STATE');
+    }
+
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    bid.completionOtp = otp;
+    await bid.save();
+
+    success(res, { bid, otp }, 'Delivery OTP regenerated successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DRIVER: Verify OTP for delivery
+// POST /api/payments/verify-otp/:bidId
+// ─────────────────────────────────────────────────────────────────────────────
+export const verifyGigOtp = async (req, res, next) => {
+  try {
+    const { otp, proofUrl } = req.body;
+    const bid = await Bid.findById(req.params.bidId);
+    if (!bid) return error(res, 'Bid not found', 404, 'NOT_FOUND');
+
+    if (bid.vendor.toString() !== req.user.id) {
+      return error(res, 'Access denied', 403, 'FORBIDDEN');
+    }
+
+    if (bid.gigStatus !== 'arrived') {
+      return error(res, 'Gig must be marked as arrived first', 400, 'INVALID_STATE');
+    }
+
+    if (bid.completionOtp !== otp) {
+      return error(res, 'Invalid OTP', 400, 'INVALID_OTP');
+    }
+
+    // Clear OTP so it can't be reused, keep status arrived or move to next step internally
+    // We keep status as 'arrived' or we can leave it as arrived but clear the OTP to signify verification.
+    bid.completionOtp = null; 
+    if (proofUrl) {
+      bid.proofOfDelivery = proofUrl;
+    }
+    await bid.save();
+
+    success(res, bid, 'OTP verified successfully. You may proceed to collect payment.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USER: Submit feedback
+// POST /api/payments/feedback/:bidId
+// ─────────────────────────────────────────────────────────────────────────────
+export const submitFeedback = async (req, res, next) => {
+  try {
+    const { rating, comment } = req.body;
+    const bid = await Bid.findById(req.params.bidId).populate('requirement');
+    if (!bid) return error(res, 'Bid not found', 404, 'NOT_FOUND');
+
+    const requirement = bid.requirement;
+    const reqUserId = req.user.id || req.user._id;
+    if (requirement.user.toString() !== reqUserId?.toString()) {
+      return error(res, 'Access denied', 403, 'FORBIDDEN');
+    }
+
+    if (bid.gigStatus !== 'completed') {
+      return error(res, 'Feedback can only be submitted for completed gigs', 400, 'INVALID_STATE');
+    }
+
+    bid.feedback = {
+      rating: Number(rating),
+      comment: comment || '',
+    };
+    await bid.save();
+
+    success(res, bid, 'Feedback submitted successfully');
   } catch (err) {
     next(err);
   }

@@ -32,7 +32,7 @@ const CreateRequirement = () => {
     date: "",
     time: "",
     notes: "",
-    price: 1733,
+    price: 1500,
   };
   const initialStep = location.state?.step || 1;
 
@@ -362,7 +362,7 @@ const CreateRequirement = () => {
 
                   <Button 
                      onClick={() => { setActiveLocField(null); nextStep(); }}
-                     disabled={!formData.pickup || !formData.drops[0]}
+                     disabled={!formData.pickup || formData.drops.some(d => !d || !d.trim())}
                      className="w-full h-11 rounded-xl bg-zinc-500 text-white font-semibold text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all mt-1"
                   >
                      Confirm Route
@@ -751,8 +751,8 @@ const CreateRequirement = () => {
                         <span className="text-[8px] font-semibold">₹</span>
                      </div>
                      <span className="text-[10px] font-bold text-black tracking-tight relative z-10">
-                        Coin Discount: <span className="line-through text-zinc-400">₹{formData.price || 1733}</span>
-                        <span className="ml-1 text-black font-semibold">₹{Math.round((formData.price || 1733) * 0.96)}</span>
+                        Coin Discount: <span className="line-through text-zinc-400">₹{formData.price || 1500}</span>
+                        <span className="ml-1 text-black font-semibold">₹{Math.round((formData.price || 1500) * 0.96)}</span>
                      </span>
                   </motion.div>
 
@@ -783,7 +783,7 @@ const CreateRequirement = () => {
                   <div className="w-full border border-zinc-100 rounded-xl p-3 flex flex-col gap-2 bg-white/50">
                      <div className="flex justify-between items-center px-1">
                         <span className="text-[10px] font-semibold text-black">50% Advance</span>
-                        <span className="text-sm font-semibold text-black tabular-nums">₹{Math.round((formData.price || 1733) * 0.5)}</span>
+                        <span className="text-sm font-semibold text-black tabular-nums">₹{Math.round((formData.price || 1500) * 0.5)}</span>
                      </div>
                      <div className="h-px bg-zinc-50"></div>
                      <div className="flex justify-between items-center text-[9px] font-bold text-zinc-400 uppercase tracking-widest px-1">
@@ -851,11 +851,13 @@ const CreateRequirement = () => {
           lat: formData.pickupCoords?.lat || null,
           lon: formData.pickupCoords?.lon || null
         },
-        drops: formData.drops.map((addr, idx) => ({ 
-          address: addr,
-          lat: formData.dropsCoords?.[idx]?.lat || null,
-          lon: formData.dropsCoords?.[idx]?.lon || null
-        })),
+        drops: formData.drops
+          .map((addr, idx) => ({ 
+            address: addr ? addr.trim() : "",
+            lat: formData.dropsCoords?.[idx]?.lat || null,
+            lon: formData.dropsCoords?.[idx]?.lon || null
+          }))
+          .filter(d => d.address !== ""),
         items: (formData.serviceType === 'house' || formData.serviceType === 'house-shifting') 
           ? `House Shifting (${formData.houseSize || 'N/A'})` 
           : (formData.serviceType === 'emergency')
@@ -867,7 +869,7 @@ const CreateRequirement = () => {
         date: formData.date,
         time: formData.time,
         notes: formData.notes,
-        price: formData.price || 1733
+        price: formData.price || 1500
       };
 
       await requirementApi.create(payload);
@@ -933,7 +935,7 @@ const CreateRequirement = () => {
             className="rounded-xl h-11 px-6 shadow-lg shadow-primary/20 text-xs font-semibold uppercase tracking-widest"
             onClick={nextStep}
             disabled={
-              (step === 1 && (!formData.pickup || !formData.drops[0])) ||
+              (step === 1 && (!formData.pickup || formData.drops.some(d => !d || !d.trim()))) ||
               (step === 2 && !formData.serviceType) ||
               (step === 3 && !formData.vehicleType) ||
               (step === 5 && (!formData.date || !formData.time))
