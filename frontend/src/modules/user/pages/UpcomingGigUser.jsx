@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   CheckCircle2, MapPin, Calendar, Loader2, ChevronLeft,
   Banknote, QrCode, Clock, ArrowRight, Star, ShieldCheck,
-  MessageSquare, AlertCircle, RefreshCw, Truck
+  MessageSquare, AlertCircle, RefreshCw, Truck, Key, Copy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +24,7 @@ const PAYMENT_STATUS_CONFIG = {
 const GIG_STATUS_CONFIG = {
   scheduled: { label: "Scheduled", desc: "Driver will start on the scheduled date" },
   in_progress: { label: "In Progress", desc: "Gig is currently underway" },
+  arrived: { label: "Arrived", desc: "Driver arrived. Please provide OTP to confirm." },
   completed: { label: "Completed", desc: "Gig successfully completed" },
 };
 
@@ -34,6 +35,10 @@ const UpcomingGigUser = () => {
   const [loading, setLoading] = useState(true);
   const [gig, setGig] = useState(null);
   const [fetchError, setFetchError] = useState(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+
 
   const loadGig = useCallback(async () => {
     try {
@@ -48,6 +53,35 @@ const UpcomingGigUser = () => {
   }, [bidId]);
 
   useEffect(() => { loadGig(); }, [loadGig]);
+
+  const handleSubmitFeedback = async () => {
+    setFeedbackLoading(true);
+    try {
+      const res = await paymentApi.submitFeedback(bidId, { rating, comment });
+      if (res.success) {
+        setGig(res.data);
+        toast.success("Feedback submitted!");
+      }
+    } catch (err) {
+      toast.error(err.message || "Failed to submit feedback");
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
+
+  // Poll for gig status updates (e.g. driver arriving, or gig completed)
+  useEffect(() => {
+    if (!gig || gig.gigStatus === 'completed') return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await paymentApi.getGigStatus(bidId);
+        if (res.success) {
+          setGig(res.data);
+        }
+      } catch {}
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [gig?.gigStatus, bidId]);
 
   // Poll when driver has selected online and is showing QR
   useEffect(() => {
@@ -139,6 +173,40 @@ const UpcomingGigUser = () => {
             </CardContent>
           </Card>
 
+          {!gig.feedback && (
+            <Card className="border-2 border-zinc-100 rounded-3xl p-6 bg-white shadow-sm">
+              <h3 className="text-sm font-black text-center uppercase tracking-widest mb-4">Rate Your Driver</h3>
+              <div className="flex justify-center gap-2 mb-4">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star 
+                    key={star}
+                    className={cn("w-8 h-8 cursor-pointer transition-colors", rating >= star ? "text-amber-400 fill-amber-400" : "text-zinc-200")}
+                    onClick={() => setRating(star)}
+                  />
+                ))}
+              </div>
+              <input 
+                placeholder="Optional feedback..."
+                className="w-full text-sm p-3 rounded-xl bg-zinc-50 border border-zinc-200 outline-none focus:border-amber-400 transition-colors mb-4"
+                value={comment}
+                onChange={e => setComment(e.target.value)}
+              />
+              <Button disabled={feedbackLoading} className="w-full h-12 rounded-xl bg-amber-400 text-black font-black" onClick={handleSubmitFeedback}>
+                {feedbackLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Submit Feedback
+              </Button>
+            </Card>
+          )}
+
+          {gig.feedback && (
+            <Card className="border-2 border-amber-100 rounded-3xl p-5 bg-amber-50 shadow-sm text-center">
+              <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2">Your Rating</p>
+              <div className="flex justify-center gap-1 mb-2">
+                {[...Array(gig.feedback.rating)].map((_, i) => <Star key={i} className="w-5 h-5 text-amber-400 fill-amber-400" />)}
+              </div>
+              {gig.feedback.comment && <p className="text-xs font-bold text-amber-700 italic">"{gig.feedback.comment}"</p>}
+            </Card>
+          )}
+
           <Button className="w-full h-14 rounded-3xl bg-primary text-black font-black" onClick={() => navigate("/user/requests")}>
             Back to My Requests
           </Button>
@@ -203,6 +271,106 @@ const UpcomingGigUser = () => {
           </CardContent>
         </Card>
 
+        {/* Live Trip Tracking Stepper */}
+        <Card className="border-none shadow-lg rounded-3xl overflow-hidden bg-white">
+          <CardContent className="p-5 space-y-4">
+            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Live Trip Tracking</p>
+            
+            <div className="relative space-y-6">
+              {/* Dynamic Connection Line */}
+              <div className="absolute left-[10px] top-2 bottom-2 w-0.5 bg-zinc-100 -translate-x-1/2">
+                <div 
+                  className="bg-primary w-full origin-top transition-all duration-500"
+                  style={{
+                    height: 
+                      gig.gigStatus === 'scheduled' ? '0%' :
+                      gig.gigStatus === 'in_progress' ? '33%' :
+                      gig.gigStatus === 'arrived' ? '66%' :
+                      gig.gigStatus === 'completed' ? '100%' : '0%'
+                  }}
+                />
+              </div>
+
+              {/* Step 1: Scheduled */}
+              <div className="relative flex gap-4 items-start pl-7">
+                <div className={cn(
+                  "absolute left-[10px] top-0.5 w-[18px] h-[18px] rounded-full flex items-center justify-center border-2 z-10 transition-all duration-300 -translate-x-1/2",
+                  (gig.gigStatus === 'scheduled' || gig.gigStatus === 'in_progress' || gig.gigStatus === 'arrived' || gig.gigStatus === 'completed')
+                    ? "bg-primary border-primary text-black shadow-[0_0_8px_rgba(250,204,21,0.4)]"
+                    : "bg-white border-zinc-200 text-zinc-400"
+                )}>
+                  <Calendar className="w-2.5 h-2.5" />
+                </div>
+                <div>
+                  <h4 className={cn(
+                    "text-xs font-black leading-none",
+                    (gig.gigStatus === 'scheduled' || gig.gigStatus === 'in_progress' || gig.gigStatus === 'arrived' || gig.gigStatus === 'completed') ? "text-zinc-900" : "text-zinc-400"
+                  )}>Gig Scheduled</h4>
+                  <p className="text-[9px] text-zinc-500 font-bold mt-1 uppercase tracking-tight">Driver is assigned & confirmed</p>
+                </div>
+              </div>
+
+              {/* Step 2: Underway */}
+              <div className="relative flex gap-4 items-start pl-7">
+                <div className={cn(
+                  "absolute left-[10px] top-0.5 w-[18px] h-[18px] rounded-full flex items-center justify-center border-2 z-10 transition-all duration-300 -translate-x-1/2",
+                  (gig.gigStatus === 'in_progress' || gig.gigStatus === 'arrived' || gig.gigStatus === 'completed')
+                    ? "bg-primary border-primary text-black shadow-[0_0_8px_rgba(250,204,21,0.4)]"
+                    : "bg-white border-zinc-200 text-zinc-400"
+                )}>
+                  <Truck className="w-2.5 h-2.5" />
+                </div>
+                <div>
+                  <h4 className={cn(
+                    "text-xs font-black leading-none",
+                    (gig.gigStatus === 'in_progress' || gig.gigStatus === 'arrived' || gig.gigStatus === 'completed') ? "text-zinc-900" : "text-zinc-400"
+                  )}>Gig Underway</h4>
+                  <p className="text-[9px] text-zinc-500 font-bold mt-1 uppercase tracking-tight">Driver is currently on route</p>
+                </div>
+              </div>
+
+              {/* Step 3: Arrived */}
+              <div className="relative flex gap-4 items-start pl-7">
+                <div className={cn(
+                  "absolute left-[10px] top-0.5 w-[18px] h-[18px] rounded-full flex items-center justify-center border-2 z-10 transition-all duration-300 -translate-x-1/2",
+                  (gig.gigStatus === 'arrived' || gig.gigStatus === 'completed')
+                    ? "bg-primary border-primary text-black shadow-[0_0_8px_rgba(250,204,21,0.4)]"
+                    : "bg-white border-zinc-200 text-zinc-400"
+                )}>
+                  <MapPin className="w-2.5 h-2.5" />
+                </div>
+                <div>
+                  <h4 className={cn(
+                    "text-xs font-black leading-none",
+                    (gig.gigStatus === 'arrived' || gig.gigStatus === 'completed') ? "text-zinc-900" : "text-zinc-400"
+                  )}>Driver Arrived</h4>
+                  <p className="text-[9px] text-zinc-500 font-bold mt-1 uppercase tracking-tight">Share the Delivery OTP with driver</p>
+                </div>
+              </div>
+
+              {/* Step 4: Completed */}
+              <div className="relative flex gap-4 items-start pl-7">
+                <div className={cn(
+                  "absolute left-[10px] top-0.5 w-[18px] h-[18px] rounded-full flex items-center justify-center border-2 z-10 transition-all duration-300 -translate-x-1/2",
+                  gig.gigStatus === 'completed'
+                    ? "bg-emerald-500 border-emerald-500 text-white shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                    : "bg-white border-zinc-200 text-zinc-400"
+                )}>
+                  <CheckCircle2 className="w-2.5 h-2.5" />
+                </div>
+                <div>
+                  <h4 className={cn(
+                    "text-xs font-black leading-none",
+                    gig.gigStatus === 'completed' ? "text-zinc-900" : "text-zinc-400"
+                  )}>Completed</h4>
+                  <p className="text-[9px] text-zinc-500 font-bold mt-1 uppercase tracking-tight">Delivery verified & completed</p>
+                </div>
+              </div>
+
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Payment Breakdown */}
         <Card className="border-2 border-zinc-100 rounded-3xl p-5 bg-white space-y-4">
           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Payment Summary</p>
@@ -228,6 +396,38 @@ const UpcomingGigUser = () => {
             </div>
           </div>
         </Card>
+
+        {/* OTP Display when arrived */}
+        {gig.gigStatus === 'arrived' && (
+          <Card className="border-2 border-purple-100 rounded-3xl p-5 bg-purple-50 text-center relative overflow-hidden">
+            <Key className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+            <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Delivery OTP</p>
+            {gig.completionOtp ? (
+              <>
+                <div className="flex items-center justify-center gap-2 mt-1">
+                  <p className="text-4xl font-black text-purple-700 tracking-widest">{gig.completionOtp}</p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-8 h-8 rounded-full text-purple-600 hover:bg-purple-100 hover:text-purple-800"
+                    onClick={() => {
+                      navigator.clipboard.writeText(gig.completionOtp);
+                      toast.success("OTP copied!");
+                    }}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-purple-600 font-bold mt-2">Share this code with the driver to confirm delivery</p>
+              </>
+            ) : (
+              <div className="py-2 space-y-1">
+                <p className="text-xs text-purple-600 font-bold">Verification Pending</p>
+                <p className="text-[10px] text-zinc-500 font-bold">Ask the driver to generate/verify the delivery OTP from their app.</p>
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* Final payment method info (when driver has chosen) */}
         {gig.finalPaymentMethod === 'cash' && gig.gigStatus === 'in_progress' && (

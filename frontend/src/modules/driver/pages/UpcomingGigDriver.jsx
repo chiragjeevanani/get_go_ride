@@ -3,9 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   CheckCircle2, MapPin, Calendar, Loader2, ChevronLeft,
   Banknote, Smartphone, AlertCircle, QrCode, Clock,
-  ArrowRight, User, Copy, ExternalLink, RefreshCw, Truck
+  ArrowRight, User, Copy, ExternalLink, RefreshCw, Truck, Key
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,6 +17,7 @@ import { cn } from "@/lib/utils";
 const GIG_STATUS_CONFIG = {
   scheduled: { label: "Scheduled", color: "bg-blue-100 text-blue-700", desc: "Advance paid — gig ready to start" },
   in_progress: { label: "In Progress", color: "bg-amber-100 text-amber-700", desc: "Gig is underway" },
+  arrived: { label: "Arrived", color: "bg-purple-100 text-purple-700", desc: "Arrived at destination, pending OTP" },
   completed: { label: "Completed", color: "bg-emerald-100 text-emerald-700", desc: "Gig done & payment settled" },
 };
 
@@ -26,9 +28,10 @@ const UpcomingGigDriver = () => {
   const [loading, setLoading] = useState(true);
   const [gig, setGig] = useState(null);
   const [fetchError, setFetchError] = useState(null);
-  const [step, setStep] = useState("detail"); // detail | method | qr | done
+  const [step, setStep] = useState("detail"); // detail | method | qr | done | otp
   const [actionLoading, setActionLoading] = useState(false);
   const [paymentLink, setPaymentLink] = useState(null);
+  const [otpInput, setOtpInput] = useState("");
 
   const loadGig = useCallback(async () => {
     try {
@@ -37,6 +40,7 @@ const UpcomingGigDriver = () => {
       if (res.success) {
         setGig(res.data);
         if (res.data.gigStatus === 'completed') setStep("done");
+        else if (res.data.gigStatus === 'arrived') setStep("otp");
         else if (res.data.finalPaymentMethod === 'online' && res.data.finalPaymentLinkUrl) {
           setPaymentLink(res.data.finalPaymentLinkUrl);
           setStep("qr");
@@ -85,12 +89,60 @@ const UpcomingGigDriver = () => {
     }
   };
 
+  const handleMarkArrived = async () => {
+    setActionLoading(true);
+    try {
+      const res = await paymentApi.markGigArrived(bidId);
+      if (res.success) {
+        setGig(res.data.bid);
+        setStep("otp");
+        toast.success("Marked as arrived! Ask customer for OTP.");
+      }
+    } catch (err) {
+      toast.error(err.message || "Failed to mark as arrived");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if(otpInput.length !== 4) return toast.error("Enter a valid 4-digit OTP");
+    setActionLoading(true);
+    try {
+      const res = await paymentApi.verifyGigOtp(bidId, otpInput, null);
+      if (res.success) {
+        setGig(res.data);
+        setStep("method"); // Move to payment method
+        toast.success("OTP Verified! Proceed to collect payment.");
+      }
+    } catch (err) {
+      toast.error(err.message || "Failed to verify OTP");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRegenerateOtp = async () => {
+    setActionLoading(true);
+    try {
+      const res = await paymentApi.regenerateOtp(bidId);
+      if (res.success) {
+        setGig(res.data.bid);
+        toast.success("New OTP generated!");
+      }
+    } catch (err) {
+      toast.error(err.message || "Failed to regenerate OTP");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleSelectMethod = async (method) => {
     setActionLoading(true);
     try {
       const res = await paymentApi.selectPaymentMethod(bidId, method);
       if (res.success) {
-        setGig(res.data);
+        setGig(res.data.bid);
         setStep("method");
         if (method === 'online') {
           // Create the payment link immediately
@@ -138,6 +190,22 @@ const UpcomingGigDriver = () => {
         <AlertCircle className="w-12 h-12 text-red-400" />
         <p className="text-zinc-500 font-bold text-center">{fetchError || "Gig not found"}</p>
         <Button onClick={() => navigate(-1)} variant="outline">Go Back</Button>
+      </div>
+    );
+  }
+
+  if (gig.paymentStatus === 'unpaid') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 bg-zinc-50 max-w-md mx-auto">
+        <AlertCircle className="w-12 h-12 text-amber-500" />
+        <h2 className="text-lg font-bold text-zinc-900 uppercase tracking-tight">Gig Not Active Yet</h2>
+        <p className="text-zinc-500 font-bold text-center text-xs leading-relaxed">
+          The customer has not completed the advance payment for this booking yet. 
+          You can track and start this gig once the advance is paid.
+        </p>
+        <Button onClick={() => navigate(-1)} className="w-full h-11 rounded-xl bg-primary text-black font-bold uppercase text-xs">
+          Go Back
+        </Button>
       </div>
     );
   }
@@ -247,8 +315,56 @@ const UpcomingGigDriver = () => {
     );
   }
 
+  // ── Step: Verify OTP ──
+  if (step === "otp") {
+    return (
+      <div className="min-h-screen bg-zinc-50 pb-24 max-w-md mx-auto">
+        <header className="sticky top-0 z-40 bg-white border-b-2 border-yellow-400 px-4 py-4 flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="w-9 h-9 rounded-none" onClick={() => setStep("detail")}>
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-sm font-black text-zinc-900 uppercase tracking-widest italic">Delivery Verification</h1>
+            <p className="text-[8px] font-black text-zinc-400 uppercase">Step 1 of 2</p>
+          </div>
+        </header>
+        <div className="p-5 space-y-4 text-center">
+          <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4 mt-6 shadow-sm">
+            <Key className="w-10 h-10 text-purple-600" />
+          </div>
+          <h2 className="text-lg font-semibold text-zinc-900">Enter Delivery OTP</h2>
+          <p className="text-xs text-zinc-500 font-normal mb-6">Ask the customer for the 4-digit OTP shown in their app.</p>
+          
+          <Input 
+            value={otpInput}
+            onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+            placeholder="0000"
+            className="h-16 text-center text-2xl font-medium tracking-widest rounded-2xl bg-white shadow-sm border-2 border-zinc-100 focus:border-purple-400 transition-colors"
+          />
+
+          <Button 
+            disabled={actionLoading || otpInput.length !== 4}
+            className="w-full h-14 rounded-2xl bg-primary text-black font-black uppercase tracking-wide mt-8 shadow-sm hover:bg-yellow-400 transition-all"
+            onClick={handleVerifyOtp}
+          >
+            {actionLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : "Verify OTP"}
+          </Button>
+
+          <Button
+            variant="ghost"
+            disabled={actionLoading}
+            className="w-full text-xs font-bold text-zinc-500 hover:text-zinc-700 mt-2"
+            onClick={handleRegenerateOtp}
+          >
+            Resend / Regenerate OTP
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Step: Select payment method ──
-  if (step === "method" && gig.gigStatus === 'in_progress') {
+  if (step === "method" && !gig.finalPaymentMethod && (gig.gigStatus === 'in_progress' || gig.gigStatus === 'arrived')) {
     return (
       <div className="min-h-screen bg-zinc-50 pb-24 max-w-md mx-auto">
         <header className="sticky top-0 z-40 bg-white border-b-2 border-yellow-400 px-4 py-4 flex items-center gap-3">
@@ -333,11 +449,15 @@ const UpcomingGigDriver = () => {
           </div>
           <Button
             disabled={actionLoading}
-            className="w-full h-16 rounded-3xl bg-emerald-500 text-white text-base font-black shadow-lg hover:bg-emerald-600"
+            className="w-full h-auto min-h-[3.5rem] py-3 px-4 rounded-xl bg-emerald-500 text-white text-xs sm:text-sm font-black shadow-lg hover:bg-emerald-600 whitespace-normal leading-tight text-center flex items-center justify-center gap-2"
             onClick={handleCashComplete}
           >
-            {actionLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <CheckCircle2 className="w-5 h-5 mr-2" />}
-            Confirm Cash Collected & Complete Gig
+            {actionLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+            )}
+            <span>Confirm Cash Collected & Complete Gig</span>
           </Button>
         </div>
       </div>
@@ -431,22 +551,33 @@ const UpcomingGigDriver = () => {
         {gig.paymentStatus === 'advance_paid' && gig.gigStatus === 'scheduled' && (
           <Button
             disabled={actionLoading}
-            className="w-full h-14 rounded-none bg-primary text-black font-black text-sm uppercase tracking-widest"
+            className="w-full h-auto min-h-[3.5rem] py-3 rounded-xl bg-primary text-black font-black text-xs sm:text-sm uppercase tracking-wide px-4 whitespace-normal leading-tight text-center"
             onClick={handleStartGig}
           >
-            {actionLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Truck className="w-5 h-5 mr-2" />}
-            Start Gig
+            <Truck className="w-5 h-5 mr-2 shrink-0" />
+            {actionLoading ? "Starting..." : "Start Gig"}
           </Button>
         )}
 
         {gig.gigStatus === 'in_progress' && !gig.finalPaymentMethod && (
           <Button
             disabled={actionLoading}
-            className="w-full h-14 rounded-none bg-emerald-500 text-white font-black text-sm uppercase tracking-widest hover:bg-emerald-600"
-            onClick={() => setStep("method")}
+            className="w-full h-auto min-h-[3.5rem] py-3 rounded-xl bg-purple-500 text-white font-black text-xs sm:text-sm uppercase tracking-wide px-4 whitespace-normal leading-tight text-center hover:bg-purple-600 shadow-sm transition-colors"
+            onClick={handleMarkArrived}
           >
-            <CheckCircle2 className="w-5 h-5 mr-2" />
-            Mark Gig Complete & Collect Payment
+            <MapPin className="w-5 h-5 mr-2 shrink-0" />
+            Mark Arrived at Destination
+          </Button>
+        )}
+
+        {gig.gigStatus === 'arrived' && !gig.finalPaymentMethod && (
+          <Button
+            disabled={actionLoading}
+            className="w-full h-auto min-h-[3.5rem] py-3 rounded-xl bg-emerald-500 text-white font-black text-xs sm:text-sm uppercase tracking-wide px-4 whitespace-normal leading-tight text-center hover:bg-emerald-600 shadow-sm transition-colors"
+            onClick={() => setStep("otp")}
+          >
+            <Key className="w-5 h-5 mr-2 shrink-0" />
+            Verify OTP & Complete
           </Button>
         )}
 

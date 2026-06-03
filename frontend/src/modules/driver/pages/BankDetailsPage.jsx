@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft, Building2, Save, CheckCircle2, Loader2, AlertCircle,
-  Shield, Info
+  Shield, Info, Edit2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +17,7 @@ const BankDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({
     accountHolderName: "",
     accountNumber: "",
@@ -37,8 +38,13 @@ const BankDetailsPage = () => {
             bankName: res.data.bankName || "",
             upiId: res.data.upiId || "",
           });
+          setIsEditing(false);
+        } else {
+          setIsEditing(true);
         }
-      } catch {}
+      } catch {
+        setIsEditing(true);
+      }
       finally { setLoading(false); }
     };
     fetchDetails();
@@ -111,7 +117,8 @@ const BankDetailsPage = () => {
                 placeholder="As per bank records"
                 value={form.accountHolderName}
                 onChange={handleChange("accountHolderName")}
-                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary"
+                disabled={!isEditing}
+                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary disabled:bg-zinc-50 disabled:text-zinc-500 disabled:opacity-100"
               />
             </div>
 
@@ -124,7 +131,8 @@ const BankDetailsPage = () => {
                 onChange={handleChange("accountNumber")}
                 type="tel"
                 inputMode="numeric"
-                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary font-mono"
+                disabled={!isEditing}
+                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary font-mono disabled:bg-zinc-50 disabled:text-zinc-500 disabled:opacity-100"
               />
             </div>
 
@@ -135,7 +143,8 @@ const BankDetailsPage = () => {
                 placeholder="e.g. SBIN0001234"
                 value={form.ifscCode}
                 onChange={(e) => setForm(prev => ({ ...prev, ifscCode: e.target.value.toUpperCase() }))}
-                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary font-mono uppercase"
+                disabled={!isEditing}
+                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary font-mono uppercase disabled:bg-zinc-50 disabled:text-zinc-500 disabled:opacity-100"
                 maxLength={11}
               />
               <p className="text-[9px] text-zinc-400 font-bold">Format: 4 letters + 0 + 6 digits/letters</p>
@@ -148,7 +157,8 @@ const BankDetailsPage = () => {
                 placeholder="e.g. State Bank of India"
                 value={form.bankName}
                 onChange={handleChange("bankName")}
-                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary"
+                disabled={!isEditing}
+                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary disabled:bg-zinc-50 disabled:text-zinc-500 disabled:opacity-100"
               />
             </div>
 
@@ -159,25 +169,45 @@ const BankDetailsPage = () => {
                 placeholder="yourname@upi"
                 value={form.upiId}
                 onChange={handleChange("upiId")}
-                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary"
+                disabled={!isEditing}
+                className="rounded-xl border-2 border-zinc-100 font-bold text-zinc-900 focus:border-primary disabled:bg-zinc-50 disabled:text-zinc-500 disabled:opacity-100"
               />
             </div>
           </CardContent>
         </Card>
 
-        <Button
-          disabled={saving || saved}
-          className="w-full h-14 rounded-xl bg-primary text-black font-bold text-sm uppercase tracking-widest hover:bg-yellow-400 transition-all disabled:opacity-50"
-          onClick={handleSave}
-        >
-          {saving ? (
-            <div className="flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Saving...</div>
-          ) : saved ? (
-            <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> Saved!</div>
-          ) : (
-            <div className="flex items-center gap-2"><Save className="w-5 h-5" /> Save Bank Details</div>
-          )}
-        </Button>
+        {!isEditing ? (
+          <Button
+            className="w-full h-14 rounded-xl bg-zinc-900 text-white font-bold text-sm uppercase tracking-widest hover:bg-zinc-800 transition-all"
+            onClick={() => setIsEditing(true)}
+          >
+            <div className="flex items-center gap-2"><Edit2 className="w-5 h-5" /> Edit Bank Details</div>
+          </Button>
+        ) : (
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1 h-14 rounded-xl border-2 border-zinc-200 text-zinc-600 font-bold text-sm uppercase tracking-widest hover:bg-zinc-100 transition-all"
+              onClick={() => setIsEditing(false)}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={saving || saved}
+              className="flex-[2] h-14 rounded-xl bg-primary text-black font-bold text-sm uppercase tracking-widest hover:bg-yellow-400 transition-all disabled:opacity-50"
+              onClick={handleSave}
+            >
+              {saving ? (
+                <div className="flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Saving...</div>
+              ) : saved ? (
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> Saved!</div>
+              ) : (
+                <div className="flex items-center gap-2"><Save className="w-5 h-5" /> Save Details</div>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

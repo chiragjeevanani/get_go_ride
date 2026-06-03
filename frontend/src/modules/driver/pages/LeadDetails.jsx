@@ -49,7 +49,7 @@ const LeadDetails = () => {
     if (lead) {
       try {
         setAccepting(true);
-        const finalPrice = customPrice ? Number(customPrice) : Number(lead.price || 1733);
+        const finalPrice = customPrice ? Number(customPrice) : Number(lead.price || 1500);
         const bid = await acceptLead(lead.id, finalPrice);
         toast.success("Lead accepted and bid placed successfully!");
         setShowBidModal(false);
@@ -175,7 +175,7 @@ const LeadDetails = () => {
                      </div>
                      <div className="space-y-0.5">
                         <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600">Estimated Fare</span>
-                        <p className="text-lg font-black text-zinc-900 leading-tight">₹{lead?.price || 1733}</p>
+                        <p className="text-lg font-black text-zinc-900 leading-tight">₹{lead?.price || 1500}</p>
                       </div>
                    </div>
                    <div className="text-right">

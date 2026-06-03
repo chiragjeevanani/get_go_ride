@@ -33,7 +33,7 @@ export const normalizeLead = (req) => {
     distance: "Local",
     status: req.status === 'pending' ? 'new' : req.status,
     type: req.serviceType,
-    price: req.price || 1733,
+    price: req.price || 1500,
     raw: req
   };
 };
@@ -132,7 +132,7 @@ export const useDriverState = (options = {}) => {
     let bidResult = null;
     try {
       const res = await leadApi.bid(leadId, {
-        amount: customAmount || 1733, // Fallback to a default if not provided
+        amount: customAmount || 1500, // Fallback to a default if not provided
         notes: 'Interested in this job'
       });
       bidResult = res.data || res;

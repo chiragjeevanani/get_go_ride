@@ -46,7 +46,7 @@ const bidSchema = new mongoose.Schema(
     },
     gigStatus: {
       type: String,
-      enum: ['scheduled', 'in_progress', 'completed'],
+      enum: ['scheduled', 'in_progress', 'arrived', 'completed'],
       default: 'scheduled',
     },
     advanceAmount: { type: Number, default: 0 },   // 50% of bid amount
@@ -61,6 +61,14 @@ const bidSchema = new mongoose.Schema(
       default: null,
     },
     finalPaymentLinkUrl: { type: String, default: '' }, // Razorpay payment link short_url
+    
+    // ─── OTP Verification & Feedback ──────────────────────────────────────────
+    completionOtp: { type: String, default: null },
+    proofOfDelivery: { type: String, default: '' },
+    feedback: {
+      rating: { type: Number, min: 1, max: 5 },
+      comment: { type: String, default: '' }
+    },
   },
   { timestamps: true }
 );
