@@ -28,11 +28,11 @@ app.use(cors({
     if (process.env.NODE_ENV === 'development' || !origin) {
       return callback(null, true);
     }
-    
-    const allowedOrigins = process.env.FRONTEND_URL 
+
+    const allowedOrigins = process.env.FRONTEND_URL
       ? process.env.FRONTEND_URL.split(',').map(url => url.trim().replace(/\/$/, ''))
       : [];
-    
+
     if (allowedOrigins.indexOf(origin.replace(/\/$/, '')) !== -1) {
       callback(null, true);
     } else {
@@ -46,26 +46,26 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/uploads', express.static('uploads'));
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ success: true, message: 'GetGoLoad API is running 🚀', env: process.env.NODE_ENV });
 });
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/vendors', vendorRoutes);
-app.use('/api/requirements', requirementRoutes);
-app.use('/api/leads', leadRoutes);
-app.use('/api/bids', bidRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/settings', settingsRoutes);
-app.use('/api/faqs', faqRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/plans', planRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/vehicles', vehicleRoutes);
-app.use('/api/chats', chatRoutes);
-app.use('/api/payments', paymentRoutes);
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/vendors', vendorRoutes);
+app.use('/requirements', requirementRoutes);
+app.use('/leads', leadRoutes);
+app.use('/bids', bidRoutes);
+app.use('/categories', categoryRoutes);
+app.use('/settings', settingsRoutes);
+app.use('/faqs', faqRoutes);
+app.use('/admin', adminRoutes);
+app.use('/plans', planRoutes);
+app.use('/upload', uploadRoutes);
+app.use('/vehicles', vehicleRoutes);
+app.use('/chats', chatRoutes);
+app.use('/payments', paymentRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────────────
 app.use((req, res) => {
