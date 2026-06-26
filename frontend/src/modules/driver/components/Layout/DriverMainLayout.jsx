@@ -1,10 +1,37 @@
+import { useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import { Home, Zap, MessageSquare, User, BarChart2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import { initializePushNotifications, setupForegroundNotificationHandler } from "@/services/pushNotificationService";
 
 const DriverMainLayout = () => {
   const location = useLocation();
+
+  useEffect(() => {
+    const token = localStorage.getItem('gtgl_driver_token');
+    if (token) {
+      // Register SW, request permission, and fetch FCM token
+      initializePushNotifications();
+
+      // Listen for foreground notifications
+      const unsubscribe = setupForegroundNotificationHandler((payload) => {
+        toast.info(payload.notification?.title || payload.data?.title || "New Gig Alert", {
+          description: payload.notification?.body || payload.data?.body || "",
+          action: payload.data?.deepLink ? {
+            label: "View",
+            onClick: () => {
+              window.location.href = payload.data.deepLink;
+            }
+          } : undefined,
+          duration: 6000
+        });
+      });
+
+      return unsubscribe;
+    }
+  }, []);
 
   const navItems = [
     { icon: <Home className="w-[18px] h-[18px]" strokeWidth={2.5} />, label: "Home", path: "/driver/dashboard" },

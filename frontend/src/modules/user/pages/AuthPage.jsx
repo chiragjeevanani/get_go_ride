@@ -81,6 +81,14 @@ const AuthPage = () => {
       localStorage.setItem('gtgl_refresh_token', res.data.refreshToken);
       localStorage.setItem('gtgl_user', JSON.stringify(res.data.user));
       
+      // Initialize push notifications (request permission & save token)
+      // Done asynchronously to ensure it does not block the login process
+      import("../../../services/pushNotificationService").then(({ initializePushNotifications }) => {
+        initializePushNotifications().catch(err => {
+          console.warn("[FCM] Failed to initialize push notifications on login:", err);
+        });
+      });
+      
       toast.success("Login successful!");
       navigate("/user/dashboard");
     } catch (error) {

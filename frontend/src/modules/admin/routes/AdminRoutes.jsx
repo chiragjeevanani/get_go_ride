@@ -17,6 +17,7 @@ const ActivityFeed = lazy(() => import('../pages/ActivityFeed'));
 const Faqs = lazy(() => import('../pages/Faqs'));
 const Login = lazy(() => import('../pages/Login'));
 const WithdrawalManagement = lazy(() => import('../pages/WithdrawalManagement'));
+const FcmTestDashboard = lazy(() => import('../pages/FcmTestDashboard'));
 
 // Placeholder Loading Component
 const PageLoading = () => (
@@ -49,6 +50,7 @@ const AdminRoutes = () => {
           <Route path="categories" element={<Categories />} />
           <Route path="moderation" element={<Moderation />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="fcm-test" element={<FcmTestDashboard />} />
           <Route path="settings" element={<Settings />} />
           <Route path="faqs" element={<Faqs />} />
           <Route path="withdrawals" element={<WithdrawalManagement />} />

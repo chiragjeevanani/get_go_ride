@@ -363,7 +363,13 @@ const DriverProfile = () => {
          <Button 
            variant="ghost" 
            className="w-full h-11 rounded-xl text-red-500 border border-red-100 bg-red-50/20 hover:bg-red-50 transition-colors font-bold text-xs tracking-tight group"
-           onClick={() => {
+           onClick={async () => {
+              try {
+                const { removeFCMToken } = await import("../../../services/pushNotificationService");
+                await removeFCMToken();
+              } catch (err) {
+                console.warn("[FCM] Failed to remove token on logout:", err);
+              }
               localStorage.removeItem("gtgl_driver_token");
               localStorage.removeItem("gtgl_driver_refresh_token");
               localStorage.removeItem("gtgl_driver");

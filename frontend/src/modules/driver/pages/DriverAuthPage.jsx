@@ -122,6 +122,10 @@ const DriverAuthPage = () => {
       // If existing vendor and onboarding complete, go to dashboard
       // Otherwise, start/continue the wizard
       if (!isNewUser && vendor.onboardingComplete) {
+        // Initialize push notifications for returning driver
+        import("../../../services/pushNotificationService").then(({ initializePushNotifications }) => {
+          initializePushNotifications().catch(err => console.warn("[FCM] Driver login token init failed:", err));
+        });
         navigate("/driver/dashboard");
       } else {
         setStep(4);
@@ -161,6 +165,12 @@ const DriverAuthPage = () => {
       if (res.data) {
         storage.setDriver(res.data);
       }
+
+      // Initialize push notifications after onboarding completes
+      import("../../../services/pushNotificationService").then(({ initializePushNotifications }) => {
+        initializePushNotifications().catch(err => console.warn("[FCM] Driver onboarding token init failed:", err));
+      });
+
       toast.success("Profile saved successfully!");
       navigate("/driver/subscribe");
     } catch (error) {

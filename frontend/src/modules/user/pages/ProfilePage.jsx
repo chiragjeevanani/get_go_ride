@@ -296,7 +296,18 @@ const ProfilePage = () => {
          <Button 
            variant="ghost" 
            className="w-full h-10 rounded-xl text-red-500 border border-red-100 bg-red-50/20 hover:bg-red-50 transition-colors font-semibold text-[11px] uppercase tracking-widest group"
-           onClick={() => navigate("/user/auth")}
+           onClick={async () => {
+             try {
+               const { removeFCMToken } = await import("../../../services/pushNotificationService");
+               await removeFCMToken();
+             } catch (err) {
+               console.warn("[FCM] Failed to remove token on logout:", err);
+             }
+             localStorage.removeItem('gtgl_token');
+             localStorage.removeItem('gtgl_refresh_token');
+             localStorage.removeItem('gtgl_user');
+             navigate("/user/auth");
+           }}
          >
             <LogOut className="w-3.5 h-3.5 mr-2 group-hover:translate-x-0.5 transition-transform" />
             Logout Account

@@ -33,6 +33,11 @@ const AdminLogin = () => {
       localStorage.setItem("gtgl_refresh_token", res.data.refreshToken);
       localStorage.setItem("gtgl_user", JSON.stringify(res.data.admin || res.data.user || {}));
 
+      // Initialize push notifications for Admin (request permission & save token)
+      import("../../../services/pushNotificationService").then(({ initializePushNotifications }) => {
+        initializePushNotifications().catch(err => console.warn("[FCM] Admin login token init failed:", err));
+      });
+
       toast.success("Welcome back, Super Admin!");
       navigate("/admin/dashboard");
     } catch (err) {

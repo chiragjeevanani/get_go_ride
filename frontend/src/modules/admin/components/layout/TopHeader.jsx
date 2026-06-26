@@ -19,7 +19,13 @@ import { ThemeToggle } from '../common/ThemeToggle';
 export const TopHeader = ({ theme, toggleTheme }) => {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      const { removeFCMToken } = await import("../../../../services/pushNotificationService");
+      await removeFCMToken();
+    } catch (err) {
+      console.warn("[FCM] Failed to remove token on admin logout:", err);
+    }
     localStorage.removeItem('gtgl_token');
     localStorage.removeItem('gtgl_refresh_token');
     localStorage.removeItem('gtgl_user');

@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Truck, MessageSquare, 
   CreditCard, PieChart, Layers, ShieldCheck, 
   Settings, Bell, ChevronLeft, ChevronRight,
-  LogOut, Shield, Activity, Banknote
+  LogOut, Shield, Activity, Banknote, Send
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +40,7 @@ const navGroups = [
       { path: "/admin/faqs", icon: MessageSquare, label: "FAQ Support" },
       { path: "/admin/moderation", icon: ShieldCheck, label: "Req Oversight" },
       { path: "/admin/notifications", icon: Bell, label: "Broadcasts" },
+      { path: "/admin/fcm-test", icon: Send, label: "FCM Dashboard" },
       { path: "/admin/settings", icon: Settings, label: "Settings" },
     ]
   }

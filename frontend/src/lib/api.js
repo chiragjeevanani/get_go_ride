@@ -312,4 +312,11 @@ export const planApi = {
   incrementQuota: () => api.post('/plans/me/quota/increment'),
 };
 
+export const fcmApi = {
+  saveToken: (token, platform) => api.post('/fcm/save', { token, platform }),
+  removeToken: (token) => api.delete('/fcm/remove', { data: { token } }),
+  sendTest: () => api.post('/fcm/test'),
+  adminSend: (data) => api.post('/fcm/admin/send', data),
+};
+
 export default api;
