@@ -56,6 +56,20 @@ const userSchema = new mongoose.Schema(
         lon: Number,
       },
     ],
+    fcmTokens: {
+      web: [
+        {
+          token: { type: String, required: true },
+          createdAt: { type: Date, default: Date.now }
+        }
+      ],
+      mobile: [
+        {
+          token: { type: String, required: true },
+          createdAt: { type: Date, default: Date.now }
+        }
+      ]
+    },
   },
   { timestamps: true }
 );

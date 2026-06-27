@@ -4,12 +4,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-comp
 // Initialize Firebase App in Service Worker (Compat Version)
 // Note: In production, compile or replace these placeholders with your actual Firebase config values
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBh-h3IpieDdI4SDNOUSyDwaafv1eLrvWA",
+  authDomain: "getgoload.firebaseapp.com",
+  projectId: "getgoload",
+  storageBucket: "getgoload.firebasestorage.app",
+  messagingSenderId: "831873056505",
+  appId: "1:831873056505:web:72fb344ca4f6c86b662c28"
 };
 
 let firebaseInitialized = false;

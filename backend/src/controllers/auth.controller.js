@@ -30,16 +30,16 @@ export const sendOtpHandler = async (req, res, next) => {
     const otp = generateOtp();
     const hashedOtp = await bcrypt.hash(otp, 10);
 
-    // Delete any existing OTP session for this phone+role
-    await OtpSession.deleteOne({ phone, role });
-
-    // Save new OTP session (expires in 10 minutes)
-    await OtpSession.create({
-      phone,
-      role,
-      otp: hashedOtp,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-    });
+    // Save new OTP session (expires in 10 minutes) or update existing
+    await OtpSession.findOneAndUpdate(
+      { phone, role },
+      {
+        otp: hashedOtp,
+        attempts: 0,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
     // Send OTP
     const result = await sendOtp(phone, otp);
@@ -75,7 +75,7 @@ export const verifyOtpHandler = async (req, res, next) => {
     }
 
     // Verify OTP
-    const isMatch = await bcrypt.compare(otp, session.otp);
+    const isMatch = await bcrypt.compare(String(otp).trim(), session.otp);
     if (!isMatch) {
       session.attempts += 1;
       await session.save();

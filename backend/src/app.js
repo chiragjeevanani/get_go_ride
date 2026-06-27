@@ -19,6 +19,7 @@ import uploadRoutes from './routes/upload.routes.js';
 import vehicleRoutes from './routes/vehicle.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
+import fcmRoutes from './routes/fcm.routes.js';
 
 const app = express();
 
@@ -45,6 +46,14 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/uploads', express.static('uploads'));
 
+// Strip /api prefix if present (enables compatibility with VITE_API_URL=/api)
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api')) {
+    req.url = req.url.replace(/^\/api/, '');
+  }
+  next();
+});
+
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
   res.json({ success: true, message: 'GetGoLoad API is running 🚀', env: process.env.NODE_ENV });
@@ -66,6 +75,7 @@ app.use('/upload', uploadRoutes);
 app.use('/vehicles', vehicleRoutes);
 app.use('/chats', chatRoutes);
 app.use('/payments', paymentRoutes);
+app.use('/fcm', fcmRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────────────
 app.use((req, res) => {

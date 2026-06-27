@@ -3,6 +3,7 @@ import Requirement from '../models/Requirement.model.js';
 import Vendor from '../models/Vendor.model.js';
 import { success, error } from '../utils/response.js';
 import { getRevenueModelConfig } from './settings.controller.js';
+import { sendNotificationToUser } from '../utils/pushNotificationHelper.js';
 
 /**
  * @route   POST /api/leads/:id/bid
@@ -95,6 +96,24 @@ export const placeBid = async (req, res, next) => {
       requirement.status = 'bidding';
       await requirement.save();
     }
+
+    // Trigger push notification to user (customer)
+    (async () => {
+      try {
+        if (requirement && requirement.user) {
+          await sendNotificationToUser(requirement.user.toString(), 'user', {
+            title: 'New Bid Received! 💰',
+            body: `A driver has placed a bid of ₹${amount} on your load request for ${requirement.serviceType || 'shipping'}.`,
+            type: 'new_bid',
+            entityId: requirement._id.toString(),
+            deepLink: `/user/requests/${requirement._id.toString()}`,
+            priority: 'high'
+          });
+        }
+      } catch (fcmErr) {
+        console.error('[FCM] Error sending new bid notification:', fcmErr.message);
+      }
+    })();
 
     success(res, bid, 'Bid placed successfully', 201);
   } catch (err) {

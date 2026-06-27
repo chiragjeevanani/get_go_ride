@@ -2,6 +2,7 @@ import Bid from '../models/Bid.model.js';
 import Vendor from '../models/Vendor.model.js';
 import Requirement from '../models/Requirement.model.js';
 import { success, error } from '../utils/response.js';
+import { sendNotificationToUser } from '../utils/pushNotificationHelper.js';
 import razorpay from '../config/razorpay.js';
 import crypto from 'crypto';
 
@@ -213,6 +214,36 @@ export const verifyAdvancePayment = async (req, res, next) => {
       console.error('Failed to broadcast deal accepted message:', msgErr);
     }
 
+    // Trigger Push Notifications
+    (async () => {
+      try {
+        const vendor = await Vendor.findById(bid.vendor);
+        if (vendor) {
+          // 1. Notify Customer (Booking Confirmed & Driver Assigned)
+          await sendNotificationToUser(requirement.user.toString(), 'user', {
+            title: 'Booking Confirmed! 🤝',
+            body: `Your payment has been received and driver ${vendor.name || 'Vendor'} is assigned to your load request.`,
+            type: 'booking_confirmed',
+            entityId: requirement._id.toString(),
+            deepLink: '/user/requests',
+            priority: 'high'
+          });
+
+          // 2. Notify Driver (Booking Accepted & Payment Received)
+          await sendNotificationToUser(vendor._id.toString(), 'vendor', {
+            title: 'Booking Accepted! 🚚',
+            body: `Your bid of ₹${bid.amount} has been accepted. Advance payment of ₹${advance} is credited to your pending wallet.`,
+            type: 'booking_accepted',
+            entityId: requirement._id.toString(),
+            deepLink: '/driver/gigs',
+            priority: 'high'
+          });
+        }
+      } catch (fcmErr) {
+        console.error('[FCM] Error sending advance payment push notifications:', fcmErr.message);
+      }
+    })();
+
     success(res, { bid, advance, final }, 'Advance payment verified. Gig is scheduled!');
   } catch (err) {
     next(err);
@@ -335,7 +366,7 @@ export const getGigStatus = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const markGigStarted = async (req, res, next) => {
   try {
-    const bid = await Bid.findById(req.params.bidId);
+    const bid = await Bid.findById(req.params.bidId).populate('requirement');
     if (!bid) return error(res, 'Bid not found', 404, 'NOT_FOUND');
 
     if (bid.vendor.toString() !== req.user.id) {
@@ -352,6 +383,24 @@ export const markGigStarted = async (req, res, next) => {
 
     bid.gigStatus = 'in_progress';
     await bid.save();
+
+    // Trigger Trip Started push notification to customer
+    (async () => {
+      try {
+        if (bid.requirement && bid.requirement.user) {
+          await sendNotificationToUser(bid.requirement.user.toString(), 'user', {
+            title: 'Trip Started! 🚀',
+            body: `Your driver has started the trip for your load request (${bid.requirement.serviceType}).`,
+            type: 'trip_started',
+            entityId: bid.requirement._id.toString(),
+            deepLink: `/user/requests/${bid.requirement._id.toString()}`,
+            priority: 'high'
+          });
+        }
+      } catch (fcmErr) {
+        console.error('[FCM] Error sending trip started notification:', fcmErr.message);
+      }
+    })();
 
     success(res, bid, 'Gig marked as in progress');
   } catch (err) {
@@ -390,6 +439,38 @@ export const selectFinalPaymentMethod = async (req, res, next) => {
   }
 };
 
+// Helper to trigger push notifications on trip/gig completion
+const _sendCompletionNotifications = async (bid, requirement) => {
+  try {
+    const userId = requirement.user?._id?.toString() || requirement.user?.toString();
+    if (userId) {
+      // 1. Notify Customer
+      await sendNotificationToUser(userId, 'user', {
+        title: 'Trip Completed! 🎉',
+        body: `Your logistics trip (${requirement.serviceType}) has been completed successfully.`,
+        type: 'trip_completed',
+        entityId: requirement._id.toString(),
+        deepLink: `/user/requests/${requirement._id.toString()}`,
+        priority: 'normal'
+      });
+    }
+
+    // 2. Notify Driver (earnings credited & payment received)
+    if (bid.vendor) {
+      await sendNotificationToUser(bid.vendor.toString(), 'vendor', {
+        title: 'Earnings Credited! 💰',
+        body: `Your gig earnings of ₹${bid.amount} (Final payment cleared) have been credited to your active wallet.`,
+        type: 'earnings_credited',
+        entityId: requirement._id.toString(),
+        deepLink: '/driver/wallet',
+        priority: 'high'
+      });
+    }
+  } catch (fcmErr) {
+    console.error('[FCM] Error sending trip completion push notifications:', fcmErr.message);
+  }
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // DRIVER: Confirm cash collection — complete gig
 // POST /api/payments/cash-complete/:bidId
@@ -421,6 +502,9 @@ export const completeCashPayment = async (req, res, next) => {
 
     // Move entire bid amount from pending → active in driver wallet
     await _releaseDriverWallet(bid);
+
+    // Send push notifications
+    _sendCompletionNotifications(bid, bid.requirement);
 
     success(res, bid, 'Gig completed via cash. Full amount credited to wallet!');
   } catch (err) {
@@ -521,6 +605,9 @@ export const verifyFinalPayment = async (req, res, next) => {
       await Requirement.findByIdAndUpdate(bid.requirement._id, { status: 'completed' });
       await _releaseDriverWallet(bid);
 
+      // Send push notifications
+      _sendCompletionNotifications(bid, bid.requirement);
+
       return success(res, bid, 'Gig completed successfully via verified online payment!');
     }
 
@@ -561,7 +648,7 @@ export const handlePaymentWebhook = async (req, res, next) => {
       const type = notes.type;
 
       if (bidId && type === 'final_payment') {
-        const bid = await Bid.findById(bidId);
+        const bid = await Bid.findById(bidId).populate('requirement');
         if (bid && bid.paymentStatus === 'advance_paid') {
           const paymentId = payload.payment?.entity?.id || entity.id;
           bid.paymentStatus = 'completed';
@@ -569,8 +656,11 @@ export const handlePaymentWebhook = async (req, res, next) => {
           bid.finalPaymentId = paymentId;
           await bid.save();
 
-          await Requirement.findByIdAndUpdate(bid.requirement, { status: 'completed' });
+          await Requirement.findByIdAndUpdate(bid.requirement._id, { status: 'completed' });
           await _releaseDriverWallet(bid);
+
+          // Send push notifications
+          _sendCompletionNotifications(bid, bid.requirement);
 
           console.log(`[PAYMENT WEBHOOK] Gig ${bidId} completed via online payment`);
         }
@@ -589,7 +679,7 @@ export const handlePaymentWebhook = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const markGigArrived = async (req, res, next) => {
   try {
-    const bid = await Bid.findById(req.params.bidId);
+    const bid = await Bid.findById(req.params.bidId).populate('requirement');
     if (!bid) return error(res, 'Bid not found', 404, 'NOT_FOUND');
 
     if (bid.vendor.toString() !== req.user.id) {
@@ -605,6 +695,24 @@ export const markGigArrived = async (req, res, next) => {
     bid.gigStatus = 'arrived';
     bid.completionOtp = otp;
     await bid.save();
+
+    // Trigger Driver Arrived push notification to customer
+    (async () => {
+      try {
+        if (bid.requirement && bid.requirement.user) {
+          await sendNotificationToUser(bid.requirement.user.toString(), 'user', {
+            title: 'Driver Arrived! 📍',
+            body: `Your driver has arrived at the pickup location. Share OTP ${otp} once load is complete.`,
+            type: 'driver_arrived',
+            entityId: bid.requirement._id.toString(),
+            deepLink: `/user/requests/${bid.requirement._id.toString()}`,
+            priority: 'high'
+          });
+        }
+      } catch (fcmErr) {
+        console.error('[FCM] Error sending driver arrived notification:', fcmErr.message);
+      }
+    })();
 
     success(res, { bid, otp }, 'Gig marked as arrived. OTP generated.');
   } catch (err) {

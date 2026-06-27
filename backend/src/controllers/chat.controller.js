@@ -6,6 +6,7 @@ import Vendor from '../models/Vendor.model.js';
 import SystemSetting from '../models/SystemSetting.model.js';
 import { success, error } from '../utils/response.js';
 import { getIO } from '../config/socket.js';
+import { sendNotificationToUser } from '../utils/pushNotificationHelper.js';
 import razorpay from '../config/razorpay.js';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
@@ -381,6 +382,31 @@ export const sendMessage = async (req, res, next) => {
       console.error('Socket broadcast failed:', wsErr.message);
     }
 
+    // Trigger Push Notifications
+    (async () => {
+      try {
+        const isUser = req.user.role === 'user';
+        const recipientId = isUser ? vendorUser : requirementUser;
+        const recipientRole = isUser ? 'vendor' : 'user';
+        const senderName = isUser 
+          ? (bid.requirement?.user?.name || 'Customer')
+          : (bid.vendor?.name || 'Driver');
+
+        if (recipientId) {
+          await sendNotificationToUser(recipientId.toString(), recipientRole, {
+            title: `💬 New Message from ${senderName}`,
+            body: text || (type === 'image' ? '📷 Sent an image' : 'New attachment'),
+            type: 'customer_message',
+            entityId: bid._id.toString(),
+            deepLink: `/${recipientRole}/chats/${bid._id.toString()}`,
+            priority: 'normal'
+          });
+        }
+      } catch (fcmErr) {
+        console.error('[FCM] Error sending chat push notification:', fcmErr.message);
+      }
+    })();
+
     success(res, msg, 'Message sent successfully', 201);
   } catch (err) {
     next(err);
@@ -524,6 +550,31 @@ export const sendOffer = async (req, res, next) => {
     } catch (wsErr) {
       console.error('Socket broadcast failed:', wsErr.message);
     }
+
+    // Trigger Push Notifications
+    (async () => {
+      try {
+        const isUser = req.user.role === 'user';
+        const recipientId = isUser ? vendorUser : requirementUser;
+        const recipientRole = isUser ? 'vendor' : 'user';
+        const senderName = isUser 
+          ? (bid.requirement?.user?.name || 'Customer')
+          : (bid.vendor?.name || 'Driver');
+
+        if (recipientId) {
+          await sendNotificationToUser(recipientId.toString(), recipientRole, {
+            title: isUser ? `💰 Counter Offer from ${senderName}` : `💰 New Offer from ${senderName}`,
+            body: `Offered a price of ₹${amount} for the request.`,
+            type: 'offer_sent',
+            entityId: bid._id.toString(),
+            deepLink: `/${recipientRole}/chats/${bid._id.toString()}`,
+            priority: 'high'
+          });
+        }
+      } catch (fcmErr) {
+        console.error('[FCM] Error sending offer push notification:', fcmErr.message);
+      }
+    })();
 
     success(res, msg, 'Offer submitted and updated successfully', 201);
   } catch (err) {

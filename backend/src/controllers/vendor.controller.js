@@ -4,6 +4,7 @@ import Bid from '../models/Bid.model.js';
 import Requirement from '../models/Requirement.model.js';
 import mongoose from 'mongoose';
 import { success, error } from '../utils/response.js';
+import { sendNotificationToUser, sendNotificationToAdmins } from '../utils/pushNotificationHelper.js';
 
 // --- Vendor Facing ---
 
@@ -109,6 +110,22 @@ export const submitOnboarding = async (req, res, next) => {
     ).populate('activeSubscription');
 
     if (!vendor) return error(res, 'Vendor not found', 404, 'NOT_FOUND');
+
+    // Trigger push notification to admins about new registration & pending verification
+    (async () => {
+      try {
+        await sendNotificationToAdmins({
+          title: 'New Driver Registration 🚚',
+          body: `Driver ${vendor.name || 'Vendor'} (${vendor.phone}) completed onboarding. KYC verification is pending.`,
+          type: 'driver_verification_pending',
+          entityId: vendor._id.toString(),
+          deepLink: '/admin/vendors',
+          priority: 'normal'
+        });
+      } catch (fcmErr) {
+        console.error('[FCM] Error notifying admins of driver registration:', fcmErr.message);
+      }
+    })();
 
     success(res, vendor, 'Onboarding completed successfully');
   } catch (err) {
@@ -299,6 +316,36 @@ export const verifyVendor = async (req, res, next) => {
     );
 
     if (!vendor) return error(res, 'Vendor not found', 404, 'NOT_FOUND');
+
+    // Trigger push notification to vendor regarding verification status
+    (async () => {
+      try {
+        let title = 'Account Status Update 🔔';
+        let body = `Your driver profile status is now: ${status}.`;
+
+        if (status === 'Verified') {
+          title = 'Account Verified! 🎉';
+          body = 'Congratulations! Your profile has been approved. You are now ready to accept gigs and bid on load requests.';
+        } else if (status === 'Rejected') {
+          title = 'KYC Verification Rejected ⚠️';
+          body = 'Your submitted documents were rejected. Please review your details and re-upload valid documents.';
+        } else if (status === 'Suspended') {
+          title = 'Account Suspended 🚫';
+          body = 'Your driver account has been suspended by the administrator. Contact support for details.';
+        }
+
+        await sendNotificationToUser(vendor._id.toString(), 'vendor', {
+          title,
+          body,
+          type: 'driver_verification_status',
+          entityId: vendor._id.toString(),
+          deepLink: '/driver/profile',
+          priority: 'high'
+        });
+      } catch (fcmErr) {
+        console.error('[FCM] Error notifying driver of verification status update:', fcmErr.message);
+      }
+    })();
     
     success(res, vendor, `Vendor status updated to ${status}`);
   } catch (err) {

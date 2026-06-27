@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Send, Bell, User, Users, ShieldAlert, CheckCircle, 
-  Smartphone, Monitor, RefreshCw, HelpCircle, Play, Info, AlertCircle
+  Smartphone, Monitor, RefreshCw, HelpCircle, Play, Info, AlertCircle,
+  FileCode
 } from 'lucide-react';
 import { PageHeader } from '../components/common/PageHeader';
 import { Button } from "@/components/ui/button";

@@ -3,6 +3,7 @@ import Vendor from '../models/Vendor.model.js';
 import Bid from '../models/Bid.model.js';
 import { success, error } from '../utils/response.js';
 import { getRevenueModelConfig } from './settings.controller.js';
+import { sendNotificationToUser, sendNotificationToMultipleUsers, sendNotificationToAdmins } from '../utils/pushNotificationHelper.js';
 
 /**
  * @route   POST /api/requirements
@@ -56,6 +57,47 @@ export const createRequirement = async (req, res, next) => {
       notes,
       price: price ? Number(price) : 1733,
     });
+
+    // Send push notifications asynchronously (do not block client response)
+    (async () => {
+      try {
+        // 1. Notify Customer
+        await sendNotificationToUser(req.user.id, 'user', {
+          title: 'Booking Created 📦',
+          body: `Your load request for ${serviceType} has been posted successfully.`,
+          type: 'booking_created',
+          entityId: requirement._id.toString(),
+          deepLink: '/user/requests',
+          priority: 'normal'
+        });
+
+        // 2. Notify Admin
+        await sendNotificationToAdmins({
+          title: 'New Booking Posted 🔔',
+          body: `A new load request for ${serviceType} has been posted by customer.`,
+          type: 'new_booking',
+          entityId: requirement._id.toString(),
+          deepLink: '/admin/deals',
+          priority: 'normal'
+        });
+
+        // 3. Notify Drivers matching this service category
+        const matchingVendors = await Vendor.find({ serviceCategories: serviceType, status: 'Verified' });
+        if (matchingVendors.length > 0) {
+          const vendorIds = matchingVendors.map(v => v._id.toString());
+          await sendNotificationToMultipleUsers(vendorIds, 'vendor', {
+            title: 'New Load Request Available 🚚',
+            body: `New load request for ${serviceType} is available in your operating area. Tap to bid.`,
+            type: 'new_load_request',
+            entityId: requirement._id.toString(),
+            deepLink: '/driver/leads',
+            priority: 'high'
+          });
+        }
+      } catch (fcmErr) {
+        console.error('[FCM] Error broadcasting requirement creation:', fcmErr.message);
+      }
+    })();
 
     success(res, requirement, 'Requirement posted successfully', 201);
   } catch (err) {
@@ -200,6 +242,38 @@ export const updateRequirementStatus = async (req, res, next) => {
     );
 
     if (!requirement) return error(res, 'Requirement not found', 404, 'NOT_FOUND');
+
+    // Trigger cancel notifications if status is updated to cancelled
+    if (status === 'cancelled') {
+      (async () => {
+        try {
+          // 1. Notify Customer
+          await sendNotificationToUser(requirement.user.toString(), 'user', {
+            title: 'Booking Cancelled ❌',
+            body: `Your booking for ${requirement.serviceType} has been cancelled.`,
+            type: 'booking_cancelled',
+            entityId: requirement._id.toString(),
+            deepLink: '/user/requests',
+            priority: 'high'
+          });
+
+          // 2. Notify Driver (if a bid was accepted)
+          const acceptedBid = await Bid.findOne({ requirement: requirement._id, status: 'accepted' });
+          if (acceptedBid && acceptedBid.vendor) {
+            await sendNotificationToUser(acceptedBid.vendor.toString(), 'vendor', {
+              title: 'Booking Cancelled ❌',
+              body: `The booking for ${requirement.serviceType} (Gig ID: ${acceptedBid._id.toString().slice(-8)}) has been cancelled by the system.`,
+              type: 'booking_cancelled',
+              entityId: requirement._id.toString(),
+              deepLink: '/driver/gigs',
+              priority: 'high'
+            });
+          }
+        } catch (fcmErr) {
+          console.error('[FCM] Error sending cancellation notification:', fcmErr.message);
+        }
+      })();
+    }
 
     success(res, requirement, `Status updated to ${status}`);
   } catch (err) {

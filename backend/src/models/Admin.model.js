@@ -30,6 +30,20 @@ const adminSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    fcmTokens: {
+      web: [
+        {
+          token: { type: String, required: true },
+          createdAt: { type: Date, default: Date.now }
+        }
+      ],
+      mobile: [
+        {
+          token: { type: String, required: true },
+          createdAt: { type: Date, default: Date.now }
+        }
+      ]
+    },
   },
   { timestamps: true }
 );
