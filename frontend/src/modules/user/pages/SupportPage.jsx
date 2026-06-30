@@ -29,7 +29,7 @@ const SupportPage = () => {
   };
 
   const handleEmailSupport = () => {
-    const subject = encodeURIComponent("Support Request - Safarsetto User");
+    const subject = encodeURIComponent("Support Request - Get Go Load User");
     const body = encodeURIComponent("Hello Support Team,\n\nI need assistance with the following:\n\n[Describe your issue here]\n\nMy Registered Phone Number: ");
     window.location.href = `mailto:support@getgoride.com?subject=${subject}&body=${body}`;
   };

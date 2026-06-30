@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import UserRoutes from "./modules/user/routes/UserRoutes";
 import DriverRoutes from "./modules/driver/routes/DriverRoutes";
 import AdminRoutes from "./modules/admin/routes/AdminRoutes";
+import PrivacyPage from "./pages/PrivacyPage";
+import PublicSupportPage from "./pages/SupportPage";
 import "./App.css";
 import { Toaster } from "sonner";
 
@@ -10,6 +12,8 @@ function App() {
     <BrowserRouter>
       <Toaster position="top-right" expand={true} richColors />
       <Routes>
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/support" element={<PublicSupportPage />} />
         <Route path="/user/*" element={<UserRoutes />} />
         <Route path="/driver/*" element={<DriverRoutes />} />
         <Route path="/admin/*" element={<AdminRoutes />} />

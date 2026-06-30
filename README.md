@@ -1,4 +1,4 @@
-# Safarsetto / GetGoLoad - Testing Guide
+# Get Go Load - Testing Guide
 
 **Last Updated:** 2026-05-11
 **Backend:** `http://localhost:5001`

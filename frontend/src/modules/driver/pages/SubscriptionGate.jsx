@@ -280,7 +280,7 @@ const SubscriptionGate = () => {
         {freePlan && (
           <div className="bg-amber-50/20 border border-dashed border-amber-500/20 rounded-2xl p-4 flex flex-col gap-2.5 items-center text-center">
              <div className="space-y-0.5">
-               <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Safarsetto Basic</span>
+               <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Get Go Load Basic</span>
                <h4 className="text-xs font-black text-zinc-900 uppercase tracking-tight">Try 30-Day Free Trial</h4>
                <p className="text-[9px] text-zinc-500 font-bold leading-relaxed">Skip payment and operate with {freePlan.leadQuota?.limit || 5} leads daily for 30 days.</p>
              </div>

@@ -64,7 +64,7 @@ export const useDriverState = (options = {}) => {
   const [loading, setLoading] = useState(false);
   const [activeLeads, setActiveLeads] = useState([]);
   const [stats, setStats] = useState(() => {
-    const savedStats = localStorage.getItem('safarsetto_driver_stats');
+    const savedStats = localStorage.getItem('get_go_load_driver_stats');
     return savedStats ? JSON.parse(savedStats) : {
       total: 0,
       accepted: 0,
@@ -117,7 +117,7 @@ export const useDriverState = (options = {}) => {
   }, [driver]);
 
   useEffect(() => {
-    localStorage.setItem('gtgl_driver_stats', JSON.stringify(stats));
+    localStorage.setItem('get_go_load_driver_stats', JSON.stringify(stats));
   }, [stats]);
 
   const toggleOnline = () => {

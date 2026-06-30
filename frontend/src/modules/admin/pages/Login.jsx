@@ -137,7 +137,7 @@ const AdminLogin = () => {
 
         {/* Footer Brand Info */}
         <p className="text-center text-[9px] text-zinc-400 font-extrabold uppercase tracking-widest mt-8">
-           Powered by Safarsetto Engine • Version 1.0.4
+           Powered by Get Go Load Engine • Version 1.0.4
         </p>
       </motion.div>
     </div>
